@@ -67,7 +67,7 @@ export function PriceAlertButton({
         onClick={() => setOpen(true)}
         className="mt-2 inline-flex h-8 w-full items-center justify-center gap-1.5 rounded-lg border border-zinc-200 text-xs font-medium text-zinc-600 transition-colors hover:border-accent-soft hover:bg-accent-soft hover:text-accent"
       >
-        <BellRing className="h-3.5 w-3.5" aria-hidden />
+        <BellRing className="h-3.5 w-3.5 origin-top group-hover:animate-bell-alert" aria-hidden />
         {t('button')}
       </button>
     );

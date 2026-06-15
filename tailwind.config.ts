@@ -29,6 +29,22 @@ const config: Config = {
         // ~2x the card-hover shadow — used for the deal-card hover lift cue.
         'card-hover-lg': '0 8px 24px -4px rgb(0 0 0 / 0.20), 0 4px 12px -4px rgb(0 0 0 / 0.12)',
       },
+      keyframes: {
+        // Bell swing + turn red, used on the price-alert button on card hover.
+        'bell-alert': {
+          '0%': { transform: 'rotate(0)', color: '#DC2626' },
+          '15%': { transform: 'rotate(18deg)' },
+          '30%': { transform: 'rotate(-15deg)' },
+          '45%': { transform: 'rotate(12deg)' },
+          '60%': { transform: 'rotate(-9deg)' },
+          '75%': { transform: 'rotate(5deg)' },
+          '100%': { transform: 'rotate(0)', color: '#DC2626' },
+        },
+      },
+      animation: {
+        // 1s delay, then a 1s ring; `forwards` keeps it red while hovering.
+        'bell-alert': 'bell-alert 1s ease-in-out 1s forwards',
+      },
     },
   },
   plugins: [],

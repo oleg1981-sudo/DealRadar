@@ -20,7 +20,7 @@ export function DealCard({ deal, priority = false }: { deal: NormalizedDeal; pri
   const pw = priceWindow(deal);
 
   return (
-    <Card className="flex flex-col overflow-hidden">
+    <Card className="group flex flex-col overflow-hidden">
       <div className="relative aspect-[4/3] bg-zinc-50">
         {deal.imageUrl ? (
           <Image
