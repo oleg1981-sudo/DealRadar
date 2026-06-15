@@ -3,6 +3,7 @@ import { useTranslations, useLocale } from 'next-intl';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { PriceHeatBar } from './PriceHeatBar';
+import { PriceAlertButton } from './PriceAlertButton';
 import { formatPrice, formatDiscount } from '@/lib/utils/format';
 import { priceWindow } from '@/lib/utils/price-history';
 import { decorateAffiliateUrl } from '@/lib/utils/affiliate';
@@ -78,6 +79,13 @@ export function DealCard({ deal, priority = false }: { deal: NormalizedDeal; pri
         >
           {t('goToDeal')}
         </a>
+
+        <PriceAlertButton
+          productId={deal.productId}
+          productName={deal.productName}
+          price={deal.salePrice}
+          currency={deal.currency}
+        />
       </div>
     </Card>
   );

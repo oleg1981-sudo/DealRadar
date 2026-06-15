@@ -60,3 +60,25 @@ $$;
 -- RLS: the app uses the service-role key server-side only. Lock the table down
 -- for anon/authenticated so a leaked anon key exposes nothing.
 alter table public.deals enable row level security;
+
+-- Price-drop alert subscriptions (one row per email × product). The refresh job
+-- emails the subscriber once the product's sale_price first drops below
+-- target_price, then flips `notified` (see notifyPriceDrops() in alerts.repo.ts).
+create table if not exists public.price_alerts (
+  id            uuid          primary key default gen_random_uuid(),
+  email         text          not null,
+  product_id    text          not null,
+  product_name  text          not null,
+  target_price  numeric(12,2) not null check (target_price >= 0),
+  currency      char(3)       not null,
+  notified      boolean       not null default false,
+  notified_at   timestamptz,
+  created_at    timestamptz   not null default now(),
+  unique (email, product_id)
+);
+
+-- Hot path for the notify pass: pending alerts looked up by product.
+create index if not exists price_alerts_pending_idx
+  on public.price_alerts (product_id) where notified = false;
+
+alter table public.price_alerts enable row level security;

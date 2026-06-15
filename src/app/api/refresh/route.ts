@@ -12,6 +12,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { fetchDealsAcrossProviders } from '@/lib/providers/registry';
 import { upsertDeals } from '@/lib/db/deals.repo';
+import { notifyPriceDrops } from '@/lib/db/alerts.repo';
 import { SUPPORTED_COUNTRIES, CATEGORY_SLUGS, type CategorySlug, type CountryCode } from '@/lib/providers/types';
 
 export const runtime = 'nodejs';
@@ -30,6 +31,7 @@ export async function POST(req: NextRequest) {
   const countries = body.countries ?? [...SUPPORTED_COUNTRIES];
   const categories = body.categories ?? [...CATEGORY_SLUGS];
   const summary: Record<string, number> = {};
+  let notified = 0;
 
   for (const country of countries) {
     let count = 0;
@@ -37,6 +39,8 @@ export async function POST(req: NextRequest) {
       try {
         const deals = await fetchDealsAcrossProviders({ country, category, limit: 100 });
         count += await upsertDeals(deals);
+        // Email anyone whose alert price has now been beaten by these deals.
+        notified += await notifyPriceDrops(deals);
       } catch (e) {
         console.error(`[api/refresh] ${country}/${category} failed:`, e);
       }
@@ -44,5 +48,5 @@ export async function POST(req: NextRequest) {
     summary[country] = count;
   }
 
-  return NextResponse.json({ ok: true, upserted: summary, at: new Date().toISOString() });
+  return NextResponse.json({ ok: true, upserted: summary, alertsSent: notified, at: new Date().toISOString() });
 }

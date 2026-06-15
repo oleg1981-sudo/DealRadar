@@ -22,6 +22,14 @@
     "priceHistory": "Price · last 3 months",
     "today": "Today"
   },
+  "alert": {
+    "button": "Receive best price alert",
+    "emailPlaceholder": "your@email.com",
+    "submit": "Notify me",
+    "success": "Done! We'll email you when the price drops.",
+    "invalidEmail": "Please enter a valid email address.",
+    "errorGeneric": "Something went wrong. Please try again."
+  },
   "search": {
     "placeholder": "Search products, brands…",
     "products": "Products",

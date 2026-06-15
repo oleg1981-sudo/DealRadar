@@ -22,6 +22,14 @@
     "priceHistory": "Preis · letzte 3 Monate",
     "today": "Heute"
   },
+  "alert": {
+    "button": "Preisalarm erhalten",
+    "emailPlaceholder": "deine@email.de",
+    "submit": "Benachrichtigen",
+    "success": "Erledigt! Wir benachrichtigen dich, sobald der Preis fällt.",
+    "invalidEmail": "Bitte gib eine gültige E-Mail-Adresse ein.",
+    "errorGeneric": "Etwas ist schiefgelaufen. Bitte versuche es erneut."
+  },
   "search": {
     "placeholder": "Produkte, Marken suchen…",
     "products": "Produkte",
