@@ -39,6 +39,24 @@ export function FilterPanel({ brands, category }: { brands: string[]; category?:
     router.push(slug ? `/category/${slug}${suffix}` : `/search${suffix}`);
   };
 
+  // Refine within the current category: keep brand/price/sort, set the term.
+  const goToTerm = (slug: string, term: string) => {
+    const next = new URLSearchParams(params.toString());
+    next.set('category', slug);
+    next.set('q', term);
+    router.push(`/search?${next.toString()}`);
+  };
+  const clearCategory = () => {
+    const next = new URLSearchParams(params.toString());
+    next.delete('category');
+    next.delete('q');
+    const qs = next.toString();
+    router.push(qs ? `/search?${qs}` : '/search');
+  };
+
+  const activeTerm = params.get('q') ?? '';
+  const current = CATEGORIES.find((c) => c.slug === (category ?? params.get('category') ?? ''));
+
   const applyPrices = () => {
     const next = new URLSearchParams(params.toString());
     minPrice ? next.set('minPrice', minPrice) : next.delete('minPrice');
@@ -67,20 +85,68 @@ export function FilterPanel({ brands, category }: { brands: string[]; category?:
       </div>
 
       <div>
-        <label htmlFor="f-category" className="text-xs font-medium uppercase tracking-wide text-zinc-400">
+        <span className="text-xs font-medium uppercase tracking-wide text-zinc-400">
           {t('filters.category')}
-        </label>
-        <select
-          id="f-category"
-          value={category ?? params.get('category') ?? ''}
-          onChange={(e) => goToCategory(e.target.value)}
-          className="mt-1 h-10 w-full rounded-lg border border-zinc-200 bg-white px-2 text-sm"
-        >
-          <option value="">{t('filters.allCategories')}</option>
-          {CATEGORIES.map((c) => (
-            <option key={c.slug} value={c.slug}>{t(`categories.${c.slug}`)}</option>
-          ))}
-        </select>
+        </span>
+        {current ? (
+          // In a category: refine within its own subcategories, not all categories.
+          <div className="mt-1">
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-sm font-semibold text-zinc-900">{t(`categories.${current.slug}`)}</span>
+              <button type="button" onClick={clearCategory} className="shrink-0 text-xs text-accent hover:underline">
+                {t('filters.allCategories')}
+              </button>
+            </div>
+            <ul className="mt-2 space-y-0.5">
+              {current.children.map((sub) => {
+                const isActive = sub.name === activeTerm || (sub.children ?? []).includes(activeTerm);
+                return (
+                  <li key={sub.name}>
+                    <button
+                      type="button"
+                      onClick={() => goToTerm(current.slug, sub.name)}
+                      className={`w-full rounded-md px-2 py-1 text-left text-sm transition-colors ${
+                        isActive ? 'bg-accent-soft font-medium text-accent' : 'text-zinc-700 hover:bg-zinc-50'
+                      }`}
+                    >
+                      {sub.name}
+                    </button>
+                    {isActive && sub.children && sub.children.length > 0 && (
+                      <ul className="mb-1 ml-3 mt-0.5 space-y-0.5 border-l border-zinc-100 pl-2">
+                        {sub.children.map((leaf) => (
+                          <li key={leaf}>
+                            <button
+                              type="button"
+                              onClick={() => goToTerm(current.slug, leaf)}
+                              className={`w-full rounded px-2 py-0.5 text-left text-xs transition-colors ${
+                                leaf === activeTerm ? 'font-medium text-accent' : 'text-zinc-500 hover:text-accent'
+                              }`}
+                            >
+                              {leaf}
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        ) : (
+          <select
+            id="f-category"
+            aria-label={t('filters.category')}
+            value={category ?? params.get('category') ?? ''}
+            onChange={(e) => goToCategory(e.target.value)}
+            className="mt-1 h-10 w-full rounded-lg border border-zinc-200 bg-white px-2 text-sm"
+          >
+            <option value="">{t('filters.allCategories')}</option>
+            {CATEGORIES.map((c) => (
+              <option key={c.slug} value={c.slug}>{t(`categories.${c.slug}`)}</option>
+            ))}
+          </select>
+        )}
       </div>
 
       {brands.length > 0 && (

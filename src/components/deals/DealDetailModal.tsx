@@ -14,7 +14,7 @@ import { Badge } from '@/components/ui/badge';
 import { PriceHeatBar } from './PriceHeatBar';
 import { PriceAlertButton } from './PriceAlertButton';
 import { formatPrice, formatDiscount } from '@/lib/utils/format';
-import { priceWindow, priceSeries } from '@/lib/utils/price-history';
+import { priceWindow } from '@/lib/utils/price-history';
 import { decorateAffiliateUrl } from '@/lib/utils/affiliate';
 import { productGallery, productSpecs, productSizes } from '@/lib/utils/product-details';
 import type { NormalizedDeal } from '@/lib/providers/types';
@@ -125,7 +125,6 @@ export function DealDetailModal({ deal, onClose }: { deal: NormalizedDeal; onClo
             <div className="mt-3">
               <PriceHeatBar
                 window={pw}
-                series={priceSeries(deal)}
                 currency={deal.currency}
                 locale={locale}
                 captionLabel={t('priceHistory')}

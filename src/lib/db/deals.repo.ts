@@ -8,6 +8,7 @@
 import 'server-only';
 import { supabase, supabaseConfigured } from './supabase';
 import { fetchDealsAcrossProviders } from '../providers/registry';
+import { queryTokens } from '../utils/search-tokens';
 import type { CategorySlug, CountryCode, DealQuery, NormalizedDeal } from '../providers/types';
 
 const TABLE = 'deals';
@@ -70,7 +71,12 @@ export async function queryDeals(filters: DealFilters): Promise<NormalizedDeal[]
   if (filters.city) q = q.or(`city.eq.${filters.city},city.is.null`);
   if (filters.category) q = q.eq('category', filters.category);
   if (filters.brand) q = q.eq('brand', filters.brand);
-  if (filters.q) q = q.or(`product_name.ilike.%${filters.q}%,brand.ilike.%${filters.q}%`);
+  // Token-AND match: each term must appear in the product name or brand, so
+  // menu terms like "OLED TVs" match "LG 4K OLED TV 55\"". Tokens are stripped
+  // to [a-z0-9] by queryTokens, so they're safe to interpolate into ilike.
+  for (const tok of filters.q ? queryTokens(filters.q) : []) {
+    q = q.or(`product_name.ilike.%${tok}%,brand.ilike.%${tok}%`);
+  }
   if (filters.minDiscountPercent) q = q.gte('discount_percent', filters.minDiscountPercent);
   if (filters.minPrice !== undefined) q = q.gte('sale_price', filters.minPrice);
   if (filters.maxPrice !== undefined) q = q.lte('sale_price', filters.maxPrice);

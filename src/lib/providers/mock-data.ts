@@ -10,6 +10,7 @@ import {
   type NormalizedDeal,
   computeDiscountPercent,
 } from './types';
+import { queryTokens } from '../utils/search-tokens';
 
 const PRODUCTS: Record<CategorySlug, { names: string[]; brands: string[]; base: [number, number] }> = {
   electronics: {
@@ -132,10 +133,13 @@ export function generateMockDeals(providerId: string, query: DealQuery): Normali
 
   let deals = out;
   if (query.q) {
-    const q = query.q.toLowerCase();
-    deals = deals.filter(
-      (d) => d.productName.toLowerCase().includes(q) || (d.brand ?? '').toLowerCase().includes(q),
-    );
+    const tokens = queryTokens(query.q);
+    if (tokens.length) {
+      deals = deals.filter((d) => {
+        const hay = `${d.productName} ${d.brand ?? ''}`.toLowerCase();
+        return tokens.every((tok) => hay.includes(tok));
+      });
+    }
   }
   if (query.minDiscountPercent) {
     deals = deals.filter((d) => d.discountPercent >= query.minDiscountPercent!);
