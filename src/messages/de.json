@@ -20,7 +20,10 @@
     "goToDeal": "Zum Angebot",
     "sponsored": "Anzeige",
     "priceHistory": "Preis · letzte 3 Monate",
-    "today": "Heute"
+    "today": "Heute",
+    "close": "Schließen",
+    "sizes": "Größen",
+    "details": "Produktdetails"
   },
   "alert": {
     "button": "Preisalarm erhalten",

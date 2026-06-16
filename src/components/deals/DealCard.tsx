@@ -1,27 +1,37 @@
+'use client';
+
+import { useState } from 'react';
 import Image from 'next/image';
 import { useTranslations, useLocale } from 'next-intl';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { PriceHeatBar } from './PriceHeatBar';
 import { PriceAlertButton } from './PriceAlertButton';
+import { DealDetailModal } from './DealDetailModal';
 import { formatPrice, formatDiscount } from '@/lib/utils/format';
 import { priceWindow } from '@/lib/utils/price-history';
 import { decorateAffiliateUrl } from '@/lib/utils/affiliate';
 import type { NormalizedDeal } from '@/lib/providers/types';
 
 /**
- * One deal. Server component — no client JS per card keeps the grid cheap
- * (Lighthouse perf target ≥ 85).
+ * One deal. Clicking the image or title opens the detailed-card modal; the
+ * action buttons (Go to deal, alert) act on their own.
  */
 export function DealCard({ deal, priority = false }: { deal: NormalizedDeal; priority?: boolean }) {
   const t = useTranslations('deal');
   const locale = useLocale();
+  const [open, setOpen] = useState(false);
   const href = decorateAffiliateUrl(deal.shopUrl, deal.source);
   const pw = priceWindow(deal);
 
   return (
     <Card className="group flex flex-col overflow-hidden">
-      <div className="relative aspect-[4/3] bg-zinc-50">
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        aria-label={deal.productName}
+        className="relative block aspect-[4/3] w-full bg-zinc-50 text-left"
+      >
         {deal.imageUrl ? (
           <Image
             src={deal.imageUrl}
@@ -32,15 +42,20 @@ export function DealCard({ deal, priority = false }: { deal: NormalizedDeal; pri
             className="object-cover"
           />
         ) : (
-          <div className="flex h-full items-center justify-center text-zinc-300">—</div>
+          <span className="flex h-full items-center justify-center text-zinc-300">—</span>
         )}
         <Badge variant="deal" className="absolute left-2 top-2 text-sm">
           {formatDiscount(deal.discountPercent)}
         </Badge>
-      </div>
+      </button>
 
       <div className="flex flex-1 flex-col gap-1.5 p-4">
-        <h3 className="line-clamp-2 text-sm font-medium leading-snug">{deal.productName}</h3>
+        <h3
+          onClick={() => setOpen(true)}
+          className="line-clamp-2 cursor-pointer text-sm font-medium leading-snug transition-colors hover:text-accent"
+        >
+          {deal.productName}
+        </h3>
         <div className="flex items-center gap-2 text-xs text-zinc-500">
           {deal.shopLogoUrl && (
             // eslint-disable-next-line @next/next/no-img-element -- tiny logos, arbitrary hosts
@@ -82,6 +97,8 @@ export function DealCard({ deal, priority = false }: { deal: NormalizedDeal; pri
           currency={deal.currency}
         />
       </div>
+
+      {open && <DealDetailModal deal={deal} onClose={() => setOpen(false)} />}
     </Card>
   );
 }

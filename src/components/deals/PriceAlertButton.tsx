@@ -5,7 +5,7 @@
  * Submitting POSTs to /api/alerts; the refresh job emails the user when the
  * product's price later drops below the price at subscribe time.
  */
-import { useState, type FormEvent } from 'react';
+import { useId, useState, type FormEvent } from 'react';
 import { useTranslations } from 'next-intl';
 import { BellRing, Check, Loader2 } from 'lucide-react';
 
@@ -23,6 +23,7 @@ export function PriceAlertButton({
   currency: string;
 }) {
   const t = useTranslations('alert');
+  const uid = useId();
   const [open, setOpen] = useState(false);
   const [email, setEmail] = useState('');
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
@@ -75,12 +76,12 @@ export function PriceAlertButton({
 
   return (
     <form onSubmit={submit} className="mt-2">
-      <label htmlFor={`alert-${productId}`} className="sr-only">
+      <label htmlFor={`alert-${uid}`} className="sr-only">
         {t('button')}
       </label>
       <div className="flex gap-1.5">
         <input
-          id={`alert-${productId}`}
+          id={`alert-${uid}`}
           type="email"
           required
           autoFocus

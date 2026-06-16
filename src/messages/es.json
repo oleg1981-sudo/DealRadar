@@ -20,7 +20,10 @@
     "goToDeal": "Go to deal",
     "sponsored": "Sponsored",
     "priceHistory": "Price · last 3 months",
-    "today": "Today"
+    "today": "Today",
+    "close": "Close",
+    "sizes": "Sizes",
+    "details": "Product details"
   },
   "alert": {
     "button": "Receive best price alert",
