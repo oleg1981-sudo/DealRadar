@@ -58,18 +58,18 @@ export function DealDetailModal({ deal, onClose }: { deal: NormalizedDeal; onClo
         role="dialog"
         aria-modal="true"
         aria-label={deal.productName}
-        className="relative z-10 max-h-[85vh] w-full max-w-3xl overflow-y-auto rounded-2xl bg-white p-5 shadow-card-hover sm:p-6"
+        className="relative z-10 max-h-[85vh] w-full max-w-3xl overflow-y-auto rounded-2xl bg-white p-5 shadow-card-hover sm:p-6 md:flex md:flex-col md:overflow-hidden"
       >
         <button
           type="button"
           onClick={onClose}
           aria-label={t('close')}
-          className="absolute right-3 top-3 rounded-lg p-1.5 text-zinc-500 transition-colors hover:bg-zinc-100"
+          className="absolute right-3 top-3 z-20 rounded-full bg-white/90 p-1.5 text-zinc-600 shadow ring-1 ring-zinc-200 transition-colors hover:bg-white"
         >
           <X className="h-5 w-5" aria-hidden />
         </button>
 
-        <div className="grid gap-6 md:grid-cols-2">
+        <div className="grid gap-6 md:shrink-0 md:grid-cols-2">
           {/* Gallery — top-left */}
           <div>
             <div className="relative aspect-[4/3] overflow-hidden rounded-xl bg-zinc-50">
@@ -172,11 +172,10 @@ export function DealDetailModal({ deal, onClose }: { deal: NormalizedDeal; onClo
           </div>
         </div>
 
-        {/* Technical details */}
-        <div className="mt-6 border-t border-zinc-100 pt-4">
-          <h3 className="mb-2 text-sm font-semibold text-zinc-900">{t('details')}</h3>
-          {/* Dynamic height; scrolls within the card when a feed returns many specs. */}
-          <dl className="grid max-h-[40vh] grid-cols-1 gap-x-8 overflow-y-auto overscroll-contain pr-1 sm:grid-cols-2">
+        {/* Technical details — the only scroll area on desktop. */}
+        <div className="mt-6 border-t border-zinc-100 pt-4 md:flex md:min-h-0 md:flex-col">
+          <h3 className="mb-2 text-sm font-semibold text-zinc-900 md:shrink-0">{t('details')}</h3>
+          <dl className="grid grid-cols-1 gap-x-8 overscroll-contain pr-1 sm:grid-cols-2 md:min-h-0 md:overflow-y-auto">
             {specs.map((s) => (
               <div key={s.label} className="flex justify-between gap-4 border-b border-zinc-100 py-1.5 text-sm">
                 <dt className="text-zinc-500">{s.label}</dt>

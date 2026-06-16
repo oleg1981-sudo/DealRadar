@@ -35,19 +35,54 @@ export interface Spec {
   value: string;
 }
 
+/** Stable synthetic model code — shown on the card and in the spec table. */
+export function productModel(deal: NormalizedDeal): string {
+  const r = seeded(`${deal.productId}:model`);
+  const prefix = (deal.brand ?? '').replace(/[^A-Za-z]/g, '').slice(0, 2).toUpperCase() || 'DR';
+  return `${prefix}-${Math.floor(r() * 9000) + 1000}`;
+}
+
 export function productSpecs(deal: NormalizedDeal): Spec[] {
   const r = seeded(`${deal.productId}:spec`);
   const colors = ['Black', 'White', 'Silver', 'Graphite', 'Blue', 'Green', 'Red'];
   const warranties = ['1 year', '2 years', '3 years'];
+  const origins = ['Germany', 'China', 'Poland', 'Vietnam', 'Czechia'];
 
   const specs: Spec[] = [];
   if (deal.brand) specs.push({ label: 'Brand', value: deal.brand });
-  specs.push({ label: 'Model', value: `DR-${Math.floor(r() * 9000) + 1000}` });
+  specs.push({ label: 'Model', value: productModel(deal) });
   specs.push({ label: 'Color', value: pick(colors, r) });
   specs.push({ label: 'Condition', value: 'New' });
   specs.push({ label: 'Warranty', value: pick(warranties, r) });
   specs.push({ label: 'Weight', value: `${(0.3 + r() * 6).toFixed(1)} kg` });
   specs.push({ label: 'Availability', value: `${Math.floor(r() * 40) + 5} in stock` });
+
+  // Electronics carry a long spec sheet — realistic, and it exercises the
+  // scrollable details section in the detailed card.
+  if (deal.category === 'electronics') {
+    specs.push({ label: 'Screen size', value: `${pick([40, 43, 50, 55, 65, 75], r)}"` });
+    specs.push({ label: 'Resolution', value: pick(['Full HD', '4K UHD', '8K UHD'], r) });
+    specs.push({ label: 'Refresh rate', value: pick(['60 Hz', '120 Hz', '144 Hz'], r) });
+    specs.push({ label: 'Panel', value: pick(['IPS', 'OLED', 'QLED', 'VA'], r) });
+    specs.push({ label: 'HDR', value: pick(['HDR10', 'HDR10+', 'Dolby Vision'], r) });
+    specs.push({ label: 'Connectivity', value: pick(['Wi-Fi 5', 'Wi-Fi 6', 'Wi-Fi 6E'], r) });
+    specs.push({ label: 'Bluetooth', value: pick(['5.0', '5.2', '5.3'], r) });
+    specs.push({ label: 'HDMI ports', value: String(pick([2, 3, 4], r)) });
+    specs.push({ label: 'USB ports', value: String(pick([1, 2, 3], r)) });
+    specs.push({ label: 'Battery life', value: `${pick([8, 10, 12, 20], r)} h` });
+    specs.push({ label: 'Power', value: `${pick([45, 65, 90, 120], r)} W` });
+    specs.push({ label: 'Energy class', value: pick(['A', 'B', 'C', 'D'], r) });
+    specs.push({ label: 'Operating system', value: pick(['Android', 'webOS', 'Tizen', 'Proprietary'], r) });
+    specs.push({ label: 'Voice control', value: pick(['Alexa', 'Google', 'Both'], r) });
+    specs.push({ label: 'Smart features', value: pick(['Yes', 'Yes', 'No'], r) });
+  }
+
+  specs.push({ label: 'Material', value: pick(['Aluminium', 'Plastic', 'Steel', 'Composite'], r) });
+  specs.push({ label: 'Dimensions', value: `${pick([20, 30, 40, 60], r)}×${pick([15, 20, 30], r)}×${pick([4, 8, 12], r)} cm` });
+  specs.push({ label: 'Country of origin', value: pick(origins, r) });
+  specs.push({ label: 'SKU', value: `SKU-${Math.floor(r() * 900000) + 100000}` });
+  specs.push({ label: 'Returns', value: '30-day free returns' });
+  specs.push({ label: 'Shipping', value: pick(['Free', '€2.99', '€4.99'], r) });
   return specs;
 }
 

@@ -91,12 +91,13 @@ export function PriceAlertButton({
             if (status === 'error') setStatus('idle');
           }}
           placeholder={t('emailPlaceholder')}
-          className="h-8 min-w-0 flex-1 rounded-lg border border-zinc-200 px-2 text-xs placeholder:text-zinc-400 focus-visible:border-accent focus-visible:outline-none"
+          // 16px text-base keeps iOS Safari from zooming the page on focus.
+          className="h-9 min-w-0 flex-1 rounded-lg border border-zinc-200 px-2.5 text-base placeholder:text-zinc-400 focus-visible:border-accent focus-visible:outline-none"
         />
         <button
           type="submit"
           disabled={status === 'loading'}
-          className="inline-flex h-8 shrink-0 items-center justify-center rounded-lg bg-accent px-2.5 text-xs font-medium text-white transition-colors hover:bg-accent-hover disabled:opacity-60"
+          className="inline-flex h-9 shrink-0 items-center justify-center rounded-lg bg-accent px-3 text-sm font-medium text-white transition-colors hover:bg-accent-hover disabled:opacity-60"
         >
           {status === 'loading' ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> : t('submit')}
         </button>
