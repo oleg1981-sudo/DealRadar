@@ -49,3 +49,27 @@ export function priceWindow(deal: NormalizedDeal): PriceWindow {
 
   return { low: round2(low), high: round2(high), current, position };
 }
+
+/**
+ * A deterministic synthetic price series (oldest → today) for the sparkline.
+ * Until a real price-history store exists, it's seeded from `productId` so the
+ * line is stable across reloads. Values stay within the window's [low, high],
+ * and the last point is today's price (`current`) — where the marker sits.
+ */
+export function priceSeries(deal: NormalizedDeal, points = 24): number[] {
+  const { low, high, current } = priceWindow(deal);
+  const span = high - low || 1;
+  const rnd = seeded(deal.productId + '|series');
+
+  // Start somewhere in the upper part of the range, drift toward today's price.
+  const start = low + span * (0.55 + rnd() * 0.4);
+  const series: number[] = [];
+  for (let i = 0; i < points; i++) {
+    const phase = i / (points - 1);
+    const trend = start + (current - start) * phase;
+    const noise = (rnd() - 0.5) * span * 0.22;
+    series.push(round2(Math.min(high, Math.max(low, trend + noise))));
+  }
+  series[points - 1] = current; // today
+  return series;
+}

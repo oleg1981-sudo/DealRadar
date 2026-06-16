@@ -89,7 +89,7 @@ function priceDropEmail(deal: NormalizedDeal, targetPrice: number): string {
   return `<div style="font-family:system-ui,sans-serif;max-width:480px;color:#18181b">
   <h2 style="margin:0 0 12px">Good news — the price dropped 🎉</h2>
   <p style="margin:0 0 12px"><strong>${name}</strong> is now <strong>${now}</strong> (was ${was}) at ${shop}.</p>
-  <p style="margin:0 0 20px"><a href="${deal.shopUrl}" style="display:inline-block;background:#4F46E5;color:#fff;padding:10px 18px;border-radius:8px;text-decoration:none;font-weight:500">View the deal</a></p>
+  <p style="margin:0 0 20px"><a href="${deal.shopUrl}" style="display:inline-block;background:#EA580C;color:#fff;padding:10px 18px;border-radius:8px;text-decoration:none;font-weight:500">View the deal</a></p>
   <p style="color:#71717a;font-size:12px;margin:0">You're receiving this because you set a price alert on DealRadar.</p>
 </div>`;
 }

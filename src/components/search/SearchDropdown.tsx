@@ -59,7 +59,7 @@ export function SearchDropdown({
             {results.categories.map((c) => (
               <li key={c}>
                 <Link href={`/${locale}/category/${c}`} onClick={onClose}
-                  className="inline-block rounded-md bg-gray-100 px-2 py-1 text-xs text-gray-700 hover:bg-indigo-50 hover:text-indigo-700">
+                  className="inline-block rounded-md bg-gray-100 px-2 py-1 text-xs text-gray-700 hover:bg-accent-soft hover:text-accent">
                   {c.replace('-', ' ')}
                 </Link>
               </li>
@@ -75,7 +75,7 @@ export function SearchDropdown({
             {results.brands.map((b) => (
               <li key={b}>
                 <Link href={`/${locale}/search?brand=${encodeURIComponent(b)}`} onClick={onClose}
-                  className="inline-block rounded-md bg-gray-100 px-2 py-1 text-xs text-gray-700 hover:bg-indigo-50 hover:text-indigo-700">
+                  className="inline-block rounded-md bg-gray-100 px-2 py-1 text-xs text-gray-700 hover:bg-accent-soft hover:text-accent">
                   {b}
                 </Link>
               </li>
@@ -86,7 +86,7 @@ export function SearchDropdown({
 
       {!empty && (
         <button onClick={onSeeAll}
-          className="block w-full border-t border-gray-100 px-4 py-2.5 text-center text-sm font-medium text-indigo-600 hover:bg-indigo-50">
+          className="block w-full border-t border-gray-100 px-4 py-2.5 text-center text-sm font-medium text-accent hover:bg-accent-soft">
           {t('seeAll')}
         </button>
       )}

@@ -9,7 +9,7 @@ import { PriceHeatBar } from './PriceHeatBar';
 import { PriceAlertButton } from './PriceAlertButton';
 import { DealDetailModal } from './DealDetailModal';
 import { formatPrice, formatDiscount } from '@/lib/utils/format';
-import { priceWindow } from '@/lib/utils/price-history';
+import { priceWindow, priceSeries } from '@/lib/utils/price-history';
 import { productModel } from '@/lib/utils/product-details';
 import { decorateAffiliateUrl } from '@/lib/utils/affiliate';
 import type { NormalizedDeal } from '@/lib/providers/types';
@@ -78,6 +78,7 @@ export function DealCard({ deal, priority = false }: { deal: NormalizedDeal; pri
 
         <PriceHeatBar
           window={pw}
+          series={priceSeries(deal)}
           currency={deal.currency}
           locale={locale}
           captionLabel={t('priceHistory')}

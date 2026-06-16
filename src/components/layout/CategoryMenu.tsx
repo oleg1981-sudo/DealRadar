@@ -1,16 +1,19 @@
 'use client';
 
 /**
- * Full-width "Browse by category" bar at the top of the page. Click it and a
- * category panel slides down, overlaying the content below; pick a category to
- * jump to its page. Replaces the old burger drawer.
+ * Horizontal category bar with a cascading mega-menu. The bar scrolls
+ * horizontally (chevrons appear at the edges); hovering or clicking a category
+ * opens a panel beneath it. The panel is two-level: a left column of
+ * departments and, beside it, the leaf categories of the active department.
+ * Top category → /category/<slug>; departments & leaves → /search filtered by
+ * that term. Replaces the old "Browse by category" bar.
  */
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/routing';
 import { CATEGORIES } from '@/lib/categories';
 import {
-  ChevronDown, MonitorSmartphone, Shirt, Sofa, Bike, Sparkles,
+  ChevronLeft, ChevronRight, MonitorSmartphone, Shirt, Sofa, Bike, Sparkles,
   ShoppingBasket, Blocks, Car, BookOpen, Plane, type LucideIcon,
 } from 'lucide-react';
 
@@ -18,78 +21,200 @@ const ICONS: Record<string, LucideIcon> = {
   MonitorSmartphone, Shirt, Sofa, Bike, Sparkles, ShoppingBasket, Blocks, Car, BookOpen, Plane,
 };
 
-/** Column of 3 down-chevrons that light up top→bottom as a "push to open" hint. */
-function ChevronStack({ animate }: { animate: boolean }) {
-  return (
-    <span className="flex flex-col items-center -space-y-2 text-zinc-400" aria-hidden>
-      {[0, 1, 2].map((i) => (
-        <ChevronDown
-          key={i}
-          className={`h-4 w-7 ${animate ? 'animate-chevron-hint' : ''}`}
-          style={{ animationDelay: `${i * 0.18}s` }}
-        />
-      ))}
-    </span>
-  );
-}
+const termHref = (slug: string, name: string) =>
+  `/search?category=${slug}&q=${encodeURIComponent(name)}`;
 
 export function CategoryMenu() {
   const t = useTranslations('categories');
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
+  const [openSlug, setOpenSlug] = useState<string | null>(null);
+  const [activeSub, setActiveSub] = useState(0);
+  const [canLeft, setCanLeft] = useState(false);
+  const [canRight, setCanRight] = useState(false);
+
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const scrollerRef = useRef<HTMLDivElement>(null);
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const open = (slug: string) => {
+    if (closeTimer.current) clearTimeout(closeTimer.current);
+    setOpenSlug(slug);
+    setActiveSub(0);
+  };
+  const close = () => setOpenSlug(null);
+  const scheduleClose = () => {
+    closeTimer.current = setTimeout(() => setOpenSlug(null), 140);
+  };
+  const cancelClose = () => {
+    if (closeTimer.current) clearTimeout(closeTimer.current);
+  };
 
   // Close on outside click or Escape.
   useEffect(() => {
-    if (!open) return;
+    if (!openSlug) return;
     const onClick = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) close();
     };
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false);
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && close();
     document.addEventListener('mousedown', onClick);
     document.addEventListener('keydown', onKey);
     return () => {
       document.removeEventListener('mousedown', onClick);
       document.removeEventListener('keydown', onKey);
     };
-  }, [open]);
+  }, [openSlug]);
+
+  // Track scroll position to show/hide the edge chevrons.
+  const updateArrows = useCallback(() => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    setCanLeft(el.scrollLeft > 4);
+    setCanRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 4);
+  }, []);
+  useEffect(() => {
+    updateArrows();
+    const el = scrollerRef.current;
+    if (!el) return;
+    el.addEventListener('scroll', updateArrows, { passive: true });
+    window.addEventListener('resize', updateArrows);
+    return () => {
+      el.removeEventListener('scroll', updateArrows);
+      window.removeEventListener('resize', updateArrows);
+    };
+  }, [updateArrows]);
+
+  const scrollBy = (dir: 1 | -1) =>
+    scrollerRef.current?.scrollBy({ left: dir * 280, behavior: 'smooth' });
+
+  const active = CATEGORIES.find((c) => c.slug === openSlug);
 
   return (
-    <div ref={ref} className="relative z-30 mb-6">
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        aria-expanded={open}
-        className="flex h-12 w-full items-center justify-center gap-4 rounded-lg border border-zinc-200 bg-white text-base font-medium text-zinc-700 shadow-card transition-colors hover:border-accent-soft hover:bg-accent-soft hover:text-accent"
-      >
-        <ChevronStack animate={!open} />
-        <span className="text-center">{t('heading')}</span>
-        <ChevronStack animate={!open} />
-      </button>
+    <div
+      ref={wrapRef}
+      className="relative z-30 mb-6"
+      onMouseEnter={cancelClose}
+      onMouseLeave={scheduleClose}
+    >
+      <div className="relative">
+        {canLeft && (
+          <button
+            type="button"
+            aria-label="Scroll categories left"
+            onClick={() => scrollBy(-1)}
+            className="absolute left-0 top-1/2 z-10 -translate-y-1/2 rounded-full border border-zinc-200 bg-white p-1.5 text-zinc-600 shadow-md transition-colors hover:text-accent"
+          >
+            <ChevronLeft className="h-4 w-4" aria-hidden />
+          </button>
+        )}
 
-      <div
-        className={`absolute left-0 right-0 top-full z-40 mt-2 origin-top rounded-xl border border-zinc-200 bg-white p-4 shadow-card-hover transition-all duration-200 ${
-          open ? 'visible translate-y-0 opacity-100' : 'invisible -translate-y-2 opacity-0'
-        }`}
-      >
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+        <div
+          ref={scrollerRef}
+          className="flex gap-2 overflow-x-auto scroll-smooth pb-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+        >
           {CATEGORIES.map((c) => {
             const Icon = ICONS[c.icon];
+            const isOpen = openSlug === c.slug;
             return (
-              <Link
+              <button
                 key={c.slug}
-                href={`/category/${c.slug}`}
-                onClick={() => setOpen(false)}
-                className="group flex flex-col items-center gap-2 rounded-lg border border-zinc-100 bg-white p-4 transition-colors hover:border-accent-soft hover:bg-accent-soft"
+                type="button"
+                aria-expanded={isOpen}
+                aria-haspopup="true"
+                onPointerEnter={(e) => e.pointerType === 'mouse' && open(c.slug)}
+                onClick={() => (isOpen ? close() : open(c.slug))}
+                className={`flex h-12 shrink-0 items-center gap-2 rounded-xl border px-4 text-sm font-medium transition-colors ${
+                  isOpen
+                    ? 'border-accent bg-accent-soft text-accent'
+                    : 'border-zinc-200 bg-white text-zinc-700 hover:border-accent/40 hover:text-accent'
+                }`}
               >
-                <Icon className="h-6 w-6 text-accent" aria-hidden />
-                <span className="text-center text-sm font-medium text-zinc-700 group-hover:text-accent">
-                  {t(c.slug)}
-                </span>
-              </Link>
+                {Icon && (
+                  <Icon className={`h-5 w-5 ${isOpen ? 'text-accent' : 'text-zinc-500'}`} aria-hidden />
+                )}
+                <span className="whitespace-nowrap">{t(c.slug)}</span>
+              </button>
             );
           })}
         </div>
+
+        {canRight && (
+          <button
+            type="button"
+            aria-label="Scroll categories right"
+            onClick={() => scrollBy(1)}
+            className="absolute right-0 top-1/2 z-10 -translate-y-1/2 rounded-full border border-zinc-200 bg-white p-1.5 text-zinc-600 shadow-md transition-colors hover:text-accent"
+          >
+            <ChevronRight className="h-4 w-4" aria-hidden />
+          </button>
+        )}
       </div>
+
+      {/* Cascading mega-menu panel */}
+      {active && (
+        <div className="absolute left-0 right-0 top-full z-40 mt-2 max-h-[72vh] overflow-y-auto rounded-xl border border-zinc-200 bg-white shadow-card-hover">
+          <div className="flex items-center justify-between border-b border-zinc-100 px-4 py-3">
+            <Link
+              href={`/category/${active.slug}`}
+              onClick={close}
+              className="text-sm font-semibold text-accent hover:underline"
+            >
+              {t(active.slug)}
+            </Link>
+          </div>
+
+          <div className="grid sm:grid-cols-[220px_1fr]">
+            {/* Departments (level 2) */}
+            <ul className="border-b border-zinc-100 p-2 sm:border-b-0 sm:border-r">
+              {active.children.map((sub, i) => (
+                <li key={sub.name}>
+                  <button
+                    type="button"
+                    onPointerEnter={(e) => e.pointerType === 'mouse' && setActiveSub(i)}
+                    onClick={() => setActiveSub(i)}
+                    aria-current={i === activeSub}
+                    className={`flex w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-left text-sm transition-colors ${
+                      i === activeSub
+                        ? 'bg-accent-soft font-medium text-accent'
+                        : 'text-zinc-700 hover:bg-zinc-50'
+                    }`}
+                  >
+                    <span>{sub.name}</span>
+                    <ChevronRight className="h-4 w-4 shrink-0 opacity-60" aria-hidden />
+                  </button>
+                </li>
+              ))}
+            </ul>
+
+            {/* Leaf categories (level 3) of the active department */}
+            <div className="p-4">
+              {active.children[activeSub] && (
+                <>
+                  <Link
+                    href={termHref(active.slug, active.children[activeSub].name)}
+                    onClick={close}
+                    className="mb-3 inline-flex items-center gap-1 text-sm font-semibold text-zinc-900 hover:text-accent"
+                  >
+                    {active.children[activeSub].name}
+                    <ChevronRight className="h-4 w-4" aria-hidden />
+                  </Link>
+                  <ul className="grid grid-cols-2 gap-x-6 gap-y-1.5 lg:grid-cols-3">
+                    {(active.children[activeSub].children ?? []).map((leaf) => (
+                      <li key={leaf}>
+                        <Link
+                          href={termHref(active.slug, leaf)}
+                          onClick={close}
+                          className="block rounded px-1 py-1 text-sm text-zinc-600 transition-colors hover:text-accent"
+                        >
+                          {leaf}
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
