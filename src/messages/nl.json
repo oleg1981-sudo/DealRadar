@@ -1,93 +1,93 @@
 {
   "home": {
-    "heroTitle": "Find <em>real</em> deals, not fake discounts",
-    "heroSubtitle": "Track price drops, compare price history, and go directly to trusted retailers.",
-    "heroDisclosure": "We don't sell products directly — we help you find verified deals and redirect you to trusted retailers.",
-    "heroCta": "Search",
-    "topDeals": "Top deals in {country}",
-    "noDeals": "No deals available for your location yet. Check back soon."
+    "heroTitle": "Vind <em>echte</em> deals, geen nepkortingen",
+    "heroSubtitle": "Volg prijsdalingen, vergelijk de prijsgeschiedenis en ga rechtstreeks naar betrouwbare winkels.",
+    "heroDisclosure": "Wij verkopen geen producten rechtstreeks — we helpen je geverifieerde deals te vinden en sturen je door naar betrouwbare winkels.",
+    "heroCta": "Zoeken",
+    "topDeals": "Topdeals in {country}",
+    "noDeals": "Nog geen deals beschikbaar voor jouw locatie. Kom snel terug."
   },
   "categories": {
-    "heading": "Browse by category",
-    "electronics": "Electronics",
-    "fashion": "Fashion",
-    "home-garden": "Home & Garden",
-    "sports": "Sports",
+    "heading": "Bladeren per categorie",
+    "electronics": "Elektronica",
+    "fashion": "Mode",
+    "home-garden": "Huis & tuin",
+    "sports": "Sport",
     "beauty": "Beauty",
-    "food-grocery": "Food & Grocery",
-    "toys": "Toys",
-    "automotive": "Automotive",
-    "books": "Books",
-    "travel": "Travel"
+    "food-grocery": "Boodschappen",
+    "toys": "Speelgoed",
+    "automotive": "Auto",
+    "books": "Boeken",
+    "travel": "Reizen"
   },
   "deal": {
-    "goToDeal": "Go to deal",
-    "sponsored": "Sponsored",
-    "priceHistory": "Price · last 3 months",
-    "today": "Today",
-    "close": "Close",
-    "sizes": "Sizes",
-    "details": "Product details"
+    "goToDeal": "Naar de deal",
+    "sponsored": "Gesponsord",
+    "priceHistory": "Prijs · laatste 3 maanden",
+    "today": "Vandaag",
+    "close": "Sluiten",
+    "sizes": "Maten",
+    "details": "Productdetails"
   },
   "alert": {
-    "button": "Receive best price alert",
-    "emailPlaceholder": "your@email.com",
-    "submit": "Notify me",
-    "success": "Done! We'll email you when the price drops.",
-    "invalidEmail": "Please enter a valid email address.",
-    "errorGeneric": "Something went wrong. Please try again."
+    "button": "Ontvang beste-prijsmelding",
+    "emailPlaceholder": "jouw@email.com",
+    "submit": "Houd me op de hoogte",
+    "success": "Gelukt! We mailen je zodra de prijs daalt.",
+    "invalidEmail": "Voer een geldig e-mailadres in.",
+    "errorGeneric": "Er ging iets mis. Probeer het opnieuw."
   },
   "search": {
-    "placeholder": "Search products, brands…",
-    "products": "Products",
-    "categories": "Categories",
-    "brands": "Brands",
-    "seeAll": "See all results",
-    "resultsFor": "Results for “{q}”",
-    "allResults": "All deals",
-    "noResults": "No deals match your filters. Try widening the price range or lowering the minimum discount."
+    "placeholder": "Zoek producten, merken…",
+    "products": "Producten",
+    "categories": "Categorieën",
+    "brands": "Merken",
+    "seeAll": "Alle resultaten bekijken",
+    "resultsFor": "Resultaten voor ‘{q}’",
+    "allResults": "Alle deals",
+    "noResults": "Geen deals voldoen aan je filters. Verruim het prijsbereik of verlaag de minimale korting."
   },
   "filters": {
     "heading": "Filters",
-    "sort": "Sort by",
-    "sortDiscount": "Biggest discount",
-    "sortPriceAsc": "Price: low to high",
-    "sortPriceDesc": "Price: high to low",
-    "sortNewest": "Newest",
-    "category": "Category",
-    "allCategories": "All categories",
-    "brand": "Brand",
-    "allBrands": "All brands",
-    "priceRange": "Price range",
+    "sort": "Sorteren op",
+    "sortDiscount": "Hoogste korting",
+    "sortPriceAsc": "Prijs: laag naar hoog",
+    "sortPriceDesc": "Prijs: hoog naar laag",
+    "sortNewest": "Nieuwste",
+    "category": "Categorie",
+    "allCategories": "Alle categorieën",
+    "brand": "Merk",
+    "allBrands": "Alle merken",
+    "priceRange": "Prijsbereik",
     "min": "Min",
     "max": "Max",
-    "minDiscount": "Minimum discount",
-    "apply": "Apply filters"
+    "minDiscount": "Minimale korting",
+    "apply": "Filters toepassen"
   },
   "geo": {
-    "promptTitle": "Show deals near you?",
-    "promptBody": "Allow location access to see deals from shops in your city. If you decline, we estimate your country from your IP address.",
-    "allow": "Allow location",
-    "useIpInstead": "Use my IP instead",
-    "changeLocation": "Change location",
-    "country": "Country",
-    "cityOptional": "City (optional)",
-    "cityPlaceholder": "e.g. Berlin",
-    "apply": "Apply"
+    "promptTitle": "Deals bij jou in de buurt tonen?",
+    "promptBody": "Geef locatietoegang om deals van winkels in jouw stad te zien. Als je weigert, schatten we je land op basis van je IP-adres.",
+    "allow": "Locatie toestaan",
+    "useIpInstead": "Gebruik mijn IP",
+    "changeLocation": "Locatie wijzigen",
+    "country": "Land",
+    "cityOptional": "Stad (optioneel)",
+    "cityPlaceholder": "bijv. Amsterdam",
+    "apply": "Toepassen"
   },
   "gdpr": {
-    "bannerTitle": "Cookies on DealRadar",
-    "bannerBody": "We use essential cookies for language and location. Optional cookies help us improve the site with anonymous usage statistics.",
-    "essentialOnly": "Essential only",
-    "acceptAll": "Accept all"
+    "bannerTitle": "Cookies op DealRadar",
+    "bannerBody": "We gebruiken essentiële cookies voor taal en locatie. Optionele cookies helpen ons de site te verbeteren met anonieme gebruiksstatistieken.",
+    "essentialOnly": "Alleen essentiële",
+    "acceptAll": "Alles accepteren"
   },
   "nav": {
-    "openMenu": "Open menu",
-    "closeMenu": "Close menu",
-    "subcategories": "subcategories",
-    "brands": "Brands"
+    "openMenu": "Menu openen",
+    "closeMenu": "Menu sluiten",
+    "subcategories": "subcategorieën",
+    "brands": "Merken"
   },
   "footer": {
-    "affiliateDisclosure": "DealRadar may earn a commission when you buy through links on this site — at no extra cost to you."
+    "affiliateDisclosure": "DealRadar kan een commissie verdienen wanneer je via links op deze site koopt — zonder extra kosten voor jou."
   }
 }

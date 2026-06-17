@@ -1,93 +1,93 @@
 {
   "home": {
-    "heroTitle": "Find <em>real</em> deals, not fake discounts",
-    "heroSubtitle": "Track price drops, compare price history, and go directly to trusted retailers.",
-    "heroDisclosure": "We don't sell products directly — we help you find verified deals and redirect you to trusted retailers.",
-    "heroCta": "Search",
-    "topDeals": "Top deals in {country}",
-    "noDeals": "No deals available for your location yet. Check back soon."
+    "heroTitle": "Găsește oferte <em>reale</em>, nu reduceri false",
+    "heroSubtitle": "Urmărește scăderile de preț, compară istoricul prețurilor și mergi direct la comercianți de încredere.",
+    "heroDisclosure": "Nu vindem produse direct — te ajutăm să găsești oferte verificate și te redirecționăm către comercianți de încredere.",
+    "heroCta": "Caută",
+    "topDeals": "Cele mai bune oferte în {country}",
+    "noDeals": "Încă nu există oferte pentru locația ta. Revino în curând."
   },
   "categories": {
-    "heading": "Browse by category",
-    "electronics": "Electronics",
-    "fashion": "Fashion",
-    "home-garden": "Home & Garden",
-    "sports": "Sports",
-    "beauty": "Beauty",
-    "food-grocery": "Food & Grocery",
-    "toys": "Toys",
-    "automotive": "Automotive",
-    "books": "Books",
-    "travel": "Travel"
+    "heading": "Răsfoiește pe categorii",
+    "electronics": "Electronice",
+    "fashion": "Modă",
+    "home-garden": "Casă și grădină",
+    "sports": "Sport",
+    "beauty": "Frumusețe",
+    "food-grocery": "Alimente",
+    "toys": "Jucării",
+    "automotive": "Auto",
+    "books": "Cărți",
+    "travel": "Călătorii"
   },
   "deal": {
-    "goToDeal": "Go to deal",
-    "sponsored": "Sponsored",
-    "priceHistory": "Price · last 3 months",
-    "today": "Today",
-    "close": "Close",
-    "sizes": "Sizes",
-    "details": "Product details"
+    "goToDeal": "Vezi oferta",
+    "sponsored": "Sponsorizat",
+    "priceHistory": "Preț · ultimele 3 luni",
+    "today": "Azi",
+    "close": "Închide",
+    "sizes": "Mărimi",
+    "details": "Detalii produs"
   },
   "alert": {
-    "button": "Receive best price alert",
-    "emailPlaceholder": "your@email.com",
-    "submit": "Notify me",
-    "success": "Done! We'll email you when the price drops.",
-    "invalidEmail": "Please enter a valid email address.",
-    "errorGeneric": "Something went wrong. Please try again."
+    "button": "Primește alertă de preț",
+    "emailPlaceholder": "tu@email.com",
+    "submit": "Anunță-mă",
+    "success": "Gata! Îți trimitem un e-mail când scade prețul.",
+    "invalidEmail": "Introdu o adresă de e-mail validă.",
+    "errorGeneric": "Ceva n-a mers bine. Încearcă din nou."
   },
   "search": {
-    "placeholder": "Search products, brands…",
-    "products": "Products",
-    "categories": "Categories",
-    "brands": "Brands",
-    "seeAll": "See all results",
-    "resultsFor": "Results for “{q}”",
-    "allResults": "All deals",
-    "noResults": "No deals match your filters. Try widening the price range or lowering the minimum discount."
+    "placeholder": "Caută produse, mărci…",
+    "products": "Produse",
+    "categories": "Categorii",
+    "brands": "Mărci",
+    "seeAll": "Vezi toate rezultatele",
+    "resultsFor": "Rezultate pentru „{q}”",
+    "allResults": "Toate ofertele",
+    "noResults": "Nicio ofertă nu corespunde filtrelor tale. Încearcă să lărgești intervalul de preț sau să reduci reducerea minimă."
   },
   "filters": {
-    "heading": "Filters",
-    "sort": "Sort by",
-    "sortDiscount": "Biggest discount",
-    "sortPriceAsc": "Price: low to high",
-    "sortPriceDesc": "Price: high to low",
-    "sortNewest": "Newest",
-    "category": "Category",
-    "allCategories": "All categories",
-    "brand": "Brand",
-    "allBrands": "All brands",
-    "priceRange": "Price range",
+    "heading": "Filtre",
+    "sort": "Sortează după",
+    "sortDiscount": "Cea mai mare reducere",
+    "sortPriceAsc": "Preț: crescător",
+    "sortPriceDesc": "Preț: descrescător",
+    "sortNewest": "Cele mai noi",
+    "category": "Categorie",
+    "allCategories": "Toate categoriile",
+    "brand": "Marcă",
+    "allBrands": "Toate mărcile",
+    "priceRange": "Interval de preț",
     "min": "Min",
     "max": "Max",
-    "minDiscount": "Minimum discount",
-    "apply": "Apply filters"
+    "minDiscount": "Reducere minimă",
+    "apply": "Aplică filtrele"
   },
   "geo": {
-    "promptTitle": "Show deals near you?",
-    "promptBody": "Allow location access to see deals from shops in your city. If you decline, we estimate your country from your IP address.",
-    "allow": "Allow location",
-    "useIpInstead": "Use my IP instead",
-    "changeLocation": "Change location",
-    "country": "Country",
-    "cityOptional": "City (optional)",
-    "cityPlaceholder": "e.g. Berlin",
-    "apply": "Apply"
+    "promptTitle": "Arătăm oferte din apropiere?",
+    "promptBody": "Permite accesul la locație pentru a vedea oferte din magazinele din orașul tău. Dacă refuzi, estimăm țara ta după adresa IP.",
+    "allow": "Permite locația",
+    "useIpInstead": "Folosește IP-ul meu",
+    "changeLocation": "Schimbă locația",
+    "country": "Țară",
+    "cityOptional": "Oraș (opțional)",
+    "cityPlaceholder": "ex. București",
+    "apply": "Aplică"
   },
   "gdpr": {
-    "bannerTitle": "Cookies on DealRadar",
-    "bannerBody": "We use essential cookies for language and location. Optional cookies help us improve the site with anonymous usage statistics.",
-    "essentialOnly": "Essential only",
-    "acceptAll": "Accept all"
+    "bannerTitle": "Cookie-uri pe DealRadar",
+    "bannerBody": "Folosim cookie-uri esențiale pentru limbă și locație. Cookie-urile opționale ne ajută să îmbunătățim site-ul cu statistici de utilizare anonime.",
+    "essentialOnly": "Doar esențiale",
+    "acceptAll": "Acceptă toate"
   },
   "nav": {
-    "openMenu": "Open menu",
-    "closeMenu": "Close menu",
-    "subcategories": "subcategories",
-    "brands": "Brands"
+    "openMenu": "Deschide meniul",
+    "closeMenu": "Închide meniul",
+    "subcategories": "subcategorii",
+    "brands": "Mărci"
   },
   "footer": {
-    "affiliateDisclosure": "DealRadar may earn a commission when you buy through links on this site — at no extra cost to you."
+    "affiliateDisclosure": "DealRadar poate câștiga un comision când cumperi prin linkurile de pe acest site — fără costuri suplimentare pentru tine."
   }
 }

@@ -1,93 +1,93 @@
 {
   "home": {
-    "heroTitle": "Find <em>real</em> deals, not fake discounts",
-    "heroSubtitle": "Track price drops, compare price history, and go directly to trusted retailers.",
-    "heroDisclosure": "We don't sell products directly — we help you find verified deals and redirect you to trusted retailers.",
-    "heroCta": "Search",
-    "topDeals": "Top deals in {country}",
-    "noDeals": "No deals available for your location yet. Check back soon."
+    "heroTitle": "Encuentra ofertas <em>reales</em>, no descuentos falsos",
+    "heroSubtitle": "Sigue las bajadas de precio, compara el historial de precios y ve directo a tiendas de confianza.",
+    "heroDisclosure": "No vendemos productos directamente: te ayudamos a encontrar ofertas verificadas y te redirigimos a tiendas de confianza.",
+    "heroCta": "Buscar",
+    "topDeals": "Mejores ofertas en {country}",
+    "noDeals": "Todavía no hay ofertas disponibles para tu ubicación. Vuelve pronto."
   },
   "categories": {
-    "heading": "Browse by category",
-    "electronics": "Electronics",
-    "fashion": "Fashion",
-    "home-garden": "Home & Garden",
-    "sports": "Sports",
-    "beauty": "Beauty",
-    "food-grocery": "Food & Grocery",
-    "toys": "Toys",
-    "automotive": "Automotive",
-    "books": "Books",
-    "travel": "Travel"
+    "heading": "Explorar por categoría",
+    "electronics": "Electrónica",
+    "fashion": "Moda",
+    "home-garden": "Hogar y jardín",
+    "sports": "Deportes",
+    "beauty": "Belleza",
+    "food-grocery": "Alimentación",
+    "toys": "Juguetes",
+    "automotive": "Automoción",
+    "books": "Libros",
+    "travel": "Viajes"
   },
   "deal": {
-    "goToDeal": "Go to deal",
-    "sponsored": "Sponsored",
-    "priceHistory": "Price · last 3 months",
-    "today": "Today",
-    "close": "Close",
-    "sizes": "Sizes",
-    "details": "Product details"
+    "goToDeal": "Ver oferta",
+    "sponsored": "Patrocinado",
+    "priceHistory": "Precio · últimos 3 meses",
+    "today": "Hoy",
+    "close": "Cerrar",
+    "sizes": "Tallas",
+    "details": "Detalles del producto"
   },
   "alert": {
-    "button": "Receive best price alert",
-    "emailPlaceholder": "your@email.com",
-    "submit": "Notify me",
-    "success": "Done! We'll email you when the price drops.",
-    "invalidEmail": "Please enter a valid email address.",
-    "errorGeneric": "Something went wrong. Please try again."
+    "button": "Recibir alerta del mejor precio",
+    "emailPlaceholder": "tu@email.com",
+    "submit": "Avísame",
+    "success": "¡Listo! Te avisaremos por correo cuando baje el precio.",
+    "invalidEmail": "Introduce una dirección de correo válida.",
+    "errorGeneric": "Algo salió mal. Inténtalo de nuevo."
   },
   "search": {
-    "placeholder": "Search products, brands…",
-    "products": "Products",
-    "categories": "Categories",
-    "brands": "Brands",
-    "seeAll": "See all results",
-    "resultsFor": "Results for “{q}”",
-    "allResults": "All deals",
-    "noResults": "No deals match your filters. Try widening the price range or lowering the minimum discount."
+    "placeholder": "Buscar productos, marcas…",
+    "products": "Productos",
+    "categories": "Categorías",
+    "brands": "Marcas",
+    "seeAll": "Ver todos los resultados",
+    "resultsFor": "Resultados para «{q}»",
+    "allResults": "Todas las ofertas",
+    "noResults": "Ninguna oferta coincide con tus filtros. Prueba a ampliar el rango de precios o a bajar el descuento mínimo."
   },
   "filters": {
-    "heading": "Filters",
-    "sort": "Sort by",
-    "sortDiscount": "Biggest discount",
-    "sortPriceAsc": "Price: low to high",
-    "sortPriceDesc": "Price: high to low",
-    "sortNewest": "Newest",
-    "category": "Category",
-    "allCategories": "All categories",
-    "brand": "Brand",
-    "allBrands": "All brands",
-    "priceRange": "Price range",
-    "min": "Min",
-    "max": "Max",
-    "minDiscount": "Minimum discount",
-    "apply": "Apply filters"
+    "heading": "Filtros",
+    "sort": "Ordenar por",
+    "sortDiscount": "Mayor descuento",
+    "sortPriceAsc": "Precio: de menor a mayor",
+    "sortPriceDesc": "Precio: de mayor a menor",
+    "sortNewest": "Más recientes",
+    "category": "Categoría",
+    "allCategories": "Todas las categorías",
+    "brand": "Marca",
+    "allBrands": "Todas las marcas",
+    "priceRange": "Rango de precios",
+    "min": "Mín",
+    "max": "Máx",
+    "minDiscount": "Descuento mínimo",
+    "apply": "Aplicar filtros"
   },
   "geo": {
-    "promptTitle": "Show deals near you?",
-    "promptBody": "Allow location access to see deals from shops in your city. If you decline, we estimate your country from your IP address.",
-    "allow": "Allow location",
-    "useIpInstead": "Use my IP instead",
-    "changeLocation": "Change location",
-    "country": "Country",
-    "cityOptional": "City (optional)",
-    "cityPlaceholder": "e.g. Berlin",
-    "apply": "Apply"
+    "promptTitle": "¿Mostrar ofertas cerca de ti?",
+    "promptBody": "Permite el acceso a la ubicación para ver ofertas de tiendas de tu ciudad. Si lo rechazas, estimamos tu país a partir de tu dirección IP.",
+    "allow": "Permitir ubicación",
+    "useIpInstead": "Usar mi IP en su lugar",
+    "changeLocation": "Cambiar ubicación",
+    "country": "País",
+    "cityOptional": "Ciudad (opcional)",
+    "cityPlaceholder": "p. ej. Madrid",
+    "apply": "Aplicar"
   },
   "gdpr": {
-    "bannerTitle": "Cookies on DealRadar",
-    "bannerBody": "We use essential cookies for language and location. Optional cookies help us improve the site with anonymous usage statistics.",
-    "essentialOnly": "Essential only",
-    "acceptAll": "Accept all"
+    "bannerTitle": "Cookies en DealRadar",
+    "bannerBody": "Usamos cookies esenciales para el idioma y la ubicación. Las cookies opcionales nos ayudan a mejorar el sitio con estadísticas de uso anónimas.",
+    "essentialOnly": "Solo esenciales",
+    "acceptAll": "Aceptar todo"
   },
   "nav": {
-    "openMenu": "Open menu",
-    "closeMenu": "Close menu",
-    "subcategories": "subcategories",
-    "brands": "Brands"
+    "openMenu": "Abrir menú",
+    "closeMenu": "Cerrar menú",
+    "subcategories": "subcategorías",
+    "brands": "Marcas"
   },
   "footer": {
-    "affiliateDisclosure": "DealRadar may earn a commission when you buy through links on this site — at no extra cost to you."
+    "affiliateDisclosure": "DealRadar puede ganar una comisión cuando compras a través de los enlaces de este sitio, sin coste adicional para ti."
   }
 }

@@ -1,93 +1,93 @@
 {
   "home": {
-    "heroTitle": "Find <em>real</em> deals, not fake discounts",
-    "heroSubtitle": "Track price drops, compare price history, and go directly to trusted retailers.",
-    "heroDisclosure": "We don't sell products directly — we help you find verified deals and redirect you to trusted retailers.",
-    "heroCta": "Search",
-    "topDeals": "Top deals in {country}",
-    "noDeals": "No deals available for your location yet. Check back soon."
+    "heroTitle": "Hitta <em>riktiga</em> erbjudanden, inte falska rabatter",
+    "heroSubtitle": "Följ prissänkningar, jämför prishistorik och gå direkt till pålitliga butiker.",
+    "heroDisclosure": "Vi säljer inga produkter direkt — vi hjälper dig att hitta verifierade erbjudanden och skickar dig vidare till pålitliga butiker.",
+    "heroCta": "Sök",
+    "topDeals": "Bästa erbjudandena i {country}",
+    "noDeals": "Inga erbjudanden för din plats ännu. Kom tillbaka snart."
   },
   "categories": {
-    "heading": "Browse by category",
-    "electronics": "Electronics",
-    "fashion": "Fashion",
-    "home-garden": "Home & Garden",
-    "sports": "Sports",
-    "beauty": "Beauty",
-    "food-grocery": "Food & Grocery",
-    "toys": "Toys",
-    "automotive": "Automotive",
-    "books": "Books",
-    "travel": "Travel"
+    "heading": "Bläddra efter kategori",
+    "electronics": "Elektronik",
+    "fashion": "Mode",
+    "home-garden": "Hem & trädgård",
+    "sports": "Sport",
+    "beauty": "Skönhet",
+    "food-grocery": "Livsmedel",
+    "toys": "Leksaker",
+    "automotive": "Bil",
+    "books": "Böcker",
+    "travel": "Resor"
   },
   "deal": {
-    "goToDeal": "Go to deal",
-    "sponsored": "Sponsored",
-    "priceHistory": "Price · last 3 months",
-    "today": "Today",
-    "close": "Close",
-    "sizes": "Sizes",
-    "details": "Product details"
+    "goToDeal": "Till erbjudandet",
+    "sponsored": "Sponsrad",
+    "priceHistory": "Pris · senaste 3 månaderna",
+    "today": "Idag",
+    "close": "Stäng",
+    "sizes": "Storlekar",
+    "details": "Produktdetaljer"
   },
   "alert": {
-    "button": "Receive best price alert",
-    "emailPlaceholder": "your@email.com",
-    "submit": "Notify me",
-    "success": "Done! We'll email you when the price drops.",
-    "invalidEmail": "Please enter a valid email address.",
-    "errorGeneric": "Something went wrong. Please try again."
+    "button": "Få prisbevakning",
+    "emailPlaceholder": "din@email.com",
+    "submit": "Meddela mig",
+    "success": "Klart! Vi mejlar dig när priset sjunker.",
+    "invalidEmail": "Ange en giltig e-postadress.",
+    "errorGeneric": "Något gick fel. Försök igen."
   },
   "search": {
-    "placeholder": "Search products, brands…",
-    "products": "Products",
-    "categories": "Categories",
-    "brands": "Brands",
-    "seeAll": "See all results",
-    "resultsFor": "Results for “{q}”",
-    "allResults": "All deals",
-    "noResults": "No deals match your filters. Try widening the price range or lowering the minimum discount."
+    "placeholder": "Sök produkter, märken…",
+    "products": "Produkter",
+    "categories": "Kategorier",
+    "brands": "Märken",
+    "seeAll": "Visa alla resultat",
+    "resultsFor": "Resultat för ”{q}”",
+    "allResults": "Alla erbjudanden",
+    "noResults": "Inga erbjudanden matchar dina filter. Försök bredda prisintervallet eller sänka minsta rabatt."
   },
   "filters": {
-    "heading": "Filters",
-    "sort": "Sort by",
-    "sortDiscount": "Biggest discount",
-    "sortPriceAsc": "Price: low to high",
-    "sortPriceDesc": "Price: high to low",
-    "sortNewest": "Newest",
-    "category": "Category",
-    "allCategories": "All categories",
-    "brand": "Brand",
-    "allBrands": "All brands",
-    "priceRange": "Price range",
+    "heading": "Filter",
+    "sort": "Sortera efter",
+    "sortDiscount": "Störst rabatt",
+    "sortPriceAsc": "Pris: lågt till högt",
+    "sortPriceDesc": "Pris: högt till lågt",
+    "sortNewest": "Nyaste",
+    "category": "Kategori",
+    "allCategories": "Alla kategorier",
+    "brand": "Märke",
+    "allBrands": "Alla märken",
+    "priceRange": "Prisintervall",
     "min": "Min",
     "max": "Max",
-    "minDiscount": "Minimum discount",
-    "apply": "Apply filters"
+    "minDiscount": "Minsta rabatt",
+    "apply": "Tillämpa filter"
   },
   "geo": {
-    "promptTitle": "Show deals near you?",
-    "promptBody": "Allow location access to see deals from shops in your city. If you decline, we estimate your country from your IP address.",
-    "allow": "Allow location",
-    "useIpInstead": "Use my IP instead",
-    "changeLocation": "Change location",
-    "country": "Country",
-    "cityOptional": "City (optional)",
-    "cityPlaceholder": "e.g. Berlin",
-    "apply": "Apply"
+    "promptTitle": "Visa erbjudanden nära dig?",
+    "promptBody": "Tillåt platsåtkomst för att se erbjudanden från butiker i din stad. Om du avböjer uppskattar vi ditt land utifrån din IP-adress.",
+    "allow": "Tillåt plats",
+    "useIpInstead": "Använd min IP istället",
+    "changeLocation": "Ändra plats",
+    "country": "Land",
+    "cityOptional": "Stad (valfritt)",
+    "cityPlaceholder": "t.ex. Stockholm",
+    "apply": "Tillämpa"
   },
   "gdpr": {
-    "bannerTitle": "Cookies on DealRadar",
-    "bannerBody": "We use essential cookies for language and location. Optional cookies help us improve the site with anonymous usage statistics.",
-    "essentialOnly": "Essential only",
-    "acceptAll": "Accept all"
+    "bannerTitle": "Cookies på DealRadar",
+    "bannerBody": "Vi använder nödvändiga cookies för språk och plats. Valfria cookies hjälper oss att förbättra webbplatsen med anonym användningsstatistik.",
+    "essentialOnly": "Endast nödvändiga",
+    "acceptAll": "Acceptera alla"
   },
   "nav": {
-    "openMenu": "Open menu",
-    "closeMenu": "Close menu",
-    "subcategories": "subcategories",
-    "brands": "Brands"
+    "openMenu": "Öppna meny",
+    "closeMenu": "Stäng meny",
+    "subcategories": "underkategorier",
+    "brands": "Märken"
   },
   "footer": {
-    "affiliateDisclosure": "DealRadar may earn a commission when you buy through links on this site — at no extra cost to you."
+    "affiliateDisclosure": "DealRadar kan tjäna en provision när du köper via länkar på den här sidan — utan extra kostnad för dig."
   }
 }
