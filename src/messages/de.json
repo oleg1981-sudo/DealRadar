@@ -1,5 +1,9 @@
 {
   "home": {
+    "heroTitle": "Finde <em>echte</em> Angebote, keine Fake-Rabatte",
+    "heroSubtitle": "Verfolge Preissenkungen, vergleiche die Preishistorie und gelange direkt zu vertrauenswürdigen Händlern.",
+    "heroDisclosure": "Wir verkaufen keine Produkte direkt — wir helfen dir, geprüfte Angebote zu finden, und leiten dich zu vertrauenswürdigen Händlern weiter.",
+    "heroCta": "Suchen",
     "topDeals": "Top-Angebote in {country}",
     "noDeals": "Für deinen Standort sind noch keine Angebote verfügbar. Schau bald wieder vorbei."
   },

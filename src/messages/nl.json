@@ -1,5 +1,9 @@
 {
   "home": {
+    "heroTitle": "Find <em>real</em> deals, not fake discounts",
+    "heroSubtitle": "Track price drops, compare price history, and go directly to trusted retailers.",
+    "heroDisclosure": "We don't sell products directly — we help you find verified deals and redirect you to trusted retailers.",
+    "heroCta": "Search",
     "topDeals": "Top deals in {country}",
     "noDeals": "No deals available for your location yet. Check back soon."
   },
