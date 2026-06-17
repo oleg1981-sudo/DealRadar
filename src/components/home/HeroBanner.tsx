@@ -4,16 +4,18 @@ import { Search, ShieldCheck } from 'lucide-react';
 /**
  * Home hero: headline + value prop, a prominent search (native GET form → the
  * results page, works without JS) and a trust disclosure, with a decorative
- * illustration. Full-bleed warm-peach band; sits between the header and the
- * category bar. Server component.
+ * illustration. A rounded warm-peach card constrained to the content width
+ * (same as the deal grid); sits between the header and the category bar.
+ * Server component.
  */
 export async function HeroBanner({ locale }: { locale: string }) {
   const t = await getTranslations();
 
   return (
-    <section className="border-b border-orange-100/70 bg-gradient-to-br from-[#FFF7F1] via-[#FFF0E6] to-[#FFE6D5]">
-      <div className="mx-auto grid max-w-7xl items-center gap-6 px-4 py-10 md:grid-cols-[1.2fr_1fr] md:py-14">
-        <div>
+    <section className="mx-auto max-w-7xl px-4 pt-8">
+      <div className="overflow-hidden rounded-2xl border border-orange-100 bg-gradient-to-br from-[#FFF7F1] via-[#FFF0E6] to-[#FFE6D5]">
+        <div className="grid items-center gap-6 px-6 py-10 md:grid-cols-[1.2fr_1fr] md:px-10 md:py-12">
+          <div>
           <h1 className="text-3xl font-bold leading-tight tracking-tight text-zinc-900 sm:text-4xl">
             {t.rich('home.heroTitle', {
               em: (chunks) => <span className="text-accent">{chunks}</span>,
@@ -50,8 +52,9 @@ export async function HeroBanner({ locale }: { locale: string }) {
           </p>
         </div>
 
-        <div className="hidden justify-center md:flex">
-          <HeroIllustration />
+          <div className="hidden justify-center md:flex">
+            <HeroIllustration />
+          </div>
         </div>
       </div>
     </section>
