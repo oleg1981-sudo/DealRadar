@@ -2,16 +2,20 @@
 
 /** Header location indicator + "change location" dropdown (country + city input). */
 import { useState, useRef, useEffect } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
+import { usePathname } from '@/i18n/routing';
 import { MapPin, ChevronDown } from 'lucide-react';
-import { COUNTRIES } from '@/lib/geo/countries';
+import { COUNTRIES, countryInfo } from '@/lib/geo/countries';
 import { useLocation } from './LocationContext';
+import { persistLocation } from '@/lib/geo/resolve';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import type { CountryCode } from '@/lib/providers/types';
 
 export function LocationPicker() {
   const t = useTranslations('geo');
+  const locale = useLocale();
+  const pathname = usePathname();
   const { location, setLocation } = useLocation();
   const [open, setOpen] = useState(false);
   const [country, setCountry] = useState<CountryCode>(location.country);
@@ -77,8 +81,19 @@ export function LocationPicker() {
             className="mt-3 w-full"
             size="sm"
             onClick={() => {
-              setLocation({ country, city: city.trim() || null, via: 'stored' });
+              const loc = { country, city: city.trim() || null, via: 'stored' as const };
+              const target = countryInfo(country).locale;
               setOpen(false);
+              if (target !== locale) {
+                // Country drives the language: persist the location, then reload
+                // into that country's locale. (setLocation reloads the *current*
+                // locale, so hard-navigate to the new one instead; the user can
+                // still switch language afterward via the language switcher.)
+                persistLocation(loc);
+                window.location.assign(`/${target}${pathname === '/' ? '' : pathname}${window.location.search}`);
+              } else {
+                setLocation(loc);
+              }
             }}
           >
             {t('apply')}
