@@ -5,16 +5,18 @@
  * State lives in the URL (searchParams) so results are shareable and SSR'd.
  * Native inputs only — keeps the bundle small for the Lighthouse target.
  */
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { useRouter, usePathname } from '@/i18n/routing';
 import { useSearchParams } from 'next/navigation';
 import { CATEGORIES } from '@/lib/categories';
+import { categoryTerm } from '@/lib/categories-i18n';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
 
 export function FilterPanel({ brands, category }: { brands: string[]; category?: string }) {
   const t = useTranslations();
+  const locale = useLocale();
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
@@ -109,7 +111,7 @@ export function FilterPanel({ brands, category }: { brands: string[]; category?:
                         isActive ? 'bg-accent-soft font-medium text-accent' : 'text-zinc-700 hover:bg-zinc-50'
                       }`}
                     >
-                      {sub.name}
+                      {categoryTerm(sub.name, locale)}
                     </button>
                     {isActive && sub.children && sub.children.length > 0 && (
                       <ul className="mb-1 ml-3 mt-0.5 space-y-0.5 border-l border-zinc-100 pl-2">
@@ -122,7 +124,7 @@ export function FilterPanel({ brands, category }: { brands: string[]; category?:
                                 leaf === activeTerm ? 'font-medium text-accent' : 'text-zinc-500 hover:text-accent'
                               }`}
                             >
-                              {leaf}
+                              {categoryTerm(leaf, locale)}
                             </button>
                           </li>
                         ))}

@@ -26,7 +26,7 @@ export function DealDetailModal({ deal, onClose }: { deal: NormalizedDeal; onClo
   const [portalEl, setPortalEl] = useState<HTMLElement | null>(null);
 
   const gallery = productGallery(deal);
-  const specs = productSpecs(deal);
+  const specs = productSpecs(deal, locale);
   const sizes = productSizes(deal);
   const pw = priceWindow(deal);
   const href = decorateAffiliateUrl(deal.shopUrl, deal.source);

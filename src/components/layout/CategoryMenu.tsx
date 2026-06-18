@@ -9,9 +9,10 @@
  * that term. Replaces the old "Browse by category" bar.
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { Link } from '@/i18n/routing';
 import { CATEGORIES } from '@/lib/categories';
+import { categoryTerm } from '@/lib/categories-i18n';
 import {
   ChevronLeft, ChevronRight, MonitorSmartphone, Shirt, Sofa, Bike, Sparkles,
   ShoppingBasket, Blocks, Car, BookOpen, Plane, type LucideIcon,
@@ -26,6 +27,7 @@ const termHref = (slug: string, name: string) =>
 
 export function CategoryMenu() {
   const t = useTranslations('categories');
+  const locale = useLocale();
   const [openSlug, setOpenSlug] = useState<string | null>(null);
   const [activeSub, setActiveSub] = useState(0);
   const [canLeft, setCanLeft] = useState(false);
@@ -177,7 +179,7 @@ export function CategoryMenu() {
                         : 'text-zinc-700 hover:bg-zinc-50'
                     }`}
                   >
-                    <span>{sub.name}</span>
+                    <span>{categoryTerm(sub.name, locale)}</span>
                     <ChevronRight className="h-4 w-4 shrink-0 opacity-60" aria-hidden />
                   </button>
                 </li>
@@ -193,7 +195,7 @@ export function CategoryMenu() {
                     onClick={close}
                     className="mb-3 inline-flex items-center gap-1 text-sm font-semibold text-zinc-900 hover:text-accent"
                   >
-                    {active.children[activeSub].name}
+                    {categoryTerm(active.children[activeSub].name, locale)}
                     <ChevronRight className="h-4 w-4" aria-hidden />
                   </Link>
                   <ul className="grid grid-cols-2 gap-x-6 gap-y-1.5 lg:grid-cols-3">
@@ -204,7 +206,7 @@ export function CategoryMenu() {
                           onClick={close}
                           className="block rounded px-1 py-1 text-sm text-zinc-600 transition-colors hover:text-accent"
                         >
-                          {leaf}
+                          {categoryTerm(leaf, locale)}
                         </Link>
                       </li>
                     ))}
