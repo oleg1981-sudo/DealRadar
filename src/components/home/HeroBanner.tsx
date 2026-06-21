@@ -16,7 +16,10 @@ export async function HeroBanner() {
   return (
     <section className="mx-auto max-w-7xl px-4 pt-8">
       <div className="rounded-2xl border border-orange-100 bg-gradient-to-br from-[#FFF7F1] via-[#FFF0E6] to-[#FFE6D5]">
-        <div className="grid items-center gap-6 px-6 py-10 md:grid-cols-[1.2fr_1fr] md:px-10 md:py-12">
+        {/* md:pr-[50px] = the radar's distance from the banner's RIGHT edge.
+            Change that one value to move the radar horizontally (it's anchored
+            to the edge, so it stays consistent at every screen width). */}
+        <div className="grid items-stretch gap-6 px-6 py-[30px] md:grid-cols-[1fr_1fr] md:pl-10 md:pr-[50px]">
           <div>
             <h1 className="text-3xl font-bold leading-tight tracking-tight text-zinc-900 sm:text-4xl">
               {t.rich('home.heroTitle', {
@@ -35,15 +38,20 @@ export async function HeroBanner() {
             </p>
           </div>
 
-          <div className="hidden justify-center md:flex">
+          {/* Radar cell spans the full card height (the -my-[30px] cancels the
+              container's vertical padding), so the radar is sized by the whole
+              banner — not just the text row — yet never grows it (fill is
+              absolute → no intrinsic height). object-right anchors it to the
+              cell's right edge, so the md:pr-[50px] above is its exact, screen-
+              width-independent gap from the banner border. object-contain = 1:1. */}
+          <div className="relative -my-[30px] hidden md:block">
             <Image
               src="/hero-illustration.png"
               alt=""
-              width={1536}
-              height={1024}
-              sizes="512px"
+              fill
+              sizes="400px"
               priority
-              className="h-auto w-full max-w-lg scale-[1.25] rotate-[15deg]"
+              className="object-contain object-right"
             />
           </div>
         </div>
