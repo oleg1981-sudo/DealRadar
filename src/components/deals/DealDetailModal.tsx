@@ -165,7 +165,7 @@ export function DealDetailModal({ deal, onClose }: { deal: NormalizedDeal; onClo
                 {t.rich('goToDeal', {
                   shop: displayShopName(deal.shopName),
                   chip: (chunks) => (
-                    <span className="rounded-md bg-[#a0d6b4] px-2 py-1 font-semibold leading-none text-zinc-900">{chunks}</span>
+                    <span className="rounded-md bg-white px-2 py-1 font-semibold text-accent">{chunks}</span>
                   ),
                 })}
               </a>
