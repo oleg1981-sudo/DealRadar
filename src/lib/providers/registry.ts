@@ -11,6 +11,7 @@
  * The registry does NOT cache or persist — that belongs to the refresh route
  * (Supabase upsert) and the Redis layer, keeping providers stateless.
  */
+import { DummyJsonProvider } from './dummyjson';
 import { KelkooProvider } from './kelkoo';
 import { AwinProvider } from './awin';
 import { TradedoublerProvider } from './tradedoubler';
@@ -20,12 +21,21 @@ import {
   type DealQuery, type NormalizedDeal, type PriceProvider, type ProviderHealth,
 } from './types';
 
-const PROVIDERS: PriceProvider[] = [
+const ALL_PROVIDERS: PriceProvider[] = [
+  new DummyJsonProvider(), // priority 1 — free live "real API" test feed (no key/commission)
   new KelkooProvider(),
   new AwinProvider(),
   new TradedoublerProvider(),
   new IdealoMockProvider(),
 ];
+
+// `dummyjson` is a local TEST feed: it's OPT-IN ONLY and never runs in
+// production. Set DEALRADAR_ONLY_PROVIDER=dummyjson (e.g. in .env.local) to pin
+// the whole site to it. Unset = the normal production providers, no test feed.
+const ONLY = process.env.DEALRADAR_ONLY_PROVIDER;
+const PROVIDERS: PriceProvider[] = ONLY
+  ? ALL_PROVIDERS.filter((p) => p.id === ONLY)
+  : ALL_PROVIDERS.filter((p) => p.id !== 'dummyjson');
 
 let initPromise: Promise<Map<string, ProviderHealth>> | null = null;
 

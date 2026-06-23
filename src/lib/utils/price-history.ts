@@ -1,13 +1,15 @@
 /**
  * Price-window derivation for the per-deal heat bar.
  *
- * Providers expose only a current `salePrice` and a reference `originalPrice`,
- * not a real time series. Until a price-history store exists, we derive a
- * deterministic 3-month [low, high] window from the deal's stable `productId`
- * so the bar is stable across reloads (same seeded approach as the mock data).
+ * We only show prices we actually know. A provider gives a current `salePrice`
+ * and a reference `originalPrice` (the regular/struck price) — that's it. So the
+ * graph is an HONEST straight line from the regular price down to today's price,
+ * NOT a fabricated walk. `low` = the lowest price we know (today's sale price),
+ * `high` = the regular price.
  *
- * Semantics: `low` is the cheapest the item has been (green end), `high` the
- * dearest (red end), and `current` (today's sale price) sits between them.
+ * When the daily refresh starts recording real snapshots (a price_history
+ * table), feed that recorded series into `priceSeries()` and the line will
+ * develop genuine shape over time — no other change needed here.
  */
 import type { NormalizedDeal } from '../providers/types';
 
@@ -19,56 +21,24 @@ export interface PriceWindow {
   position: number;
 }
 
-/** Deterministic pseudo-random in [0,1) from a string seed (FNV-1a based). */
-function seeded(seed: string): () => number {
-  let h = 2166136261;
-  for (let i = 0; i < seed.length; i++) {
-    h ^= seed.charCodeAt(i);
-    h = Math.imul(h, 16777619);
-  }
-  return () => {
-    h = Math.imul(h ^ (h >>> 15), 2246822519);
-    h = Math.imul(h ^ (h >>> 13), 3266489917);
-    return ((h ^= h >>> 16) >>> 0) / 4294967296;
-  };
-}
-
 const round2 = (n: number) => Math.round(n * 100) / 100;
 
 export function priceWindow(deal: NormalizedDeal): PriceWindow {
-  const rnd = seeded(deal.productId);
-  const current = deal.salePrice;
-
-  // 3-month high anchors to the pre-discount price (occasionally a touch above).
-  const high = Math.max(deal.originalPrice, current) * (1 + rnd() * 0.06);
-  // 3-month low sits a little below today's price (1–22% under it).
-  const low = current * (1 - (0.01 + rnd() * 0.21));
-
+  const current = round2(deal.salePrice);
+  const high = round2(Math.max(deal.originalPrice, deal.salePrice));
+  const low = current; // the lowest price we actually know is today's sale price
   const span = high - low;
   const position = span > 0 ? Math.min(1, Math.max(0, (current - low) / span)) : 0;
-
-  return { low: round2(low), high: round2(high), current, position };
+  return { low, high, current, position };
 }
 
 /**
- * A deterministic synthetic "cardiogram" series for the price line — a jagged
- * walk within the window's [low, high], seeded from `productId` so it's stable
- * across reloads. It's the decorative price-history shape; the marker's
- * horizontal position is driven separately by `window.position` (today's price).
+ * The real known prices as a series (oldest → newest): the regular price, then
+ * today's sale price — a straight line. Returns two equal points (flat) when
+ * there's no discount. Replace with the recorded daily series once stored.
  */
-export function priceSeries(deal: NormalizedDeal, points = 28): number[] {
-  const { low, high } = priceWindow(deal);
-  const span = high - low || 1;
-  const mid = low + span * 0.5;
-  const rnd = seeded(deal.productId + '|cardio');
-
-  let v = low + span * (0.35 + rnd() * 0.3);
-  const out: number[] = [];
-  for (let i = 0; i < points; i++) {
-    // Random step with light mean-reversion so the line stays lively but in-band.
-    const step = (rnd() - 0.5) * span * 0.55 + (mid - v) * 0.08;
-    v = Math.min(high, Math.max(low, v + step));
-    out.push(round2(v));
-  }
-  return out;
+export function priceSeries(deal: NormalizedDeal): number[] {
+  const current = round2(deal.salePrice);
+  const high = round2(Math.max(deal.originalPrice, deal.salePrice));
+  return high > current ? [high, current] : [current, current];
 }

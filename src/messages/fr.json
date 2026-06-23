@@ -22,6 +22,7 @@
   },
   "deal": {
     "goToDeal": "Voir sur <chip>{shop}</chip>",
+    "otherStores": "Voir dans d'autres magasins",
     "sponsored": "Sponsorisé",
     "priceHistory": "Prix · 3 derniers mois",
     "today": "Aujourd'hui",

@@ -22,6 +22,7 @@
   },
   "deal": {
     "goToDeal": "Bekijk bij <chip>{shop}</chip>",
+    "otherStores": "Bekijk in andere winkels",
     "sponsored": "Gesponsord",
     "priceHistory": "Prijs · laatste 3 maanden",
     "today": "Vandaag",

@@ -91,6 +91,41 @@ export function productSpecs(deal: NormalizedDeal, locale = 'en'): Spec[] {
   return specs;
 }
 
+export interface StoreOffer {
+  shopName: string;
+  price: number;
+  currency: string;
+  url: string;
+}
+
+const OTHER_SHOPS = ['MediaMarkt', 'Otto', 'Saturn', 'Amazon', 'Cyberport', 'Coolblue', 'Conrad', 'Notebooksbilliger'];
+
+/**
+ * "Also available at" offers for the detail modal. SYNTHETIC for now — a single
+ * provider feed (and the DummyJSON test feed) has one price per product, so we
+ * derive a few other stores deterministically, all PRICIER than our deal (we
+ * show the best price). When a real comparison feed (e.g. Kelkoo) returns the
+ * same product from multiple merchants, replace this with those real offers.
+ */
+export function otherStoreOffers(deal: NormalizedDeal): StoreOffer[] {
+  const r = seeded(`${deal.productId}:stores`);
+  const avail = OTHER_SHOPS.filter((s) => s !== deal.shopName);
+  const start = Math.floor(r() * avail.length);
+  const n = 3 + Math.floor(r() * 3); // 3–5 other stores
+  const offers: StoreOffer[] = [];
+  for (let i = 0; i < n && i < avail.length; i++) {
+    const shopName = avail[(start + i) % avail.length];
+    const price = Math.round(deal.salePrice * (1 + 0.02 + r() * 0.18) * 100) / 100; // 2–20% dearer
+    offers.push({
+      shopName,
+      price,
+      currency: deal.currency,
+      url: `https://www.google.com/search?q=${encodeURIComponent(`${deal.productName} ${shopName}`)}`,
+    });
+  }
+  return offers.sort((a, b) => a.price - b.price);
+}
+
 export interface SizeOption {
   size: string;
   available: boolean;

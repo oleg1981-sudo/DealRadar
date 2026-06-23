@@ -22,6 +22,7 @@
   },
   "deal": {
     "goToDeal": "Se hos <chip>{shop}</chip>",
+    "otherStores": "Visa i andra butiker",
     "sponsored": "Sponsrad",
     "priceHistory": "Pris · senaste 3 månaderna",
     "today": "Idag",

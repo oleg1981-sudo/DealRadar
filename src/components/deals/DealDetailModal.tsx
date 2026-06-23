@@ -9,15 +9,15 @@ import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import Image from 'next/image';
 import { useTranslations, useLocale } from 'next-intl';
-import { X } from 'lucide-react';
+import { X, ChevronDown } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { PriceHeatBar } from './PriceHeatBar';
 import { PriceAlertButton } from './PriceAlertButton';
 import { formatPrice, formatDiscount } from '@/lib/utils/format';
-import { priceWindow, priceSeries } from '@/lib/utils/price-history';
+import { priceWindow } from '@/lib/utils/price-history';
 import { decorateAffiliateUrl } from '@/lib/utils/affiliate';
 import { displayShopName } from '@/lib/utils/shop';
-import { productGallery, productSpecs, productSizes } from '@/lib/utils/product-details';
+import { productGallery, productSpecs, productSizes, otherStoreOffers } from '@/lib/utils/product-details';
 import type { NormalizedDeal } from '@/lib/providers/types';
 
 export function DealDetailModal({ deal, onClose }: { deal: NormalizedDeal; onClose: () => void }) {
@@ -25,11 +25,13 @@ export function DealDetailModal({ deal, onClose }: { deal: NormalizedDeal; onClo
   const locale = useLocale();
   const [active, setActive] = useState(0);
   const [portalEl, setPortalEl] = useState<HTMLElement | null>(null);
+  const [showStores, setShowStores] = useState(false);
 
   const gallery = productGallery(deal);
   const specs = productSpecs(deal, locale);
   const sizes = productSizes(deal);
   const pw = priceWindow(deal);
+  const otherStores = otherStoreOffers(deal);
   const href = decorateAffiliateUrl(deal.shopUrl, deal.source);
 
   // Portal target + body scroll lock + Escape to close.
@@ -126,13 +128,45 @@ export function DealDetailModal({ deal, onClose }: { deal: NormalizedDeal; onClo
             <div className="mt-3">
               <PriceHeatBar
                 window={pw}
-                series={priceSeries(deal)}
                 currency={deal.currency}
                 locale={locale}
                 captionLabel={t('priceHistory')}
                 todayLabel={t('today')}
               />
             </div>
+
+            {otherStores.length > 0 && (
+              <div className="relative mt-3">
+                <button
+                  type="button"
+                  onClick={() => setShowStores((v) => !v)}
+                  aria-expanded={showStores}
+                  className="flex w-full items-center justify-between rounded-lg border border-zinc-200 px-3 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50"
+                >
+                  <span>{t('otherStores')} ({otherStores.length})</span>
+                  <ChevronDown className={`h-4 w-4 transition-transform ${showStores ? 'rotate-180' : ''}`} aria-hidden />
+                </button>
+                {showStores && (
+                  <ul className="absolute left-0 right-0 top-full z-20 mt-1 max-h-56 divide-y divide-zinc-100 overflow-auto rounded-lg border border-zinc-200 bg-white shadow-lg">
+                    {otherStores.map((o) => (
+                      <li key={o.shopName}>
+                        <a
+                          href={decorateAffiliateUrl(o.url, deal.source)}
+                          target="_blank"
+                          rel="noopener nofollow sponsored"
+                          className="flex items-center justify-between px-3 py-2 text-sm transition-colors hover:bg-zinc-50"
+                        >
+                          <span className="text-zinc-700">{o.shopName}</span>
+                          <span className="font-semibold tabular-nums text-zinc-900">
+                            {formatPrice(o.price, o.currency, locale)}
+                          </span>
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
 
             {sizes && sizes.length > 0 && (
               <div className="mt-4">

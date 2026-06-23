@@ -22,6 +22,7 @@
   },
   "deal": {
     "goToDeal": "Katso kaupassa <chip>{shop}</chip>",
+    "otherStores": "Katso muissa kaupoissa",
     "sponsored": "Mainostettu",
     "priceHistory": "Hinta · viimeiset 3 kuukautta",
     "today": "Tänään",

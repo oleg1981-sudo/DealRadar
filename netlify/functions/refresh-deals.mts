@@ -25,6 +25,10 @@ export default async () => {
 };
 
 export const config = {
-  // Every 15 minutes — matches the 30-min Redis TTL freshness window.
-  schedule: '*/15 * * * *',
+  // Once daily, ~6am Central Europe. Netlify cron is UTC with no DST handling,
+  // so 04:00 UTC = 06:00 in Berlin during summer (CEST) / 05:00 in winter (CET).
+  // This also gives one price snapshot per day to build real price history.
+  // NOTE: true per-country 06:00-local would need several schedules (or an
+  // hourly run that only refreshes the countries whose local time is 6am).
+  schedule: '0 4 * * *',
 };
