@@ -147,3 +147,13 @@ export async function getDealBySlug(slug: string, country?: CountryCode): Promis
   return data ? fromRow(data) : null;
 }
 
+export async function updateHistoricalLows(): Promise<void> {
+  if (!supabaseConfigured()) return;
+  try {
+    const { error } = await supabase().rpc('update_historical_lows_batch');
+    if (error) console.error('[deals.repo] updateHistoricalLows error:', error.message);
+  } catch (e) {
+    console.error('[deals.repo] updateHistoricalLows exception:', e);
+  }
+}
+

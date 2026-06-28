@@ -16,6 +16,7 @@ import { KelkooProvider } from './kelkoo';
 import { AwinProvider } from './awin';
 import { TradedoublerProvider } from './tradedoubler';
 import { IdealoMockProvider } from './idealo.mock';
+import { slugify } from '../utils/slug';
 import {
   ProviderError,
   type DealQuery, type NormalizedDeal, type PriceProvider, type ProviderHealth,
@@ -63,27 +64,19 @@ export function providersFor(country: DealQuery['country']): PriceProvider[] {
 }
 
 /**
- * Fetch deals across providers for one query.
- * Strategy: take the highest-priority healthy provider's results; top up with
- * lower-priority providers only while below `limit`, deduping by productId.
+ * Fetch deals across providers for one query using hybrid deduplication.
+ * Strategy: Group deals by EAN (if present) or slugified name+merchant. Keep lowest sale price.
  */
 export async function fetchDealsAcrossProviders(query: DealQuery): Promise<NormalizedDeal[]> {
   const health = await initProviders();
   const limit = query.limit ?? 50;
-  const seen = new Set<string>();
-  const merged: NormalizedDeal[] = [];
+  const rawDeals: NormalizedDeal[] = [];
 
   for (const provider of providersFor(query.country)) {
     if (!health.get(provider.id)?.ok) continue;
-    if (merged.length >= limit) break;
     try {
-      const deals = await provider.fetchDeals({ ...query, limit: limit - merged.length });
-      for (const d of deals) {
-        if (!seen.has(d.productId)) {
-          seen.add(d.productId);
-          merged.push(d);
-        }
-      }
+      const deals = await provider.fetchDeals({ ...query, limit: limit * 2 });
+      rawDeals.push(...deals);
     } catch (e) {
       if (e instanceof ProviderError) {
         console.error(`[registry] ${provider.id} failed (retryable=${e.retryable}): ${e.message} — falling through`);
@@ -92,5 +85,22 @@ export async function fetchDealsAcrossProviders(query: DealQuery): Promise<Norma
       throw e;
     }
   }
+
+  // Hybrid deduplication
+  const deduppedMap = new Map<string, NormalizedDeal>();
+  for (const deal of rawDeals) {
+    const key = deal.eanCode
+      ? `ean:${deal.eanCode}`
+      : `name:${slugify(deal.productName)}_${slugify(deal.shopName)}`;
+    
+    const existing = deduppedMap.get(key);
+    if (!existing) {
+      deduppedMap.set(key, deal);
+    } else if (deal.salePrice < existing.salePrice) {
+      deduppedMap.set(key, deal);
+    }
+  }
+
+  const merged = Array.from(deduppedMap.values());
   return merged.sort((a, b) => b.discountPercent - a.discountPercent).slice(0, limit);
 }

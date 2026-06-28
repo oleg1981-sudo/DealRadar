@@ -140,3 +140,17 @@ create trigger trigger_record_price_history
   after insert or update on public.deals
   for each row execute function public.record_price_history();
 
+-- RPC function to batch calculate and update 90-day historical low prices
+create or replace function public.update_historical_lows_batch()
+returns void language sql as $$
+  update public.deals d
+  set historical_low_price = sub.min_price
+  from (
+    select product_id, min(sale_price) as min_price
+    from public.price_history
+    where recorded_at >= now() - interval '90 days'
+    group by product_id
+  ) sub
+  where d.product_id = sub.product_id;
+$$;
+

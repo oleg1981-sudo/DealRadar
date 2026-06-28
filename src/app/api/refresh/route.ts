@@ -11,7 +11,7 @@
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { fetchDealsAcrossProviders } from '@/lib/providers/registry';
-import { upsertDeals } from '@/lib/db/deals.repo';
+import { upsertDeals, updateHistoricalLows } from '@/lib/db/deals.repo';
 import { notifyPriceDrops } from '@/lib/db/alerts.repo';
 import { SUPPORTED_COUNTRIES, CATEGORY_SLUGS, type CategorySlug, type CountryCode } from '@/lib/providers/types';
 
@@ -47,6 +47,8 @@ export async function POST(req: NextRequest) {
     }
     summary[country] = count;
   }
+
+  await updateHistoricalLows();
 
   return NextResponse.json({ ok: true, upserted: summary, alertsSent: notified, at: new Date().toISOString() });
 }
