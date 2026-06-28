@@ -82,3 +82,61 @@ create index if not exists price_alerts_pending_idx
   on public.price_alerts (product_id) where notified = false;
 
 alter table public.price_alerts enable row level security;
+
+-- Migration Additions: Product Metadata & History Extensions
+alter table public.deals
+  add column if not exists slug text,
+  add column if not exists ean_code text,
+  add column if not exists upc_code text,
+  add column if not exists mpn text,
+  add column if not exists model_number text,
+  add column if not exists historical_low_price numeric(12,2),
+  add column if not exists merchant_id text,
+  add column if not exists affiliate_subid text;
+
+create unique index if not exists deals_slug_idx on public.deals (slug) where slug is not null;
+create index if not exists deals_ean_idx on public.deals (ean_code) where ean_code is not null;
+
+-- Historical price tracking over time
+create table if not exists public.price_history (
+  id             uuid          primary key default gen_random_uuid(),
+  product_id     text          not null references public.deals(product_id) on delete cascade,
+  sale_price     numeric(12,2) not null check (sale_price >= 0),
+  original_price numeric(12,2) not null check (original_price >= 0),
+  recorded_at    timestamptz   not null default now()
+);
+
+create index if not exists price_history_product_id_idx on public.price_history (product_id, recorded_at desc);
+alter table public.price_history enable row level security;
+
+-- Affiliate transaction & commission tracking from network postbacks
+create table if not exists public.transactions (
+  id                uuid          primary key default gen_random_uuid(),
+  transaction_id    text          not null unique,
+  product_id        text,
+  network           text          not null,
+  commission_earned numeric(12,2) not null default 0.00,
+  status            text          not null default 'pending',
+  created_at        timestamptz   not null default now()
+);
+
+create index if not exists transactions_product_id_idx on public.transactions (product_id) where product_id is not null;
+alter table public.transactions enable row level security;
+
+-- Trigger to automatically capture price snapshot on update
+create or replace function public.record_price_history()
+returns trigger language plpgsql as $$
+begin
+  if (TG_OP = 'INSERT') or (OLD.sale_price <> NEW.sale_price) then
+    insert into public.price_history (product_id, sale_price, original_price, recorded_at)
+    values (NEW.product_id, NEW.sale_price, NEW.original_price, now());
+  end if;
+  return NEW;
+end;
+$$;
+
+drop trigger if exists trigger_record_price_history on public.deals;
+create trigger trigger_record_price_history
+  after insert or update on public.deals
+  for each row execute function public.record_price_history();
+

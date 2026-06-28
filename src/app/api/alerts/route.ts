@@ -6,12 +6,21 @@
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { createPriceAlert } from '@/lib/db/alerts.repo';
+import { cacheGet, cacheSet } from '@/lib/cache/redis';
 
 export const runtime = 'nodejs';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export async function POST(req: NextRequest) {
+  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'anon';
+  const rateKey = `ratelimit:alerts:${ip}`;
+  const currentCount = (await cacheGet<number>(rateKey)) || 0;
+
+  if (currentCount >= 5) {
+    return NextResponse.json({ error: 'rate_limited', message: 'Too many alert requests. Please try again in an hour.' }, { status: 429 });
+  }
+
   let body: Record<string, unknown>;
   try {
     body = await req.json();
@@ -34,6 +43,7 @@ export async function POST(req: NextRequest) {
 
   try {
     await createPriceAlert({ email, productId, productName, targetPrice: price, currency });
+    await cacheSet(rateKey, currentCount + 1, 3600); // 1 hour window
     return NextResponse.json({ ok: true });
   } catch (e) {
     console.error('[api/alerts]', e);

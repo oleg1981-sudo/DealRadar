@@ -9,24 +9,33 @@ import 'server-only';
 import { supabase, supabaseConfigured } from './supabase';
 import { fetchDealsAcrossProviders } from '../providers/registry';
 import { queryTokens } from '../utils/search-tokens';
+import { slugify } from '../utils/slug';
 import type { CategorySlug, CountryCode, DealQuery, NormalizedDeal } from '../providers/types';
 
 const TABLE = 'deals';
 
 /** Camel ⇄ snake mapping for the deals table. */
 function toRow(d: NormalizedDeal) {
+  const generatedSlug = d.slug || `${slugify(d.productName)}-${d.productId.replace(/[^a-z0-9]/gi, '-')}`;
   return {
     product_id: d.productId, product_name: d.productName, shop_name: d.shopName,
     shop_url: d.shopUrl, shop_logo_url: d.shopLogoUrl, original_price: d.originalPrice,
     sale_price: d.salePrice, discount_percent: d.discountPercent, currency: d.currency,
     category: d.category, brand: d.brand, image_url: d.imageUrl, country: d.country,
     city: d.city, is_sponsored: d.isSponsored, source: d.source, last_updated: d.lastUpdated,
+    slug: generatedSlug, ean_code: d.eanCode ?? null, upc_code: d.upcCode ?? null,
+    mpn: d.mpn ?? null, model_number: d.modelNumber ?? null,
+    historical_low_price: d.historicalLowPrice ?? null,
+    merchant_id: d.merchantId ?? null, affiliate_subid: d.affiliateSubid ?? null,
   };
 }
 
 function fromRow(r: Record<string, unknown>): NormalizedDeal {
+  const productId = r.product_id as string;
+  const productName = r.product_name as string;
+  const slug = (r.slug as string) || `${slugify(productName)}-${productId.replace(/[^a-z0-9]/gi, '-')}`;
   return {
-    productId: r.product_id as string, productName: r.product_name as string,
+    productId, productName,
     shopName: r.shop_name as string, shopUrl: r.shop_url as string,
     shopLogoUrl: (r.shop_logo_url as string) ?? null,
     originalPrice: Number(r.original_price), salePrice: Number(r.sale_price),
@@ -35,6 +44,10 @@ function fromRow(r: Record<string, unknown>): NormalizedDeal {
     imageUrl: (r.image_url as string) ?? null, country: r.country as CountryCode,
     city: (r.city as string) ?? null, isSponsored: Boolean(r.is_sponsored),
     source: r.source as string, lastUpdated: r.last_updated as string,
+    slug, eanCode: (r.ean_code as string) ?? null, upcCode: (r.upc_code as string) ?? null,
+    mpn: (r.mpn as string) ?? null, modelNumber: (r.model_number as string) ?? null,
+    historicalLowPrice: r.historical_low_price ? Number(r.historical_low_price) : null,
+    merchantId: (r.merchant_id as string) ?? null, affiliateSubid: (r.affiliate_subid as string) ?? null,
   };
 }
 
@@ -117,3 +130,20 @@ function sortDeals(deals: NormalizedDeal[], sort?: DealFilters['sort']): Normali
     default: return copy.sort((a, b) => b.discountPercent - a.discountPercent);
   }
 }
+
+export async function getDealBySlug(slug: string, country?: CountryCode): Promise<NormalizedDeal | null> {
+  if (!slug) return null;
+  if (!supabaseConfigured()) {
+    const deals = await fetchDealsAcrossProviders({ country: country || 'DE', limit: 500 });
+    return deals.find((d) => d.slug === slug || slugify(d.productName) === slug) || null;
+  }
+  let q = supabase().from(TABLE).select('*').eq('slug', slug);
+  if (country) q = q.eq('country', country);
+  const { data, error } = await q.maybeSingle();
+  if (error) {
+    console.error(`[deals.repo] getDealBySlug failed for ${slug}:`, error.message);
+    return null;
+  }
+  return data ? fromRow(data) : null;
+}
+

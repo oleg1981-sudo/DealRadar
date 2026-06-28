@@ -11,6 +11,7 @@ import 'server-only';
 import { supabase, supabaseConfigured } from './supabase';
 import { sendEmail } from '../email/send';
 import { formatPrice } from '../utils/format';
+import { generateUnsubscribeToken } from '../utils/crypto';
 import type { NormalizedDeal } from '../providers/types';
 
 const TABLE = 'price_alerts';
@@ -60,15 +61,24 @@ export async function notifyPriceDrops(deals: NormalizedDeal[]): Promise<number>
     .eq('notified', false);
   if (error) throw new Error(`[alerts.repo] query failed: ${error.message}`);
 
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://dealradar.eu';
   let sent = 0;
   for (const row of data ?? []) {
     const deal = byId.get(row.product_id as string);
     if (!deal || deal.salePrice >= Number(row.target_price)) continue;
 
+    const recipientEmail = row.email as string;
+    const token = generateUnsubscribeToken(recipientEmail, deal.productId);
+    const unsubUrl = `${appUrl}/api/alerts/unsubscribe?email=${encodeURIComponent(recipientEmail)}&productId=${encodeURIComponent(deal.productId)}&token=${token}`;
+
     const ok = await sendEmail({
-      to: row.email as string,
+      to: recipientEmail,
       subject: `Price drop: ${deal.productName}`,
-      html: priceDropEmail(deal, Number(row.target_price)),
+      html: priceDropEmail(deal, Number(row.target_price), unsubUrl),
+      headers: {
+        'List-Unsubscribe': `<${unsubUrl}>`,
+        'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+      },
     });
     if (ok) {
       await supabase()
@@ -81,7 +91,7 @@ export async function notifyPriceDrops(deals: NormalizedDeal[]): Promise<number>
   return sent;
 }
 
-function priceDropEmail(deal: NormalizedDeal, targetPrice: number): string {
+function priceDropEmail(deal: NormalizedDeal, targetPrice: number, unsubUrl: string): string {
   const now = formatPrice(deal.salePrice, deal.currency, 'en');
   const was = formatPrice(targetPrice, deal.currency, 'en');
   const name = escapeHtml(deal.productName);
@@ -90,7 +100,7 @@ function priceDropEmail(deal: NormalizedDeal, targetPrice: number): string {
   <h2 style="margin:0 0 12px">Good news — the price dropped 🎉</h2>
   <p style="margin:0 0 12px"><strong>${name}</strong> is now <strong>${now}</strong> (was ${was}) at ${shop}.</p>
   <p style="margin:0 0 20px"><a href="${deal.shopUrl}" style="display:inline-block;background:#EA580C;color:#fff;padding:10px 18px;border-radius:8px;text-decoration:none;font-weight:500">View the deal</a></p>
-  <p style="color:#71717a;font-size:12px;margin:0">You're receiving this because you set a price alert on DealRadar.</p>
+  <p style="color:#71717a;font-size:12px;margin:0">You're receiving this because you set a price alert on DealRadar. <a href="${unsubUrl}" style="color:#71717a;text-decoration:underline">Unsubscribe</a></p>
 </div>`;
 }
 

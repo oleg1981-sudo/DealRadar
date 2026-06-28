@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { useTranslations, useLocale } from 'next-intl';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -13,24 +14,25 @@ import { priceWindow } from '@/lib/utils/price-history';
 import { productModel } from '@/lib/utils/product-details';
 import { decorateAffiliateUrl } from '@/lib/utils/affiliate';
 import { displayShopName } from '@/lib/utils/shop';
+import { slugify } from '@/lib/utils/slug';
 import type { NormalizedDeal } from '@/lib/providers/types';
 
 /**
- * One deal. Clicking the image or title opens the detailed-card modal; the
- * action buttons (Go to deal, alert) act on their own.
+ * One deal. Clicking the image or title navigates to the SSR deal page; action buttons act directly.
  */
 export function DealCard({ deal, priority = false }: { deal: NormalizedDeal; priority?: boolean }) {
   const t = useTranslations('deal');
   const locale = useLocale();
   const [open, setOpen] = useState(false);
-  const href = decorateAffiliateUrl(deal.shopUrl, deal.source);
+  const href = decorateAffiliateUrl(deal.shopUrl, deal.source, deal.country, deal.category, deal.productId);
   const pw = priceWindow(deal);
+  const dealSlug = deal.slug || slugify(deal.productName);
+  const dealPageUrl = `/${locale}/deal/${dealSlug}`;
 
   return (
     <Card className="group flex flex-col overflow-hidden">
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
+      <Link
+        href={dealPageUrl}
         aria-label={deal.productName}
         className="relative block aspect-[4/3] w-full bg-white text-left"
       >
@@ -49,15 +51,15 @@ export function DealCard({ deal, priority = false }: { deal: NormalizedDeal; pri
         <Badge variant="deal" className="absolute left-2 top-2 text-sm">
           {formatDiscount(deal.discountPercent)}
         </Badge>
-      </button>
+      </Link>
 
       <div className="flex flex-1 flex-col gap-1.5 p-4">
-        <h3
-          onClick={() => setOpen(true)}
+        <Link
+          href={dealPageUrl}
           className="line-clamp-2 cursor-pointer text-sm font-medium leading-snug transition-colors hover:text-accent"
         >
           {deal.productName}
-        </h3>
+        </Link>
         <div className="flex items-center gap-2 text-xs text-zinc-500">
           {deal.shopLogoUrl && (
             // eslint-disable-next-line @next/next/no-img-element -- tiny logos, arbitrary hosts
@@ -93,7 +95,7 @@ export function DealCard({ deal, priority = false }: { deal: NormalizedDeal; pri
         >
           {t.rich('goToDeal', {
             shop: displayShopName(deal.shopName),
-            chip: (chunks) => (
+            chip: (chunks: ReactNode) => (
               <span className="rounded-md bg-white px-2 py-1 font-semibold text-accent">{chunks}</span>
             ),
           })}

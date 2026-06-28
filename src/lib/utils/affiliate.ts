@@ -9,12 +9,22 @@ const SUBID_PARAM: Record<string, string> = {
   tradedoubler: 'epi',
 };
 
-export function decorateAffiliateUrl(shopUrl: string, source: string): string {
+export function decorateAffiliateUrl(
+  shopUrl: string,
+  source: string,
+  country?: string,
+  category?: string,
+  productId?: string
+): string {
   const param = SUBID_PARAM[source];
   if (!param || !shopUrl) return shopUrl;
   try {
     const url = new URL(shopUrl);
-    if (!url.searchParams.has(param)) url.searchParams.set(param, 'dealradar');
+    const cleanCountry = country || 'ALL';
+    const cleanCat = category || 'gen';
+    const cleanId = productId ? productId.replace(/[^a-z0-9]/gi, '_') : 'na';
+    const dynamicSubId = `dealradar_${cleanCountry}_${cleanCat}_${cleanId}`;
+    url.searchParams.set(param, dynamicSubId);
     return url.toString();
   } catch {
     return shopUrl;

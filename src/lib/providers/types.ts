@@ -43,6 +43,15 @@ export interface NormalizedDeal {
   source: string;
   /** ISO 8601. */
   lastUpdated: string;
+  /** Optional URL slug for SSR pages. */
+  slug?: string;
+  eanCode?: string | null;
+  upcCode?: string | null;
+  mpn?: string | null;
+  modelNumber?: string | null;
+  historicalLowPrice?: number | null;
+  merchantId?: string | null;
+  affiliateSubid?: string | null;
 }
 
 export interface DealQuery {
