@@ -28,7 +28,15 @@
     "today": "Azi",
     "close": "Închide",
     "sizes": "Mărimi",
-    "details": "Detalii produs"
+    "details": "Detalii produs",
+    "goToShop": "Accesați {shop}",
+    "affiliateBadge": "Link afiliat",
+    "affiliateBadgeTooltip": "Este posibil să primim un comision pentru achizițiile efectuate prin acest link, fără costuri suplimentare pentru dumneavoastră.",
+    "priceHistoryTitle": "Istoricul prețurilor",
+    "backToDeals": "Înapoi la toate ofertele",
+    "ninetyDayLow": "Cel mai mic preț din ultimele 90 de zile pe DealRadar.",
+    "notLowestNote": "Minim în 90 de zile: {price}.",
+    "verifiedAt": "Verificat la ora {time} CET."
   },
   "alert": {
     "button": "Primește alertă de preț",
@@ -89,6 +97,78 @@
     "brands": "Mărci"
   },
   "footer": {
-    "affiliateDisclosure": "DealRadar poate câștiga un comision când cumperi prin linkurile de pe acest site — fără costuri suplimentare pentru tine."
+    "affiliateDisclosure": "DealRadar poate câștiga un comision când cumperi prin linkurile de pe acest site — fără costuri suplimentare pentru tine.",
+    "imprint": "Informații legale",
+    "privacy": "Politica de confidențialitate",
+    "terms": "Termeni și condiții",
+    "cookieSettings": "Setări cookie-uri"
+  },
+  "consent": {
+    "title": "Respectăm confidențialitatea dumneavoastră",
+    "description": "Folosim cookie-uri esențiale pentru ca DealRadar să funcționeze (limbă și locație). Cu acordul dumneavoastră, folosim și cookie-uri de analiză pentru a înțelege modul de utilizare și a îmbunătăți site-ul. Puteți accepta sau respinge cookie-urile neesențiale și vă puteți modifica oricând alegerea prin „Setări cookie-uri”.",
+    "acceptAll": "Acceptați toate",
+    "rejectAll": "Respingeți toate",
+    "manage": "Gestionați preferințele",
+    "save": "Salvați preferințele",
+    "prefTitle": "Gestionați preferințele privind cookie-urile",
+    "prefDescription": "Cookie-urile esențiale sunt întotdeauna active. Alegeți dacă permiteți cookie-urile de analiză.",
+    "necessaryTitle": "Cookie-uri strict necesare",
+    "necessaryDescription": "Necesare pentru funcționalitatea de bază, precum limba și locația. Întotdeauna active.",
+    "analyticsTitle": "Cookie-uri de analiză",
+    "analyticsDescription": "Ne ajută să măsurăm utilizarea în mod anonim, pentru a putea îmbunătăți site-ul. Dezactivate până când le permiteți.",
+    "closeLabel": "Închide"
+  },
+  "imprint": {
+    "title": "Informații legale (Impressum)",
+    "infoLine": "Informații conform § 5 TMG / Directivei europene privind comerțul electronic:",
+    "representedByLabel": "Reprezentat de",
+    "representedBy": "Consiliul de administrație",
+    "contactLabel": "Contact",
+    "vatLabel": "Cod TVA",
+    "disputeTitle": "Soluționarea online a litigiilor",
+    "disputeBody": "Comisia Europeană pune la dispoziție o platformă pentru soluționarea online a litigiilor (SOL): <link>https://ec.europa.eu/consumers/odr</link>. Nu suntem obligați și nici dispuși să participăm la proceduri de soluționare a litigiilor în fața unui organism de arbitraj pentru consumatori."
+  },
+  "privacy": {
+    "title": "Politica de confidențialitate",
+    "intro": "DealRadar respectă confidențialitatea dumneavoastră și prelucrează datele cu caracter personal în conformitate cu Regulamentul general al UE privind protecția datelor (GDPR, UE 2016/679). Această politică explică ce date prelucrăm, în ce scop și care sunt drepturile dumneavoastră.",
+    "s1Title": "1. Operatorul de date",
+    "s1Body": "Operatorul responsabil de prelucrarea datelor pe acest site este entitatea menționată în secțiunea Informații legale. Pentru orice solicitare privind protecția datelor, contactați-ne la adresa de e-mail indicată acolo.",
+    "s2Title": "2. Datele pe care le prelucrăm",
+    "s2Body": "Abonările la alerte de preț: adresa dumneavoastră de e-mail și produsul vizat, utilizate exclusiv pentru a trimite notificări privind scăderile de preț. Locația aproximativă: țara dumneavoastră este estimată pe baza antetelor de rețea (și, numai cu acordul dumneavoastră, pe baza locației din browser) pentru a afișa oferte locale; coordonatele precise sunt prelucrate temporar și nu sunt stocate niciodată. Preferințele privind cookie-urile: alegerea dumneavoastră privind consimțământul este stocată pentru a o respecta la vizitele viitoare.",
+    "s3Title": "3. Persoane împuternicite terțe",
+    "s3Body": "Folosim următoarele persoane împuternicite în baza unor acorduri de prelucrare a datelor: Supabase (găzduirea bazei de date), Upstash (memorare în cache Redis și limitarea ratei de solicitări), Resend (e-mailuri tranzacționale) și rețelele noastre de afiliere (Awin, Kelkoo, Tradedoubler, Strackr), care primesc un identificator de urmărire anonimizat atunci când accesați un link extern către o ofertă. Furnizorul nostru de găzduire la marginea rețelei (edge) prelucrează datele din jurnalele serverului (inclusiv adresa IP) pentru a opera serviciul în mod securizat (art. 6 alin. (1) lit. (f) GDPR).",
+    "s4Title": "4. Cookie-uri",
+    "s4Body": "Utilizăm cookie-uri strict necesare pentru limbă și locație, care nu necesită consimțământ. Cookie-urile de analiză sunt opționale și sunt setate numai după ce vă exprimați acordul prin bannerul de cookie-uri. Vă puteți retrage consimțământul în orice moment prin „Setări cookie-uri” din subsolul paginii.",
+    "s5Title": "5. Drepturile dumneavoastră conform GDPR",
+    "s5Body": "Aveți dreptul de a accesa, rectifica, șterge (art. 17), restricționa și de a vă porta datele cu caracter personal, precum și de a vă opune sau de a vă retrage consimțământul în orice moment, fără a afecta legalitatea prelucrării efectuate anterior. Pentru a vă exercita aceste drepturi, contactați adresa indicată în secțiunea Informații legale. De asemenea, aveți dreptul de a depune o plângere la o autoritate de supraveghere.",
+    "s6Title": "6. Dezabonare și ștergere automată",
+    "s6Body": "Fiecare e-mail de alertă de preț conține un link de dezabonare cu un singur clic, securizat printr-un token HMAC. Accesarea acestuia vă șterge abonarea imediat și fără verificări suplimentare, îndeplinind dreptul de retragere a consimțământului și dreptul la ștergere. Abonările sunt, de asemenea, șterse automat după o perioadă de retenție stabilită."
+  },
+  "terms": {
+    "title": "Termeni și condiții",
+    "s1Title": "1. Natura serviciului",
+    "s1Body": "DealRadar este un index de comparare a prețurilor și de recomandare prin afiliere. Nu vindem produse și nu suntem parte la nicio achiziție. Agregăm oferte de la comercianți terți și rețele de afiliere și vă direcționăm către comerciant.",
+    "s2Title": "2. Contractele de achiziție",
+    "s2Body": "Orice contract de achiziție se încheie exclusiv între dumneavoastră și comerciantul respectiv, în conformitate cu termenii și condițiile acelui comerciant. Întrebările referitoare la comenzi, plată, livrare, returnări și garanții trebuie adresate comerciantului.",
+    "s3Title": "3. Acuratețea prețurilor",
+    "s3Body": "Prețurile și disponibilitatea se modifică dinamic și sunt furnizate de terți. Prețul și disponibilitatea afișate pe site-ul comerciantului în momentul finalizării comenzii sunt cele de referință. DealRadar nu este răspunzător pentru discrepanțele dintre prețurile afișate și cele reale.",
+    "s4Title": "4. Linkuri de afiliere",
+    "s4Body": "Linkurile externe de pe DealRadar sunt linkuri de afiliere. Este posibil să primim un comision de recomandare pentru achizițiile eligibile, fără costuri suplimentare pentru dumneavoastră. Linkurile de afiliere sunt marcate ca atare lângă butonul de redirecționare."
+  },
+  "unsubscribe": {
+    "successTitle": "Dezabonare reușită",
+    "successBody": "Nu veți mai primi alerte privind scăderile de preț pentru această ofertă.",
+    "errorTitle": "Link de dezabonare invalid sau expirat",
+    "errorBody": "Nu am putut verifica tokenul de securitate. Este posibil ca linkul să fie incomplet sau expirat."
+  },
+  "error": {
+    "title": "Ceva nu a mers bine",
+    "body": "Nu am putut încărca această pagină. Încearcă din nou.",
+    "retry": "Încearcă din nou"
+  },
+  "notFound": {
+    "title": "Pagina nu a fost găsită",
+    "body": "Pagina pe care o cauți nu există sau a fost mutată.",
+    "backHome": "Înapoi la oferte"
   }
 }

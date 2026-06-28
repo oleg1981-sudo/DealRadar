@@ -6,7 +6,7 @@
  * product's price later drops below the price at subscribe time.
  */
 import { useId, useState, type FormEvent } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { BellRing, Check, Loader2 } from 'lucide-react';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -23,6 +23,7 @@ export function PriceAlertButton({
   currency: string;
 }) {
   const t = useTranslations('alert');
+  const locale = useLocale();
   const uid = useId();
   const [open, setOpen] = useState(false);
   const [email, setEmail] = useState('');
@@ -42,7 +43,7 @@ export function PriceAlertButton({
       const res = await fetch('/api/alerts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim(), productId, productName, price, currency }),
+        body: JSON.stringify({ email: email.trim(), productId, productName, price, currency, locale }),
       });
       if (!res.ok) throw new Error('request failed');
       setStatus('success');

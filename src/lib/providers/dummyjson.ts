@@ -88,6 +88,7 @@ interface DummyProduct {
   category: string;
   thumbnail?: string;
   images?: string[];
+  meta?: { barcode?: string };
 }
 
 export class DummyJsonProvider implements PriceProvider {
@@ -106,7 +107,7 @@ export class DummyJsonProvider implements PriceProvider {
   private async load(): Promise<DummyProduct[]> {
     const now = Date.now();
     if (this.cache && now - this.cache.at < CACHE_TTL_MS) return this.cache.products;
-    const url = `${BASE}/products?limit=100&select=id,title,price,discountPercentage,brand,category,thumbnail,images`;
+    const url = `${BASE}/products?limit=100&select=id,title,price,discountPercentage,brand,category,thumbnail,images,meta`;
     let res = await fetch(url, { cache: 'no-store' });
     if (res.status === 429) {
       await new Promise((r) => setTimeout(r, 800)); // brief backoff on rate-limit, then one retry
@@ -178,6 +179,7 @@ export class DummyJsonProvider implements PriceProvider {
       isSponsored: true,
       source: this.id,
       lastUpdated: new Date().toISOString(),
+      eanCode: p.meta?.barcode ?? null,
     };
   }
 }

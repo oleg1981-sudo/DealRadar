@@ -99,6 +99,7 @@ export class KelkooProvider implements PriceProvider {
       isSponsored: true, // Kelkoo pays per click → always affiliate
       source: this.id,
       lastUpdated: new Date().toISOString(),
+      eanCode: o.ean ?? o.gtin ?? null,
     };
   }
 }
@@ -114,4 +115,6 @@ interface KelkooOffer {
   price?: { amount?: string | number; currency?: string };
   previousPrice?: { amount?: string | number };
   images?: { url?: string }[];
+  ean?: string | null;
+  gtin?: string | null;
 }

@@ -12,6 +12,7 @@ import { supabase, supabaseConfigured } from './supabase';
 import { sendEmail } from '../email/send';
 import { formatPrice } from '../utils/format';
 import { generateUnsubscribeToken } from '../utils/crypto';
+import { decorateAffiliateUrl } from '../utils/affiliate';
 import type { NormalizedDeal } from '../providers/types';
 
 const TABLE = 'price_alerts';
@@ -23,6 +24,8 @@ export interface PriceAlertInput {
   /** Notify once the product's sale price drops below this. */
   targetPrice: number;
   currency: string;
+  /** Subscriber locale, for localized emails + unsubscribe page. */
+  locale?: string;
 }
 
 export async function createPriceAlert(a: PriceAlertInput): Promise<void> {
@@ -37,12 +40,28 @@ export async function createPriceAlert(a: PriceAlertInput): Promise<void> {
       product_name: a.productName,
       target_price: a.targetPrice,
       currency: a.currency,
+      locale: a.locale ?? null,
       notified: false,
       notified_at: null,
     },
     { onConflict: 'email,product_id' },
   );
   if (error) throw new Error(`[alerts.repo] upsert failed: ${error.message}`);
+}
+
+/**
+ * GDPR retention sweep — deletes subscriptions past the retention window and
+ * notified rows past a shorter window. Delegates to the SQL function so the
+ * policy lives in one place. Called by the scheduled retention workflow.
+ */
+export async function purgeStaleAlerts(retentionDays = 365, notifiedDays = 30): Promise<number> {
+  if (!supabaseConfigured()) return 0;
+  const { data, error } = await supabase().rpc('purge_stale_price_alerts', {
+    retention_days: retentionDays,
+    notified_days: notifiedDays,
+  });
+  if (error) throw new Error(`[alerts.repo] purge failed: ${error.message}`);
+  return Number(data ?? 0);
 }
 
 /**
@@ -56,7 +75,7 @@ export async function notifyPriceDrops(deals: NormalizedDeal[]): Promise<number>
   const byId = new Map(deals.map((d) => [d.productId, d]));
   const { data, error } = await supabase()
     .from(TABLE)
-    .select('id, email, target_price, product_id')
+    .select('id, email, target_price, product_id, locale')
     .in('product_id', [...byId.keys()])
     .eq('notified', false);
   if (error) throw new Error(`[alerts.repo] query failed: ${error.message}`);
@@ -68,13 +87,17 @@ export async function notifyPriceDrops(deals: NormalizedDeal[]): Promise<number>
     if (!deal || deal.salePrice >= Number(row.target_price)) continue;
 
     const recipientEmail = row.email as string;
+    const locale = (row.locale as string) || 'en';
     const token = generateUnsubscribeToken(recipientEmail, deal.productId);
-    const unsubUrl = `${appUrl}/api/alerts/unsubscribe?email=${encodeURIComponent(recipientEmail)}&productId=${encodeURIComponent(deal.productId)}&token=${token}`;
+    const unsubUrl = `${appUrl}/api/alerts/unsubscribe?email=${encodeURIComponent(recipientEmail)}&productId=${encodeURIComponent(deal.productId)}&token=${token}&locale=${encodeURIComponent(locale)}`;
+    // Monetized outbound CTA — the price-drop click is the highest-value click,
+    // so it must carry our affiliate sub-id like every other deal link.
+    const ctaUrl = decorateAffiliateUrl(deal.shopUrl, deal.source, deal.country, deal.category, deal.productId);
 
     const ok = await sendEmail({
       to: recipientEmail,
       subject: `Price drop: ${deal.productName}`,
-      html: priceDropEmail(deal, Number(row.target_price), unsubUrl),
+      html: priceDropEmail(deal, Number(row.target_price), unsubUrl, ctaUrl, locale),
       headers: {
         'List-Unsubscribe': `<${unsubUrl}>`,
         'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
@@ -91,16 +114,22 @@ export async function notifyPriceDrops(deals: NormalizedDeal[]): Promise<number>
   return sent;
 }
 
-function priceDropEmail(deal: NormalizedDeal, targetPrice: number, unsubUrl: string): string {
-  const now = formatPrice(deal.salePrice, deal.currency, 'en');
-  const was = formatPrice(targetPrice, deal.currency, 'en');
+function priceDropEmail(
+  deal: NormalizedDeal,
+  targetPrice: number,
+  unsubUrl: string,
+  ctaUrl: string,
+  locale: string,
+): string {
+  const now = formatPrice(deal.salePrice, deal.currency, locale);
+  const was = formatPrice(targetPrice, deal.currency, locale);
   const name = escapeHtml(deal.productName);
   const shop = escapeHtml(deal.shopName);
   return `<div style="font-family:system-ui,sans-serif;max-width:480px;color:#18181b">
   <h2 style="margin:0 0 12px">Good news — the price dropped 🎉</h2>
   <p style="margin:0 0 12px"><strong>${name}</strong> is now <strong>${now}</strong> (was ${was}) at ${shop}.</p>
-  <p style="margin:0 0 20px"><a href="${deal.shopUrl}" style="display:inline-block;background:#EA580C;color:#fff;padding:10px 18px;border-radius:8px;text-decoration:none;font-weight:500">View the deal</a></p>
-  <p style="color:#71717a;font-size:12px;margin:0">You're receiving this because you set a price alert on DealRadar. <a href="${unsubUrl}" style="color:#71717a;text-decoration:underline">Unsubscribe</a></p>
+  <p style="margin:0 0 20px"><a href="${escapeHtml(ctaUrl)}" rel="noopener noreferrer nofollow sponsored" style="display:inline-block;background:#EA580C;color:#fff;padding:10px 18px;border-radius:8px;text-decoration:none;font-weight:500">View the deal</a></p>
+  <p style="color:#71717a;font-size:12px;margin:0">You're receiving this because you set a price alert on DealRadar. <a href="${escapeHtml(unsubUrl)}" style="color:#71717a;text-decoration:underline">Unsubscribe</a></p>
 </div>`;
 }
 

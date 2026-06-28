@@ -11,7 +11,7 @@ import { HeroBanner } from '@/components/home/HeroBanner';
 import { HomeOnly } from '@/components/home/HomeOnly';
 import { Footer } from '@/components/layout/Footer';
 import { LocationProvider } from '@/components/layout/LocationContext';
-import { CookieBanner } from '@/components/gdpr/CookieBanner';
+import { CookieConsentProvider } from '@/components/consent/CookieConsent';
 import { GeoConsentPrompt } from '@/components/gdpr/GeoConsentPrompt';
 import { parseLocationCookie, LOCATION_COOKIE } from '@/lib/geo/resolve';
 import { initProviders } from '@/lib/providers/registry';
@@ -61,7 +61,7 @@ export default async function LocaleLayout({
             </main>
             <Footer />
             <GeoConsentPrompt />
-            <CookieBanner />
+            <CookieConsentProvider />
           </LocationProvider>
         </NextIntlClientProvider>
       </body>

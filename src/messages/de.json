@@ -28,7 +28,15 @@
     "today": "Heute",
     "close": "Schließen",
     "sizes": "Größen",
-    "details": "Produktdetails"
+    "details": "Produktdetails",
+    "goToShop": "Zu {shop}",
+    "affiliateBadge": "Affiliate-Link",
+    "affiliateBadgeTooltip": "Über diesen Link erhalten wir unter Umständen eine Provision auf Käufe – für Sie ohne zusätzliche Kosten.",
+    "priceHistoryTitle": "Preisverlauf",
+    "backToDeals": "Zurück zu allen Angeboten",
+    "ninetyDayLow": "Niedrigster Preis seit 90 Tagen auf DealRadar.",
+    "notLowestNote": "90-Tage-Tief: {price}.",
+    "verifiedAt": "Geprüft um {time} MEZ."
   },
   "alert": {
     "button": "Preisalarm erhalten",
@@ -89,6 +97,78 @@
     "brands": "Marken"
   },
   "footer": {
-    "affiliateDisclosure": "DealRadar erhält ggf. eine Provision, wenn du über Links auf dieser Seite kaufst — ohne Mehrkosten für dich."
+    "affiliateDisclosure": "DealRadar erhält ggf. eine Provision, wenn du über Links auf dieser Seite kaufst — ohne Mehrkosten für dich.",
+    "imprint": "Impressum",
+    "privacy": "Datenschutzerklärung",
+    "terms": "Nutzungsbedingungen",
+    "cookieSettings": "Cookie-Einstellungen"
+  },
+  "consent": {
+    "title": "Wir schätzen Ihre Privatsphäre",
+    "description": "Wir verwenden notwendige Cookies, damit DealRadar funktioniert (Sprache und Standort). Mit Ihrer Einwilligung setzen wir zudem Analyse-Cookies ein, um die Nutzung zu verstehen und die Website zu verbessern. Sie können nicht notwendige Cookies annehmen oder ablehnen und Ihre Auswahl jederzeit über „Cookie-Einstellungen“ ändern.",
+    "acceptAll": "Alle akzeptieren",
+    "rejectAll": "Alle ablehnen",
+    "manage": "Einstellungen verwalten",
+    "save": "Einstellungen speichern",
+    "prefTitle": "Cookie-Einstellungen verwalten",
+    "prefDescription": "Notwendige Cookies sind stets aktiv. Wählen Sie, ob Sie Analyse-Cookies zulassen möchten.",
+    "necessaryTitle": "Unbedingt notwendige Cookies",
+    "necessaryDescription": "Erforderlich für grundlegende Funktionen wie Sprache und Standort. Immer aktiv.",
+    "analyticsTitle": "Analyse-Cookies",
+    "analyticsDescription": "Helfen uns, die Nutzung anonym zu messen, damit wir die Website verbessern können. Deaktiviert, bis Sie sie zulassen.",
+    "closeLabel": "Schließen"
+  },
+  "imprint": {
+    "title": "Impressum",
+    "infoLine": "Angaben gemäß § 5 TMG / Europäische E-Commerce-Richtlinie:",
+    "representedByLabel": "Vertreten durch",
+    "representedBy": "Vorstand",
+    "contactLabel": "Kontakt",
+    "vatLabel": "USt-IdNr.",
+    "disputeTitle": "Online-Streitbeilegung",
+    "disputeBody": "Die Europäische Kommission stellt eine Plattform zur Online-Streitbeilegung (OS) bereit: <link>https://ec.europa.eu/consumers/odr</link>. Wir sind weder verpflichtet noch bereit, an Streitbeilegungsverfahren vor einer Verbraucherschlichtungsstelle teilzunehmen."
+  },
+  "privacy": {
+    "title": "Datenschutzerklärung",
+    "intro": "DealRadar respektiert Ihre Privatsphäre und verarbeitet personenbezogene Daten im Einklang mit der EU-Datenschutz-Grundverordnung (GDPR, EU 2016/679). Diese Erklärung erläutert, welche Daten wir verarbeiten, zu welchem Zweck und welche Rechte Ihnen zustehen.",
+    "s1Title": "1. Verantwortlicher",
+    "s1Body": "Verantwortlicher für die Datenverarbeitung auf dieser Website ist der im Impressum genannte Betreiber. Für datenschutzrechtliche Anliegen kontaktieren Sie uns bitte unter der dort angegebenen E-Mail-Adresse.",
+    "s2Title": "2. Daten, die wir verarbeiten",
+    "s2Body": "Preisalarm-Abonnements: Ihre E-Mail-Adresse und das gewünschte Produkt, die ausschließlich zum Versand von Benachrichtigungen über Preissenkungen verwendet werden. Ungefährer Standort: Ihr Land wird anhand von Netzwerk-Headern (und – nur mit Ihrer Einwilligung – Ihrem Browser-Standort) geschätzt, um lokale Angebote anzuzeigen; genaue Koordinaten werden nur vorübergehend verarbeitet und niemals gespeichert. Cookie-Einstellungen: Ihre Einwilligungsentscheidung wird gespeichert, um sie bei künftigen Besuchen zu berücksichtigen.",
+    "s3Title": "3. Auftragsverarbeiter (Dritte)",
+    "s3Body": "Wir setzen die folgenden Auftragsverarbeiter auf Grundlage von Auftragsverarbeitungsverträgen ein: Supabase (Datenbank-Hosting), Upstash (Redis-Caching und Ratenbegrenzung), Resend (transaktionale E-Mails) sowie unsere Affiliate-Netzwerke (Awin, Kelkoo, Tradedoubler, Strackr), die eine anonymisierte Tracking-Kennung erhalten, wenn Sie auf einen ausgehenden Angebotslink klicken. Unser Edge-Host verarbeitet Server-Protokolldaten (einschließlich der IP-Adresse), um den Dienst sicher zu betreiben (Art. 6 Abs. 1 lit. f GDPR).",
+    "s4Title": "4. Cookies",
+    "s4Body": "Wir setzen unbedingt notwendige Cookies für Sprache und Standort, die keiner Einwilligung bedürfen. Analyse-Cookies sind optional und werden erst gesetzt, nachdem Sie über das Cookie-Banner zugestimmt haben. Sie können Ihre Einwilligung jederzeit über „Cookie-Einstellungen“ in der Fußzeile widerrufen.",
+    "s5Title": "5. Ihre Rechte nach der GDPR",
+    "s5Body": "Sie haben das Recht auf Auskunft, Berichtigung, Löschung (Art. 17), Einschränkung und Übertragbarkeit Ihrer personenbezogenen Daten sowie das Recht, der Verarbeitung zu widersprechen oder Ihre Einwilligung jederzeit zu widerrufen, ohne dass die Rechtmäßigkeit der bis dahin erfolgten Verarbeitung berührt wird. Zur Ausübung dieser Rechte wenden Sie sich bitte an die im Impressum genannte Adresse. Darüber hinaus haben Sie das Recht, Beschwerde bei einer Aufsichtsbehörde einzulegen.",
+    "s6Title": "6. Automatische Abmeldung und Löschung",
+    "s6Body": "Jede Preisalarm-E-Mail enthält einen Ein-Klick-Abmeldelink, der durch ein HMAC-Token gesichert ist. Durch Anklicken wird Ihr Abonnement sofort und ohne weitere Überprüfung gelöscht, womit dem Recht auf Widerruf der Einwilligung und auf Löschung entsprochen wird. Abonnements werden zudem nach einer festgelegten Speicherfrist automatisch gelöscht."
+  },
+  "terms": {
+    "title": "Nutzungsbedingungen",
+    "s1Title": "1. Art des Dienstes",
+    "s1Body": "DealRadar ist ein Preisvergleichs- und Affiliate-Vermittlungsverzeichnis. Wir verkaufen keine Produkte und sind nicht Vertragspartei eines Kaufs. Wir bündeln Angebote von Drittanbietern und Affiliate-Netzwerken und verlinken Sie zum Händler.",
+    "s2Title": "2. Kaufverträge",
+    "s2Body": "Ein Kaufvertrag kommt ausschließlich zwischen Ihnen und dem jeweiligen Händler zu dessen Allgemeinen Geschäftsbedingungen zustande. Fragen zu Bestellungen, Zahlung, Lieferung, Rückgabe und Gewährleistung sind an den Händler zu richten.",
+    "s3Title": "3. Preisgenauigkeit",
+    "s3Body": "Preise und Verfügbarkeit ändern sich dynamisch und werden von Dritten bereitgestellt. Maßgeblich sind der Preis und die Verfügbarkeit, die auf der Website des Händlers beim Bezahlvorgang angezeigt werden. DealRadar haftet nicht für Abweichungen zwischen gelisteten und tatsächlichen Preisen.",
+    "s4Title": "4. Affiliate-Links",
+    "s4Body": "Ausgehende Links auf DealRadar sind Affiliate-Links. Bei qualifizierten Käufen erhalten wir unter Umständen eine Vermittlungsprovision – für Sie ohne zusätzliche Kosten. Affiliate-Links sind als solche neben der Weiterleitungs-Schaltfläche gekennzeichnet."
+  },
+  "unsubscribe": {
+    "successTitle": "Erfolgreich abgemeldet",
+    "successBody": "Sie erhalten keine Benachrichtigungen über Preissenkungen für dieses Angebot mehr.",
+    "errorTitle": "Ungültiger oder abgelaufener Abmeldelink",
+    "errorBody": "Wir konnten das Sicherheitstoken nicht verifizieren. Der Link ist möglicherweise unvollständig oder abgelaufen."
+  },
+  "error": {
+    "title": "Etwas ist schiefgelaufen",
+    "body": "Diese Seite konnte nicht geladen werden. Bitte versuchen Sie es erneut.",
+    "retry": "Erneut versuchen"
+  },
+  "notFound": {
+    "title": "Seite nicht gefunden",
+    "body": "Die gesuchte Seite existiert nicht oder wurde verschoben.",
+    "backHome": "Zurück zu den Angeboten"
   }
 }

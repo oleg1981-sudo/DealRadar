@@ -28,7 +28,15 @@
     "today": "Vandaag",
     "close": "Sluiten",
     "sizes": "Maten",
-    "details": "Productdetails"
+    "details": "Productdetails",
+    "goToShop": "Ga naar {shop}",
+    "affiliateBadge": "Affiliatelink",
+    "affiliateBadgeTooltip": "Wij kunnen een commissie ontvangen op aankopen via deze link, zonder extra kosten voor u.",
+    "priceHistoryTitle": "Prijsgeschiedenis",
+    "backToDeals": "Terug naar alle deals",
+    "ninetyDayLow": "Laagste prijs in 90 dagen op DealRadar.",
+    "notLowestNote": "Laagste prijs in 90 dagen: {price}.",
+    "verifiedAt": "Geverifieerd om {time} CET."
   },
   "alert": {
     "button": "Ontvang beste-prijsmelding",
@@ -89,6 +97,78 @@
     "brands": "Merken"
   },
   "footer": {
-    "affiliateDisclosure": "DealRadar kan een commissie verdienen wanneer je via links op deze site koopt — zonder extra kosten voor jou."
+    "affiliateDisclosure": "DealRadar kan een commissie verdienen wanneer je via links op deze site koopt — zonder extra kosten voor jou.",
+    "imprint": "Colofon",
+    "privacy": "Privacybeleid",
+    "terms": "Algemene voorwaarden",
+    "cookieSettings": "Cookie-instellingen"
+  },
+  "consent": {
+    "title": "Wij hechten waarde aan uw privacy",
+    "description": "Wij gebruiken essentiële cookies om DealRadar te laten werken (taal en locatie). Met uw toestemming gebruiken wij ook analytische cookies om het gebruik te begrijpen en de site te verbeteren. U kunt niet-essentiële cookies accepteren of weigeren en uw keuze op elk moment wijzigen via “Cookie-instellingen”.",
+    "acceptAll": "Alles accepteren",
+    "rejectAll": "Alles weigeren",
+    "manage": "Voorkeuren beheren",
+    "save": "Voorkeuren opslaan",
+    "prefTitle": "Cookievoorkeuren beheren",
+    "prefDescription": "Essentiële cookies zijn altijd actief. Kies of u analytische cookies wilt toestaan.",
+    "necessaryTitle": "Strikt noodzakelijke cookies",
+    "necessaryDescription": "Vereist voor basisfunctionaliteit zoals taal en locatie. Altijd ingeschakeld.",
+    "analyticsTitle": "Analytische cookies",
+    "analyticsDescription": "Helpen ons het gebruik anoniem te meten zodat wij de site kunnen verbeteren. Uitgeschakeld totdat u ze toestaat.",
+    "closeLabel": "Sluiten"
+  },
+  "imprint": {
+    "title": "Colofon (Impressum)",
+    "infoLine": "Informatie conform § 5 TMG / Europese e-commercerichtlijn:",
+    "representedByLabel": "Vertegenwoordigd door",
+    "representedBy": "Directie",
+    "contactLabel": "Contact",
+    "vatLabel": "Btw-nummer",
+    "disputeTitle": "Onlinegeschillenbeslechting",
+    "disputeBody": "De Europese Commissie biedt een platform voor onlinegeschillenbeslechting (ODR): <link>https://ec.europa.eu/consumers/odr</link>. Wij zijn niet verplicht en niet bereid om deel te nemen aan geschillenbeslechtingsprocedures voor een geschillencommissie voor consumenten."
+  },
+  "privacy": {
+    "title": "Privacybeleid",
+    "intro": "DealRadar respecteert uw privacy en verwerkt persoonsgegevens in overeenstemming met de Algemene verordening gegevensbescherming van de EU (GDPR, EU 2016/679). In dit beleid wordt uitgelegd welke gegevens wij verwerken, waarom, en welke rechten u heeft.",
+    "s1Title": "1. Verwerkingsverantwoordelijke",
+    "s1Body": "De verwerkingsverantwoordelijke voor de gegevensverwerking op deze website is de exploitant die in ons colofon wordt genoemd. Neem voor elk verzoek inzake gegevensbescherming contact met ons op via het daar vermelde e-mailadres.",
+    "s2Title": "2. Gegevens die wij verwerken",
+    "s2Body": "Prijsmeldingsabonnementen: uw e-mailadres en het beoogde product, uitsluitend gebruikt om meldingen over prijsdalingen te versturen. Bij benadering bepaalde locatie: uw land wordt geschat op basis van netwerkheaders (en, uitsluitend met uw toestemming, uw browserlocatie) om lokale deals te tonen; nauwkeurige coördinaten worden tijdelijk verwerkt en nooit opgeslagen. Cookievoorkeuren: uw toestemmingskeuze wordt opgeslagen om deze bij toekomstige bezoeken te respecteren.",
+    "s3Title": "3. Externe verwerkers",
+    "s3Body": "Wij maken gebruik van de volgende verwerkers op basis van verwerkersovereenkomsten: Supabase (databasehosting), Upstash (Redis-caching en rate limiting), Resend (transactionele e-mail), en onze affiliatenetwerken (Awin, Kelkoo, Tradedoubler, Strackr), die een geanonimiseerde trackingidentificatie ontvangen wanneer u op een uitgaande deallink klikt. Onze edge-host verwerkt serverlogboekgegevens (waaronder IP) om de dienst veilig te exploiteren (art. 6, lid 1, onder f, GDPR).",
+    "s4Title": "4. Cookies",
+    "s4Body": "Wij plaatsen strikt noodzakelijke cookies voor taal en locatie, waarvoor geen toestemming is vereist. Analytische cookies zijn optioneel en worden pas geplaatst nadat u zich via de cookiebanner heeft aangemeld. U kunt uw toestemming op elk moment intrekken via “Cookie-instellingen” in de voettekst.",
+    "s5Title": "5. Uw rechten op grond van de GDPR",
+    "s5Body": "U heeft het recht op inzage, rectificatie, wissing (art. 17), beperking en overdraagbaarheid van uw persoonsgegevens, alsmede het recht om bezwaar te maken of uw toestemming op elk moment in te trekken, zonder dat dit afbreuk doet aan de rechtmatigheid van de eerdere verwerking. Om deze rechten uit te oefenen, neemt u contact op via het adres in ons colofon. U kunt ook een klacht indienen bij een toezichthoudende autoriteit.",
+    "s6Title": "6. Geautomatiseerde afmelding en wissing",
+    "s6Body": "Elke prijsmeldings-e-mail bevat een afmeldlink met één klik, beveiligd met een HMAC-token. Door deze te volgen wordt uw abonnement onmiddellijk en zonder verdere verificatie verwijderd, waarmee wordt voldaan aan het recht om toestemming in te trekken en het recht op wissing. Abonnementen worden ook automatisch verwijderd na een vastgestelde bewaartermijn."
+  },
+  "terms": {
+    "title": "Algemene voorwaarden",
+    "s1Title": "1. Aard van de dienst",
+    "s1Body": "DealRadar is een prijsvergelijkings- en affiliateverwijzingsindex. Wij verkopen geen producten en zijn geen partij bij enige aankoop. Wij verzamelen aanbiedingen van externe verkopers en affiliatenetwerken en verwijzen u door naar de retailer.",
+    "s2Title": "2. Koopovereenkomsten",
+    "s2Body": "Een koopovereenkomst komt uitsluitend tot stand tussen u en de betreffende verkoper, onder de algemene voorwaarden van die verkoper. Vragen over bestellingen, betaling, levering, retourzendingen en garanties dienen aan de verkoper te worden gericht.",
+    "s3Title": "3. Juistheid van prijzen",
+    "s3Body": "Prijzen en beschikbaarheid wijzigen dynamisch en worden door derden verstrekt. De prijs en beschikbaarheid die bij het afrekenen op de site van de verkoper worden getoond, zijn doorslaggevend. DealRadar is niet aansprakelijk voor afwijkingen tussen de vermelde en de werkelijke prijzen.",
+    "s4Title": "4. Affiliatelinks",
+    "s4Body": "Uitgaande links op DealRadar zijn affiliatelinks. Wij kunnen een verwijzingscommissie verdienen op in aanmerking komende aankopen, zonder extra kosten voor u. Affiliatelinks worden als zodanig aangeduid naast de uitgaande knop."
+  },
+  "unsubscribe": {
+    "successTitle": "Afmelding geslaagd",
+    "successBody": "U ontvangt geen meldingen over prijsdalingen meer voor deze deal.",
+    "errorTitle": "Ongeldige of verlopen afmeldlink",
+    "errorBody": "Wij konden het beveiligingstoken niet verifiëren. De link is mogelijk onvolledig of verlopen."
+  },
+  "error": {
+    "title": "Er ging iets mis",
+    "body": "We konden deze pagina niet laden. Probeer het opnieuw.",
+    "retry": "Opnieuw proberen"
+  },
+  "notFound": {
+    "title": "Pagina niet gevonden",
+    "body": "De pagina die je zoekt bestaat niet of is verplaatst.",
+    "backHome": "Terug naar de deals"
   }
 }

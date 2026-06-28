@@ -94,6 +94,23 @@ function mapCategory(categoryName, merchantCategory) {
 
 // ── normalise one CSV row → a `deals` table row (snake_case), or null to skip ──
 const num = (v) => { v = (v || '').trim(); if (!v) return null; const f = parseFloat(v); return Number.isFinite(f) ? f : null; };
+
+// Mirror of src/lib/utils/slug.ts slugify() — kept byte-for-byte equivalent so
+// the slug written here matches deals.repo.ts toRow() and getDealBySlug() lookups.
+const slugify = (input) => (input || '')
+  .toLowerCase()
+  .normalize('NFD').replace(/[̀-ͯ]/g, '')
+  .replace(/[^a-z0-9]+/g, '-')
+  .replace(/-+/g, '-')
+  .replace(/^-|-$/g, '');
+
+// Mirror of types.ts computeDiscountPercent() guard: clamp to 0–100, integer.
+// (.cjs cannot import the TS guard without a build step; behaviour is identical.)
+const guardedDiscount = (original, sale) => {
+  if (!Number.isFinite(original) || !Number.isFinite(sale) || original <= 0 || sale < 0 || sale > original) return 0;
+  return Math.min(100, Math.max(0, Math.round(((original - sale) / original) * 100)));
+};
+
 function normalizeRow(g) {
   if (g('in_stock').trim() !== '1') return null;            // only buyable items
   const currency = (g('currency') || 'EUR').trim().toUpperCase();
@@ -106,16 +123,22 @@ function normalizeRow(g) {
   // `savings_percent` columns are empty in this feed, so derive it ourselves.
   const original = (rrp !== null && rrp > sale) ? rrp : ((oldPrice !== null && oldPrice > sale) ? oldPrice : null);
   if (sale === null || original === null) return null;
-  const discountPercent = Math.round(((original - sale) / original) * 100);
+  const discountPercent = guardedDiscount(original, sale);   // [GAP-4] shared guard, clamped 0–100
   if (discountPercent <= 0) return null;
 
   const awId = g('aw_product_id').trim();
   const deepLink = g('aw_deep_link').trim();
   if (!awId || !deepLink) return null;
 
+  const productId = `awin:${awId}`;
+  const productName = g('product_name').trim();
+  // [GAP-1] slug parity with deals.repo.ts toRow(): slugify(name) + '-' + sanitized(productId).
+  const slug = `${slugify(productName)}-${productId.replace(/[^a-z0-9]/gi, '-')}`;
+  const ean = g('ean').trim() || g('product_GTIN').trim() || null;   // [S3-ean] activate EAN dedup
+
   return {
-    product_id: `awin:${awId}`,
-    product_name: g('product_name').trim(),
+    product_id: productId,
+    product_name: productName,
     shop_name: g('merchant_name').trim(),
     shop_url: deepLink,                                      // monetised AWIN tracking link
     shop_logo_url: null,
@@ -131,6 +154,11 @@ function normalizeRow(g) {
     is_sponsored: true,
     source: 'awin',
     last_updated: new Date().toISOString(),
+    slug,
+    ean_code: ean,
+    mpn: g('mpn').trim() || null,
+    model_number: g('model_number').trim() || null,
+    merchant_id: g('merchant_id').trim() || null,
   };
 }
 

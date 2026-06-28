@@ -28,7 +28,15 @@
     "today": "Oggi",
     "close": "Chiudi",
     "sizes": "Taglie",
-    "details": "Dettagli prodotto"
+    "details": "Dettagli prodotto",
+    "goToShop": "Vai a {shop}",
+    "affiliateBadge": "Link di affiliazione",
+    "affiliateBadgeTooltip": "Potremmo guadagnare una commissione sugli acquisti effettuati tramite questo link, senza costi aggiuntivi per te.",
+    "priceHistoryTitle": "Storico dei prezzi",
+    "backToDeals": "Torna a tutte le offerte",
+    "ninetyDayLow": "Prezzo più basso degli ultimi 90 giorni su DealRadar.",
+    "notLowestNote": "Minimo a 90 giorni: {price}.",
+    "verifiedAt": "Verificato alle {time} CET."
   },
   "alert": {
     "button": "Ricevi avviso sul prezzo migliore",
@@ -89,6 +97,78 @@
     "brands": "Marche"
   },
   "footer": {
-    "affiliateDisclosure": "DealRadar può guadagnare una commissione quando acquisti tramite i link di questo sito, senza costi aggiuntivi per te."
+    "affiliateDisclosure": "DealRadar può guadagnare una commissione quando acquisti tramite i link di questo sito, senza costi aggiuntivi per te.",
+    "imprint": "Note legali",
+    "privacy": "Informativa sulla privacy",
+    "terms": "Termini di servizio",
+    "cookieSettings": "Impostazioni dei cookie"
+  },
+  "consent": {
+    "title": "Teniamo alla tua privacy",
+    "description": "Utilizziamo cookie essenziali per il funzionamento di DealRadar (lingua e posizione). Con il tuo consenso utilizziamo anche cookie analitici per comprendere l'utilizzo e migliorare il sito. Puoi accettare o rifiutare i cookie non essenziali e modificare la tua scelta in qualsiasi momento tramite “Impostazioni dei cookie”.",
+    "acceptAll": "Accetta tutti",
+    "rejectAll": "Rifiuta tutti",
+    "manage": "Gestisci le preferenze",
+    "save": "Salva le preferenze",
+    "prefTitle": "Gestisci le preferenze dei cookie",
+    "prefDescription": "I cookie essenziali sono sempre attivi. Scegli se consentire i cookie analitici.",
+    "necessaryTitle": "Cookie strettamente necessari",
+    "necessaryDescription": "Necessari per le funzionalità di base come lingua e posizione. Sempre attivi.",
+    "analyticsTitle": "Cookie analitici",
+    "analyticsDescription": "Ci aiutano a misurare l'utilizzo in forma anonima per migliorare il sito. Disattivati finché non li consenti.",
+    "closeLabel": "Chiudi"
+  },
+  "imprint": {
+    "title": "Note legali (Impressum)",
+    "infoLine": "Informazioni ai sensi del § 5 TMG / della Direttiva europea sul commercio elettronico:",
+    "representedByLabel": "Rappresentata da",
+    "representedBy": "Consiglio di amministrazione",
+    "contactLabel": "Contatto",
+    "vatLabel": "Partita IVA",
+    "disputeTitle": "Risoluzione delle controversie online",
+    "disputeBody": "La Commissione europea mette a disposizione una piattaforma per la risoluzione delle controversie online (ODR): <link>https://ec.europa.eu/consumers/odr</link>. Non siamo né obbligati né disposti a partecipare a procedure di risoluzione delle controversie dinanzi a un organismo di conciliazione per i consumatori."
+  },
+  "privacy": {
+    "title": "Informativa sulla privacy",
+    "intro": "DealRadar rispetta la tua privacy e tratta i dati personali in conformità con il Regolamento generale sulla protezione dei dati dell'UE (GDPR, UE 2016/679). La presente informativa illustra quali dati trattiamo, per quali finalità e quali diritti ti spettano.",
+    "s1Title": "1. Titolare del trattamento",
+    "s1Body": "Il titolare del trattamento dei dati su questo sito web è il gestore indicato nelle nostre Note legali. Per qualsiasi richiesta in materia di protezione dei dati, contattaci all'indirizzo email ivi riportato.",
+    "s2Title": "2. Dati che trattiamo",
+    "s2Body": "Iscrizioni agli avvisi sui prezzi: il tuo indirizzo email e il prodotto di interesse, utilizzati esclusivamente per inviare notifiche di calo di prezzo. Posizione approssimativa: il tuo Paese viene stimato dalle intestazioni di rete (e, solo con il tuo consenso, dalla posizione del browser) per mostrarti offerte locali; le coordinate precise vengono trattate in modo transitorio e non vengono mai memorizzate. Preferenze sui cookie: la tua scelta di consenso viene memorizzata per rispettarla nelle visite future.",
+    "s3Title": "3. Responsabili del trattamento terzi",
+    "s3Body": "Ci avvaliamo dei seguenti responsabili del trattamento sulla base di accordi sul trattamento dei dati: Supabase (hosting del database), Upstash (caching Redis e limitazione della frequenza), Resend (email transazionali) e le nostre reti di affiliazione (Awin, Kelkoo, Tradedoubler, Strackr), che ricevono un identificatore di tracciamento anonimizzato quando fai clic su un link di offerta in uscita. Il nostro provider edge tratta i dati dei log del server (incluso l'indirizzo IP) per gestire il servizio in modo sicuro (art. 6, par. 1, lett. f) GDPR).",
+    "s4Title": "4. Cookie",
+    "s4Body": "Impostiamo cookie strettamente necessari per la lingua e la posizione, che non richiedono consenso. I cookie analitici sono facoltativi e vengono impostati solo dopo che hai espresso il tuo consenso tramite il banner dei cookie. Puoi revocare il consenso in qualsiasi momento tramite “Impostazioni dei cookie” nel piè di pagina.",
+    "s5Title": "5. I tuoi diritti ai sensi del GDPR",
+    "s5Body": "Hai il diritto di accedere ai tuoi dati personali, di rettificarli, cancellarli (art. 17), limitarne il trattamento e ottenerne la portabilità, nonché di opporti al trattamento o di revocare il consenso in qualsiasi momento senza pregiudicare la liceità del trattamento effettuato in precedenza. Per esercitare tali diritti, contatta l'indirizzo indicato nelle nostre Note legali. Hai inoltre il diritto di proporre reclamo a un'autorità di controllo.",
+    "s6Title": "6. Cancellazione e disiscrizione automatizzate",
+    "s6Body": "Ogni email di avviso sui prezzi contiene un link di disiscrizione con un solo clic, protetto da un token HMAC. Cliccandolo, la tua iscrizione viene eliminata immediatamente e senza ulteriori verifiche, dando attuazione al diritto di revoca del consenso e alla cancellazione. Le iscrizioni vengono inoltre eliminate automaticamente al termine di un periodo di conservazione definito."
+  },
+  "terms": {
+    "title": "Termini di servizio",
+    "s1Title": "1. Natura del servizio",
+    "s1Body": "DealRadar è un indice di comparazione dei prezzi e di segnalazione tramite affiliazione. Non vendiamo prodotti e non siamo parte di alcun acquisto. Aggreghiamo offerte da commercianti terzi e reti di affiliazione e ti rimandiamo al rivenditore.",
+    "s2Title": "2. Contratti di acquisto",
+    "s2Body": "Qualsiasi contratto di acquisto è concluso esclusivamente tra te e il rispettivo commerciante, secondo i termini e le condizioni di tale commerciante. Le domande relative a ordini, pagamenti, consegne, resi e garanzie devono essere rivolte al commerciante.",
+    "s3Title": "3. Accuratezza dei prezzi",
+    "s3Body": "I prezzi e la disponibilità variano dinamicamente e sono forniti da terzi. Il prezzo e la disponibilità mostrati sul sito del commerciante al momento del pagamento fanno fede. DealRadar non è responsabile di eventuali discrepanze tra i prezzi indicati e quelli effettivi.",
+    "s4Title": "4. Link di affiliazione",
+    "s4Body": "I link in uscita su DealRadar sono link di affiliazione. Potremmo guadagnare una commissione di segnalazione sugli acquisti idonei, senza costi aggiuntivi per te. I link di affiliazione sono contrassegnati come tali accanto al pulsante di uscita."
+  },
+  "unsubscribe": {
+    "successTitle": "Disiscrizione effettuata con successo",
+    "successBody": "Non riceverai più avvisi di calo di prezzo per questa offerta.",
+    "errorTitle": "Link di disiscrizione non valido o scaduto",
+    "errorBody": "Non è stato possibile verificare il token di sicurezza. Il link potrebbe essere incompleto o scaduto."
+  },
+  "error": {
+    "title": "Qualcosa è andato storto",
+    "body": "Impossibile caricare questa pagina. Riprova.",
+    "retry": "Riprova"
+  },
+  "notFound": {
+    "title": "Pagina non trovata",
+    "body": "La pagina che cerchi non esiste o è stata spostata.",
+    "backHome": "Torna alle offerte"
   }
 }

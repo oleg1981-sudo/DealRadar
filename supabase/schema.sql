@@ -154,3 +154,117 @@ returns void language sql as $$
   where d.product_id = sub.product_id;
 $$;
 
+-- ═══════════════════════════════════════════════════════════════════════════
+-- Remediation migration (2026-06-28) — idempotent; safe to re-run.
+-- Closes audit P0/P1/P2: slug integrity, transactions integrity, daily price
+-- snapshot, and automated price_alerts retention. See docs/remediation_plan/.
+-- ═══════════════════════════════════════════════════════════════════════════
+
+-- [R-RTE-2 / GAP-1] Guarantee every deal has a routable slug.
+-- 1) Backstop slug generator mirroring src/lib/utils/slug.ts + deals.repo toRow()
+--    (slug = slugify(product_name) || '-' || sanitized(product_id)). Writers
+--    (app toRow, ingest-awin.cjs) set slug explicitly; this only catches rows
+--    that arrive without one, so a NULL slug (→ 404 deal page) can never persist.
+create or replace function public.deal_slug(p_name text, p_product_id text)
+returns text language sql immutable as $$
+  select trim(both '-' from
+           regexp_replace(
+             regexp_replace(lower(coalesce(p_name, '')), '[^a-z0-9]+', '-', 'g'),
+             '-+', '-', 'g'))
+         || '-' ||
+         regexp_replace(lower(coalesce(p_product_id, '')), '[^a-z0-9]+', '-', 'g');
+$$;
+
+create or replace function public.deals_set_slug()
+returns trigger language plpgsql as $$
+begin
+  if NEW.slug is null or NEW.slug = '' then
+    NEW.slug := public.deal_slug(NEW.product_name, NEW.product_id);
+  end if;
+  return NEW;
+end;
+$$;
+
+drop trigger if exists trigger_deals_set_slug on public.deals;
+create trigger trigger_deals_set_slug
+  before insert or update on public.deals
+  for each row execute function public.deals_set_slug();
+
+-- 2) Backfill any pre-existing NULL/empty slugs, then enforce NOT NULL.
+update public.deals
+   set slug = public.deal_slug(product_name, product_id)
+ where slug is null or slug = '';
+alter table public.deals alter column slug set not null;
+
+-- [R-MAIL-4 / R-LOC-3] Remember the subscriber's locale so price-drop emails
+-- and the unsubscribe page render in their language.
+alter table public.price_alerts add column if not exists locale text;
+
+-- [R-MON-4 / S1-transactions-table] Bring transactions to integrity spec.
+alter table public.transactions add column if not exists subid3      text;
+alter table public.transactions add column if not exists raw_payload jsonb;
+alter table public.transactions add column if not exists received_at  timestamptz not null default now();
+
+do $$ begin
+  if not exists (select 1 from pg_constraint where conname = 'transactions_product_id_fkey') then
+    alter table public.transactions
+      add constraint transactions_product_id_fkey
+      foreign key (product_id) references public.deals(product_id) on delete set null;
+  end if;
+  if not exists (select 1 from pg_constraint where conname = 'transactions_commission_chk') then
+    alter table public.transactions
+      add constraint transactions_commission_chk check (commission_earned >= 0);
+  end if;
+  if not exists (select 1 from pg_constraint where conname = 'transactions_status_chk') then
+    alter table public.transactions
+      add constraint transactions_status_chk
+      check (status in ('pending','approved','declined','paid'));
+  end if;
+end $$;
+
+-- [R-ING-5 / S1-trigger-fn] Record a snapshot on price change OR once per day,
+-- NULL-safe (IS DISTINCT FROM), fired only when sale_price actually changes.
+create or replace function public.record_price_history()
+returns trigger language plpgsql as $$
+begin
+  if (TG_OP = 'INSERT')
+     or (OLD.sale_price is distinct from NEW.sale_price)
+     or not exists (
+       select 1 from public.price_history
+        where product_id = NEW.product_id
+          and recorded_at::date = current_date)
+  then
+    insert into public.price_history (product_id, sale_price, original_price, recorded_at)
+    values (NEW.product_id, NEW.sale_price, NEW.original_price, now());
+  end if;
+  return NEW;
+end;
+$$;
+
+drop trigger if exists trigger_record_price_history on public.deals;
+create trigger trigger_record_price_history
+  after insert or update of sale_price on public.deals
+  for each row execute function public.record_price_history();
+
+-- [R-MAIL-5 / NFR-PRIV-1] Automated GDPR retention for price_alerts.
+-- Deletes subscriptions past the retention window, and notified rows past a
+-- shorter window. Called by the scheduled retention workflow (or pg_cron).
+create or replace function public.purge_stale_price_alerts(
+  retention_days int default 365,
+  notified_days  int default 30)
+returns integer language plpgsql as $$
+declare deleted integer;
+begin
+  delete from public.price_alerts
+   where created_at < now() - make_interval(days => retention_days)
+      or (notified = true and notified_at < now() - make_interval(days => notified_days));
+  get diagnostics deleted = row_count;
+  return deleted;
+end;
+$$;
+-- Optional in-DB schedule (requires pg_cron):
+-- select cron.schedule('purge-stale-alerts', '0 5 * * *',
+--   $$select public.purge_stale_price_alerts(365, 30)$$);
+
+select 1;
+

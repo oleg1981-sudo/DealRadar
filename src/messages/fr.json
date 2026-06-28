@@ -28,7 +28,15 @@
     "today": "Aujourd'hui",
     "close": "Fermer",
     "sizes": "Tailles",
-    "details": "Détails du produit"
+    "details": "Détails du produit",
+    "goToShop": "Aller sur {shop}",
+    "affiliateBadge": "Lien affilié",
+    "affiliateBadgeTooltip": "Nous pouvons percevoir une commission sur les achats effectués via ce lien, sans coût supplémentaire pour vous.",
+    "priceHistoryTitle": "Historique des prix",
+    "backToDeals": "Retour à toutes les offres",
+    "ninetyDayLow": "Prix le plus bas sur 90 jours sur DealRadar.",
+    "notLowestNote": "Prix le plus bas sur 90 jours : {price}.",
+    "verifiedAt": "Vérifié à {time} CET."
   },
   "alert": {
     "button": "Recevoir une alerte de prix",
@@ -89,6 +97,78 @@
     "brands": "Marques"
   },
   "footer": {
-    "affiliateDisclosure": "DealRadar peut percevoir une commission lorsque vous achetez via les liens de ce site, sans coût supplémentaire pour vous."
+    "affiliateDisclosure": "DealRadar peut percevoir une commission lorsque vous achetez via les liens de ce site, sans coût supplémentaire pour vous.",
+    "imprint": "Mentions légales",
+    "privacy": "Politique de confidentialité",
+    "terms": "Conditions d'utilisation",
+    "cookieSettings": "Paramètres des cookies"
+  },
+  "consent": {
+    "title": "Nous respectons votre vie privée",
+    "description": "Nous utilisons des cookies essentiels pour assurer le fonctionnement de DealRadar (langue et localisation). Avec votre consentement, nous utilisons également des cookies analytiques afin de comprendre l'utilisation du site et de l'améliorer. Vous pouvez accepter ou refuser les cookies non essentiels et modifier votre choix à tout moment via « Paramètres des cookies ».",
+    "acceptAll": "Tout accepter",
+    "rejectAll": "Tout refuser",
+    "manage": "Gérer les préférences",
+    "save": "Enregistrer les préférences",
+    "prefTitle": "Gérer les préférences en matière de cookies",
+    "prefDescription": "Les cookies essentiels sont toujours actifs. Choisissez d'autoriser ou non les cookies analytiques.",
+    "necessaryTitle": "Cookies strictement nécessaires",
+    "necessaryDescription": "Nécessaires aux fonctionnalités de base telles que la langue et la localisation. Toujours actifs.",
+    "analyticsTitle": "Cookies analytiques",
+    "analyticsDescription": "Nous aident à mesurer l'utilisation de manière anonyme afin d'améliorer le site. Désactivés jusqu'à ce que vous les autorisiez.",
+    "closeLabel": "Fermer"
+  },
+  "imprint": {
+    "title": "Mentions légales (Impressum)",
+    "infoLine": "Informations conformément au § 5 TMG / à la directive européenne sur le commerce électronique :",
+    "representedByLabel": "Représenté par",
+    "representedBy": "Le directoire",
+    "contactLabel": "Contact",
+    "vatLabel": "Numéro de TVA",
+    "disputeTitle": "Règlement en ligne des litiges",
+    "disputeBody": "La Commission européenne met à disposition une plateforme de règlement en ligne des litiges (RLL) : <link>https://ec.europa.eu/consumers/odr</link>. Nous ne sommes ni tenus ni disposés à participer à une procédure de règlement des litiges devant un organe de médiation des consommateurs."
+  },
+  "privacy": {
+    "title": "Politique de confidentialité",
+    "intro": "DealRadar respecte votre vie privée et traite les données à caractère personnel conformément au Règlement général sur la protection des données de l'UE (GDPR, UE 2016/679). La présente politique explique quelles données nous traitons, pourquoi, et quels sont les droits dont vous disposez.",
+    "s1Title": "1. Responsable du traitement",
+    "s1Body": "Le responsable du traitement des données sur ce site web est l'exploitant mentionné dans nos mentions légales. Contactez-nous à l'adresse électronique qui y figure pour toute demande relative à la protection des données.",
+    "s2Title": "2. Données que nous traitons",
+    "s2Body": "Abonnements aux alertes de prix : votre adresse électronique et le produit ciblé, utilisés uniquement pour envoyer des notifications de baisse de prix. Localisation approximative : votre pays est estimé à partir des en-têtes réseau (et, uniquement avec votre consentement, de la localisation de votre navigateur) afin d'afficher les offres locales ; les coordonnées précises sont traitées de manière transitoire et ne sont jamais conservées. Préférences en matière de cookies : votre choix de consentement est conservé afin de le respecter lors de vos visites ultérieures.",
+    "s3Title": "3. Sous-traitants tiers",
+    "s3Body": "Nous faisons appel aux sous-traitants suivants dans le cadre d'accords de traitement des données : Supabase (hébergement de la base de données), Upstash (mise en cache Redis et limitation du débit), Resend (courriels transactionnels) et nos réseaux d'affiliation (Awin, Kelkoo, Tradedoubler, Strackr), qui reçoivent un identifiant de suivi anonymisé lorsque vous cliquez sur un lien d'offre sortant. Notre hébergeur edge traite les données des journaux serveur (y compris l'adresse IP) afin d'assurer le fonctionnement sécurisé du service (art. 6, paragraphe 1, point f), du GDPR).",
+    "s4Title": "4. Cookies",
+    "s4Body": "Nous déposons des cookies strictement nécessaires pour la langue et la localisation, qui ne requièrent aucun consentement. Les cookies analytiques sont facultatifs et ne sont déposés qu'après que vous y avez consenti via la bannière de cookies. Vous pouvez retirer votre consentement à tout moment via « Paramètres des cookies » dans le pied de page.",
+    "s5Title": "5. Vos droits au titre du GDPR",
+    "s5Body": "Vous avez le droit d'accéder à vos données à caractère personnel, de les rectifier, de les effacer (art. 17), d'en limiter le traitement et de les transférer, ainsi que de vous opposer au traitement ou de retirer votre consentement à tout moment, sans que cela n'affecte la licéité du traitement effectué auparavant. Pour exercer ces droits, contactez l'adresse indiquée dans nos mentions légales. Vous avez également le droit d'introduire une réclamation auprès d'une autorité de contrôle.",
+    "s6Title": "6. Désabonnement et effacement automatisés",
+    "s6Body": "Chaque courriel d'alerte de prix contient un lien de désabonnement en un clic, sécurisé par un jeton HMAC. En le suivant, votre abonnement est supprimé immédiatement et sans vérification supplémentaire, ce qui satisfait au droit de retirer le consentement et au droit à l'effacement. Les abonnements sont également supprimés automatiquement à l'issue d'une période de conservation définie."
+  },
+  "terms": {
+    "title": "Conditions d'utilisation",
+    "s1Title": "1. Nature du service",
+    "s1Body": "DealRadar est un comparateur de prix et un index de recommandation par affiliation. Nous ne vendons pas de produits et ne sommes partie à aucun achat. Nous agrégeons les offres de marchands tiers et de réseaux d'affiliation et vous redirigeons vers le détaillant.",
+    "s2Title": "2. Contrats d'achat",
+    "s2Body": "Tout contrat d'achat est conclu uniquement entre vous et le marchand concerné, selon les conditions générales de ce dernier. Les questions relatives aux commandes, au paiement, à la livraison, aux retours et aux garanties doivent être adressées au marchand.",
+    "s3Title": "3. Exactitude des prix",
+    "s3Body": "Les prix et la disponibilité évoluent de manière dynamique et sont fournis par des tiers. Le prix et la disponibilité affichés sur le site du marchand au moment du paiement font foi. DealRadar n'est pas responsable des écarts entre les prix indiqués et les prix réels.",
+    "s4Title": "4. Liens d'affiliation",
+    "s4Body": "Les liens sortants sur DealRadar sont des liens d'affiliation. Nous pouvons percevoir une commission de recommandation sur les achats éligibles, sans coût supplémentaire pour vous. Les liens d'affiliation sont signalés comme tels à côté du bouton sortant."
+  },
+  "unsubscribe": {
+    "successTitle": "Désabonnement réussi",
+    "successBody": "Vous ne recevrez plus d'alertes de baisse de prix pour cette offre.",
+    "errorTitle": "Lien de désabonnement invalide ou expiré",
+    "errorBody": "Nous n'avons pas pu vérifier le jeton de sécurité. Le lien est peut-être incomplet ou expiré."
+  },
+  "error": {
+    "title": "Une erreur s'est produite",
+    "body": "Nous n'avons pas pu charger cette page. Veuillez réessayer.",
+    "retry": "Réessayer"
+  },
+  "notFound": {
+    "title": "Page introuvable",
+    "body": "La page que vous recherchez n'existe pas ou a été déplacée.",
+    "backHome": "Retour aux offres"
   }
 }

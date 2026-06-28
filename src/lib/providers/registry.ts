@@ -14,6 +14,7 @@
 import { DummyJsonProvider } from './dummyjson';
 import { KelkooProvider } from './kelkoo';
 import { AwinProvider } from './awin';
+import { StrackrProvider } from './strackr';
 import { TradedoublerProvider } from './tradedoubler';
 import { IdealoMockProvider } from './idealo.mock';
 import { slugify } from '../utils/slug';
@@ -26,9 +27,14 @@ const ALL_PROVIDERS: PriceProvider[] = [
   new DummyJsonProvider(), // priority 1 — free live "real API" test feed (no key/commission)
   new KelkooProvider(),
   new AwinProvider(),
+  new StrackrProvider(),
   new TradedoublerProvider(),
   new IdealoMockProvider(),
 ];
+
+/** source id → priority, for deterministic equal-price tie-breaking in dedup. */
+const PROVIDER_PRIORITY: Map<string, number> = new Map(ALL_PROVIDERS.map((p) => [p.id, p.priority]));
+const priorityOf = (source: string): number => PROVIDER_PRIORITY.get(source) ?? Number.MAX_SAFE_INTEGER;
 
 // `dummyjson` is a local TEST feed: it's OPT-IN ONLY and never runs in
 // production. Set DEALRADAR_ONLY_PROVIDER=dummyjson (e.g. in .env.local) to pin
@@ -86,17 +92,28 @@ export async function fetchDealsAcrossProviders(query: DealQuery): Promise<Norma
     }
   }
 
-  // Hybrid deduplication
+  return dedupeDeals(rawDeals, limit);
+}
+
+/**
+ * Hybrid deduplication (pure, unit-tested): group by EAN when present, else by
+ * slugified name+shop. Keep the lowest sale price; on an exact tie, keep the
+ * higher-priority (lower number) provider. Sort by discount %, cap at `limit`.
+ */
+export function dedupeDeals(rawDeals: NormalizedDeal[], limit: number): NormalizedDeal[] {
   const deduppedMap = new Map<string, NormalizedDeal>();
   for (const deal of rawDeals) {
     const key = deal.eanCode
       ? `ean:${deal.eanCode}`
       : `name:${slugify(deal.productName)}_${slugify(deal.shopName)}`;
-    
+
     const existing = deduppedMap.get(key);
     if (!existing) {
       deduppedMap.set(key, deal);
     } else if (deal.salePrice < existing.salePrice) {
+      deduppedMap.set(key, deal);
+    } else if (deal.salePrice === existing.salePrice && priorityOf(deal.source) < priorityOf(existing.source)) {
+      // Equal price → keep the higher-priority (lower number) provider deterministically.
       deduppedMap.set(key, deal);
     }
   }

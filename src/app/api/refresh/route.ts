@@ -14,6 +14,7 @@ import { fetchDealsAcrossProviders } from '@/lib/providers/registry';
 import { upsertDeals, updateHistoricalLows } from '@/lib/db/deals.repo';
 import { notifyPriceDrops } from '@/lib/db/alerts.repo';
 import { SUPPORTED_COUNTRIES, CATEGORY_SLUGS, type CategorySlug, type CountryCode } from '@/lib/providers/types';
+import { timingSafeEqualStr } from '@/lib/utils/crypto';
 
 export const runtime = 'nodejs';
 export const maxDuration = 300;
@@ -21,7 +22,7 @@ export const maxDuration = 300;
 export async function POST(req: NextRequest) {
   const secret = process.env.CRON_SECRET;
   const auth = req.headers.get('authorization');
-  if (!secret || auth !== `Bearer ${secret}`) {
+  if (!secret || !auth || !timingSafeEqualStr(auth, `Bearer ${secret}`)) {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   }
 
@@ -33,20 +34,32 @@ export async function POST(req: NextRequest) {
   const summary: Record<string, number> = {};
   let notified = 0;
 
+  // Fan out (country × category) through a bounded worker pool so a full sync
+  // (16 countries × 10 categories = 160 tasks) runs in parallel without
+  // unleashing 160 simultaneous upstream chains. JS is single-threaded, so the
+  // shared cursor/accumulators mutate only at synchronous points — race-free.
+  const tasks: { country: CountryCode; category: CategorySlug }[] = [];
   for (const country of countries) {
-    let count = 0;
-    for (const category of categories) {
+    summary[country] = 0;
+    for (const category of categories) tasks.push({ country, category });
+  }
+  const concurrency = Math.max(1, Math.min(Number(process.env.REFRESH_CONCURRENCY) || 6, tasks.length || 1));
+
+  let cursor = 0;
+  async function worker() {
+    while (cursor < tasks.length) {
+      const { country, category } = tasks[cursor++];
       try {
         const deals = await fetchDealsAcrossProviders({ country, category, limit: 100 });
-        count += await upsertDeals(deals);
+        summary[country] += await upsertDeals(deals);
         // Email anyone whose alert price has now been beaten by these deals.
         notified += await notifyPriceDrops(deals);
       } catch (e) {
         console.error(`[api/refresh] ${country}/${category} failed:`, e);
       }
     }
-    summary[country] = count;
   }
+  await Promise.all(Array.from({ length: concurrency }, () => worker()));
 
   await updateHistoricalLows();
 

@@ -83,6 +83,8 @@ export class TradedoublerProvider implements PriceProvider {
       isSponsored: true,
       source: this.id,
       lastUpdated: new Date().toISOString(),
+      eanCode: p.identifiers?.ean ?? p.fields?.ean ?? null,
+      mpn: p.identifiers?.mpn ?? null,
     };
   }
 }
@@ -92,7 +94,8 @@ interface TdProduct {
   brand?: string;
   previousPrice?: { value?: string | number };
   productImage?: { url?: string };
-  identifiers?: { sku?: string };
+  identifiers?: { sku?: string; ean?: string | null; mpn?: string | null };
+  fields?: { ean?: string | null };
   categories?: { name?: string }[];
   offers?: {
     id?: string;

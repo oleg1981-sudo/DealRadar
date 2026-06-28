@@ -22,13 +22,21 @@
   },
   "deal": {
     "goToDeal": "View at <chip>{shop}</chip>",
+    "goToShop": "Go to {shop}",
     "otherStores": "View in other stores",
     "sponsored": "Sponsored",
+    "affiliateBadge": "Affiliate link",
+    "affiliateBadgeTooltip": "We may earn a commission on purchases via this link, at no extra cost to you.",
     "priceHistory": "Price · last 3 months",
+    "priceHistoryTitle": "Price history",
     "today": "Today",
     "close": "Close",
     "sizes": "Sizes",
-    "details": "Product details"
+    "details": "Product details",
+    "backToDeals": "Back to all deals",
+    "ninetyDayLow": "Lowest price in 90 days on DealRadar.",
+    "notLowestNote": "90-day low: {price}.",
+    "verifiedAt": "Verified at {time} CET."
   },
   "alert": {
     "button": "Receive best price alert",
@@ -82,6 +90,21 @@
     "essentialOnly": "Essential only",
     "acceptAll": "Accept all"
   },
+  "consent": {
+    "title": "We value your privacy",
+    "description": "We use essential cookies to make DealRadar work (language and location). With your consent we also use analytics cookies to understand usage and improve the site. You can accept or reject non-essential cookies, and change your choice anytime via “Cookie settings”.",
+    "acceptAll": "Accept all",
+    "rejectAll": "Reject all",
+    "manage": "Manage preferences",
+    "save": "Save preferences",
+    "prefTitle": "Manage cookie preferences",
+    "prefDescription": "Essential cookies are always active. Choose whether to allow analytics cookies.",
+    "necessaryTitle": "Strictly necessary cookies",
+    "necessaryDescription": "Required for core functionality such as language and location. Always on.",
+    "analyticsTitle": "Analytics cookies",
+    "analyticsDescription": "Help us measure usage anonymously so we can improve the site. Off until you allow them.",
+    "closeLabel": "Close"
+  },
   "nav": {
     "openMenu": "Open menu",
     "closeMenu": "Close menu",
@@ -89,6 +112,63 @@
     "brands": "Brands"
   },
   "footer": {
-    "affiliateDisclosure": "DealRadar may earn a commission when you buy through links on this site — at no extra cost to you."
+    "affiliateDisclosure": "DealRadar may earn a commission when you buy through links on this site — at no extra cost to you.",
+    "imprint": "Imprint",
+    "privacy": "Privacy Policy",
+    "terms": "Terms of Service",
+    "cookieSettings": "Cookie settings"
+  },
+  "imprint": {
+    "title": "Imprint (Impressum)",
+    "infoLine": "Information according to § 5 TMG / European E-Commerce Directive:",
+    "representedByLabel": "Represented by",
+    "representedBy": "Management Board",
+    "contactLabel": "Contact",
+    "vatLabel": "VAT ID",
+    "disputeTitle": "Online dispute resolution",
+    "disputeBody": "The European Commission provides a platform for online dispute resolution (ODR): <link>https://ec.europa.eu/consumers/odr</link>. We are neither obliged nor willing to participate in dispute-resolution proceedings before a consumer arbitration board."
+  },
+  "privacy": {
+    "title": "Privacy Policy",
+    "intro": "DealRadar respects your privacy and processes personal data in accordance with the EU General Data Protection Regulation (GDPR, EU 2016/679). This policy explains what data we process, why, and the rights you have.",
+    "s1Title": "1. Controller",
+    "s1Body": "The controller responsible for data processing on this website is the operator named in our Imprint. Contact us at the email address listed there for any data-protection request.",
+    "s2Title": "2. Data we process",
+    "s2Body": "Price-alert subscriptions: your email address and the target product, used solely to send price-drop notifications. Approximate location: your country is estimated from network headers (and, only with your consent, your browser location) to show local deals; precise coordinates are processed transiently and never stored. Cookie preferences: your consent choice is stored to honour it on future visits.",
+    "s3Title": "3. Third-party processors",
+    "s3Body": "We use the following processors under data-processing agreements: Supabase (database hosting), Upstash (Redis caching and rate limiting), Resend (transactional email), and our affiliate networks (Awin, Kelkoo, Tradedoubler, Strackr) which receive an anonymised tracking identifier when you click an outbound deal link. Our edge host processes server log data (including IP) to operate the service securely (Art. 6(1)(f) GDPR).",
+    "s4Title": "4. Cookies",
+    "s4Body": "We set strictly necessary cookies for language and location, which require no consent. Analytics cookies are optional and set only after you opt in via the cookie banner. You can withdraw consent at any time through “Cookie settings” in the footer.",
+    "s5Title": "5. Your rights under the GDPR",
+    "s5Body": "You have the right to access, rectify, erase (Art. 17), restrict and port your personal data, and to object to or withdraw consent at any time without affecting prior lawful processing. To exercise these rights, contact the address in our Imprint. You may also lodge a complaint with a supervisory authority.",
+    "s6Title": "6. Automated unsubscribe and erasure",
+    "s6Body": "Every price-alert email contains a one-click unsubscribe link secured by an HMAC token. Following it deletes your subscription immediately and without further verification, satisfying the right to withdraw consent and to erasure. Subscriptions are also deleted automatically after a defined retention period."
+  },
+  "terms": {
+    "title": "Terms of Service",
+    "s1Title": "1. Nature of the service",
+    "s1Body": "DealRadar is a price-comparison and affiliate referral index. We do not sell products and are not a party to any purchase. We aggregate offers from third-party merchants and affiliate networks and link you to the retailer.",
+    "s2Title": "2. Purchase contracts",
+    "s2Body": "Any purchase contract is concluded solely between you and the respective merchant, under that merchant's terms and conditions. Questions about orders, payment, delivery, returns and warranties must be directed to the merchant.",
+    "s3Title": "3. Price accuracy",
+    "s3Body": "Prices and availability change dynamically and are provided by third parties. The price and availability shown on the merchant's site at checkout are authoritative. DealRadar is not liable for discrepancies between listed and actual prices.",
+    "s4Title": "4. Affiliate links",
+    "s4Body": "Outbound links on DealRadar are affiliate links. We may earn a referral commission on qualifying purchases at no additional cost to you. Affiliate links are marked as such next to the outbound button."
+  },
+  "unsubscribe": {
+    "successTitle": "Unsubscribed successfully",
+    "successBody": "You will no longer receive price-drop alerts for this deal.",
+    "errorTitle": "Invalid or expired unsubscribe link",
+    "errorBody": "We could not verify the security token. The link may be incomplete or expired."
+  },
+  "error": {
+    "title": "Something went wrong",
+    "body": "We couldn't load this page. Please try again.",
+    "retry": "Try again"
+  },
+  "notFound": {
+    "title": "Page not found",
+    "body": "The page you're looking for doesn't exist or has moved.",
+    "backHome": "Back to deals"
   }
 }

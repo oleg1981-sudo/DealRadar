@@ -28,7 +28,15 @@
     "today": "I dag",
     "close": "Luk",
     "sizes": "Størrelser",
-    "details": "Produktdetaljer"
+    "details": "Produktdetaljer",
+    "goToShop": "Gå til {shop}",
+    "affiliateBadge": "Affiliatelink",
+    "affiliateBadgeTooltip": "Vi kan optjene en kommission på køb via dette link – uden ekstra omkostninger for dig.",
+    "priceHistoryTitle": "Prishistorik",
+    "backToDeals": "Tilbage til alle tilbud",
+    "ninetyDayLow": "Laveste pris i 90 dage på DealRadar.",
+    "notLowestNote": "Laveste pris i 90 dage: {price}.",
+    "verifiedAt": "Verificeret kl. {time} CET."
   },
   "alert": {
     "button": "Få besked om bedste pris",
@@ -89,6 +97,78 @@
     "brands": "Mærker"
   },
   "footer": {
-    "affiliateDisclosure": "DealRadar kan tjene en provision, når du køber via links på dette website — uden ekstra omkostninger for dig."
+    "affiliateDisclosure": "DealRadar kan tjene en provision, når du køber via links på dette website — uden ekstra omkostninger for dig.",
+    "imprint": "Juridiske oplysninger",
+    "privacy": "Privatlivspolitik",
+    "terms": "Servicevilkår",
+    "cookieSettings": "Cookieindstillinger"
+  },
+  "consent": {
+    "title": "Vi værner om dit privatliv",
+    "description": "Vi bruger nødvendige cookies for at få DealRadar til at fungere (sprog og placering). Med dit samtykke bruger vi også analysecookies til at forstå brugen og forbedre siden. Du kan acceptere eller afvise ikke-nødvendige cookies og til enhver tid ændre dit valg via »Cookieindstillinger«.",
+    "acceptAll": "Accepter alle",
+    "rejectAll": "Afvis alle",
+    "manage": "Administrer præferencer",
+    "save": "Gem præferencer",
+    "prefTitle": "Administrer cookiepræferencer",
+    "prefDescription": "Nødvendige cookies er altid aktive. Vælg, om du vil tillade analysecookies.",
+    "necessaryTitle": "Strengt nødvendige cookies",
+    "necessaryDescription": "Påkrævet til grundlæggende funktioner såsom sprog og placering. Altid aktiveret.",
+    "analyticsTitle": "Analysecookies",
+    "analyticsDescription": "Hjælper os med at måle brugen anonymt, så vi kan forbedre siden. Slået fra, indtil du tillader dem.",
+    "closeLabel": "Luk"
+  },
+  "imprint": {
+    "title": "Juridiske oplysninger (Impressum)",
+    "infoLine": "Oplysninger i henhold til § 5 TMG / det europæiske e-handelsdirektiv:",
+    "representedByLabel": "Repræsenteret af",
+    "representedBy": "Direktionen",
+    "contactLabel": "Kontakt",
+    "vatLabel": "Momsnummer",
+    "disputeTitle": "Online tvistbilæggelse",
+    "disputeBody": "Europa-Kommissionen stiller en platform til rådighed for online tvistbilæggelse (OTB): <link>https://ec.europa.eu/consumers/odr</link>. Vi er hverken forpligtede til eller villige til at deltage i tvistbilæggelsesprocedurer ved et forbrugerklagenævn."
+  },
+  "privacy": {
+    "title": "Privatlivspolitik",
+    "intro": "DealRadar respekterer dit privatliv og behandler personoplysninger i overensstemmelse med EU's generelle forordning om databeskyttelse (GDPR, EU 2016/679). Denne politik forklarer, hvilke oplysninger vi behandler, hvorfor, og hvilke rettigheder du har.",
+    "s1Title": "1. Dataansvarlig",
+    "s1Body": "Den dataansvarlige for behandlingen af oplysninger på dette websted er den operatør, der er anført i vores juridiske oplysninger (Impressum). Kontakt os på den e-mailadresse, der er anført dér, ved enhver henvendelse om databeskyttelse.",
+    "s2Title": "2. Oplysninger, vi behandler",
+    "s2Body": "Abonnementer på prisalarmer: din e-mailadresse og det ønskede produkt, som udelukkende anvendes til at sende meddelelser om prisfald. Omtrentlig placering: dit land estimeres ud fra netværksheadere (og, kun med dit samtykke, din browserplacering) for at vise lokale tilbud; præcise koordinater behandles midlertidigt og gemmes aldrig. Cookiepræferencer: dit samtykkevalg gemmes, så vi kan overholde det ved fremtidige besøg.",
+    "s3Title": "3. Tredjepartsdatabehandlere",
+    "s3Body": "Vi anvender følgende databehandlere i henhold til databehandleraftaler: Supabase (databasehosting), Upstash (Redis-caching og hastighedsbegrænsning), Resend (transaktionsmails) samt vores affiliatenetværk (Awin, Kelkoo, Tradedoubler, Strackr), som modtager en anonymiseret sporings-id, når du klikker på et udgående tilbudslink. Vores edge-host behandler serverlogdata (herunder IP) for at drive tjenesten sikkert (art. 6, stk. 1, litra f, i GDPR).",
+    "s4Title": "4. Cookies",
+    "s4Body": "Vi anvender strengt nødvendige cookies til sprog og placering, som ikke kræver samtykke. Analysecookies er valgfrie og placeres først, når du tilvælger dem via cookiebanneret. Du kan til enhver tid trække dit samtykke tilbage via »Cookieindstillinger« i sidefoden.",
+    "s5Title": "5. Dine rettigheder i henhold til GDPR",
+    "s5Body": "Du har ret til indsigt i, berigtigelse og sletning (art. 17) af samt begrænsning og dataportabilitet vedrørende dine personoplysninger og til at gøre indsigelse mod eller til enhver tid trække dit samtykke tilbage, uden at dette berører lovligheden af den behandling, der er sket forinden. For at udøve disse rettigheder kan du kontakte adressen i vores juridiske oplysninger (Impressum). Du kan også indgive en klage til en tilsynsmyndighed.",
+    "s6Title": "6. Automatisk afmelding og sletning",
+    "s6Body": "Hver prisalarm-e-mail indeholder et afmeldingslink med ét klik, der er sikret med et HMAC-token. Når du følger linket, slettes dit abonnement øjeblikkeligt og uden yderligere verificering, hvilket opfylder retten til at trække samtykket tilbage og retten til sletning. Abonnementer slettes desuden automatisk efter en fastsat opbevaringsperiode."
+  },
+  "terms": {
+    "title": "Servicevilkår",
+    "s1Title": "1. Tjenestens karakter",
+    "s1Body": "DealRadar er et prissammenlignings- og affiliate-henvisningsindeks. Vi sælger ikke produkter og er ikke part i noget køb. Vi samler tilbud fra tredjepartsforhandlere og affiliatenetværk og linker dig videre til forhandleren.",
+    "s2Title": "2. Købsaftaler",
+    "s2Body": "Enhver købsaftale indgås udelukkende mellem dig og den pågældende forhandler i henhold til forhandlerens vilkår og betingelser. Spørgsmål om ordrer, betaling, levering, returnering og garantier skal rettes til forhandleren.",
+    "s3Title": "3. Prisnøjagtighed",
+    "s3Body": "Priser og tilgængelighed ændres dynamisk og leveres af tredjeparter. Den pris og tilgængelighed, der vises på forhandlerens websted ved betaling, er gældende. DealRadar er ikke ansvarlig for uoverensstemmelser mellem de anførte og de faktiske priser.",
+    "s4Title": "4. Affiliatelinks",
+    "s4Body": "Udgående links på DealRadar er affiliatelinks. Vi kan optjene en henvisningskommission på kvalificerende køb uden ekstra omkostninger for dig. Affiliatelinks er markeret som sådanne ved siden af knappen til det udgående link."
+  },
+  "unsubscribe": {
+    "successTitle": "Afmelding gennemført",
+    "successBody": "Du modtager ikke længere prisfaldsalarmer for dette tilbud.",
+    "errorTitle": "Ugyldigt eller udløbet afmeldingslink",
+    "errorBody": "Vi kunne ikke verificere sikkerhedstokenet. Linket kan være ufuldstændigt eller udløbet."
+  },
+  "error": {
+    "title": "Noget gik galt",
+    "body": "Vi kunne ikke indlæse denne side. Prøv igen.",
+    "retry": "Prøv igen"
+  },
+  "notFound": {
+    "title": "Siden blev ikke fundet",
+    "body": "Siden, du leder efter, findes ikke eller er blevet flyttet.",
+    "backHome": "Tilbage til tilbuddene"
   }
 }

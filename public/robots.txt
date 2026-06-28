@@ -2,4 +2,17 @@ User-agent: *
 Allow: /
 Disallow: /api/
 
+# Explicitly invite AI / answer-engine crawlers (GEO/AEO thesis)
+User-agent: OAI-SearchBot
+Allow: /
+Disallow: /api/
+
+User-agent: PerplexityBot
+Allow: /
+Disallow: /api/
+
+User-agent: Google-Extended
+Allow: /
+Disallow: /api/
+
 Sitemap: https://dealradar.eu/sitemap.xml

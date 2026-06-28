@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, type ReactNode } from 'react';
+import { type ReactNode } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useTranslations, useLocale } from 'next-intl';
@@ -8,7 +8,7 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { PriceHeatBar } from './PriceHeatBar';
 import { PriceAlertButton } from './PriceAlertButton';
-import { DealDetailModal } from './DealDetailModal';
+import { SponsoredBadge } from './SponsoredBadge';
 import { formatPrice, formatDiscount } from '@/lib/utils/format';
 import { priceWindow } from '@/lib/utils/price-history';
 import { productModel } from '@/lib/utils/product-details';
@@ -23,7 +23,6 @@ import type { NormalizedDeal } from '@/lib/providers/types';
 export function DealCard({ deal, priority = false }: { deal: NormalizedDeal; priority?: boolean }) {
   const t = useTranslations('deal');
   const locale = useLocale();
-  const [open, setOpen] = useState(false);
   const href = decorateAffiliateUrl(deal.shopUrl, deal.source, deal.country, deal.category, deal.productId);
   const pw = priceWindow(deal);
   const dealSlug = deal.slug || slugify(deal.productName);
@@ -87,11 +86,14 @@ export function DealCard({ deal, priority = false }: { deal: NormalizedDeal; pri
           todayLabel={t('today')}
         />
 
+        <div className="mt-2 flex items-center justify-between gap-2">
+          <SponsoredBadge />
+        </div>
         <a
           href={href}
           target="_blank"
           rel="noopener nofollow sponsored"
-          className="mt-2 inline-flex h-9 items-center justify-center gap-1.5 rounded-lg bg-accent text-sm font-medium text-white transition-colors hover:bg-accent-hover"
+          className="mt-1 inline-flex h-9 items-center justify-center gap-1.5 rounded-lg bg-accent text-sm font-medium text-white transition-colors hover:bg-accent-hover"
         >
           {t.rich('goToDeal', {
             shop: displayShopName(deal.shopName),
@@ -108,8 +110,6 @@ export function DealCard({ deal, priority = false }: { deal: NormalizedDeal; pri
           currency={deal.currency}
         />
       </div>
-
-      {open && <DealDetailModal deal={deal} onClose={() => setOpen(false)} />}
     </Card>
   );
 }

@@ -28,7 +28,15 @@
     "today": "Dziś",
     "close": "Zamknij",
     "sizes": "Rozmiary",
-    "details": "Szczegóły produktu"
+    "details": "Szczegóły produktu",
+    "goToShop": "Przejdź do {shop}",
+    "affiliateBadge": "Link afiliacyjny",
+    "affiliateBadgeTooltip": "Możemy otrzymać prowizję od zakupów dokonanych za pośrednictwem tego linku, bez dodatkowych kosztów dla Ciebie.",
+    "priceHistoryTitle": "Historia cen",
+    "backToDeals": "Powrót do wszystkich ofert",
+    "ninetyDayLow": "Najniższa cena w ciągu 90 dni na DealRadar.",
+    "notLowestNote": "Najniższa cena z 90 dni: {price}.",
+    "verifiedAt": "Zweryfikowano o {time} CET."
   },
   "alert": {
     "button": "Otrzymuj alert o najlepszej cenie",
@@ -89,6 +97,78 @@
     "brands": "Marki"
   },
   "footer": {
-    "affiliateDisclosure": "DealRadar może otrzymać prowizję, gdy kupujesz przez linki w tej witrynie — bez dodatkowych kosztów dla Ciebie."
+    "affiliateDisclosure": "DealRadar może otrzymać prowizję, gdy kupujesz przez linki w tej witrynie — bez dodatkowych kosztów dla Ciebie.",
+    "imprint": "Nota prawna",
+    "privacy": "Polityka prywatności",
+    "terms": "Regulamin",
+    "cookieSettings": "Ustawienia plików cookie"
+  },
+  "consent": {
+    "title": "Szanujemy Twoją prywatność",
+    "description": "Używamy niezbędnych plików cookie, aby DealRadar działał prawidłowo (język i lokalizacja). Za Twoją zgodą używamy również analitycznych plików cookie, aby zrozumieć sposób korzystania z witryny i ją ulepszać. Możesz zaakceptować lub odrzucić opcjonalne pliki cookie oraz w dowolnej chwili zmienić swój wybór za pomocą opcji „Ustawienia plików cookie”.",
+    "acceptAll": "Zaakceptuj wszystkie",
+    "rejectAll": "Odrzuć wszystkie",
+    "manage": "Zarządzaj preferencjami",
+    "save": "Zapisz preferencje",
+    "prefTitle": "Zarządzaj preferencjami plików cookie",
+    "prefDescription": "Niezbędne pliki cookie są zawsze aktywne. Zdecyduj, czy zezwolić na analityczne pliki cookie.",
+    "necessaryTitle": "Ściśle niezbędne pliki cookie",
+    "necessaryDescription": "Wymagane dla podstawowych funkcji, takich jak język i lokalizacja. Zawsze włączone.",
+    "analyticsTitle": "Analityczne pliki cookie",
+    "analyticsDescription": "Pomagają nam anonimowo mierzyć sposób korzystania z witryny, abyśmy mogli ją ulepszać. Wyłączone, dopóki nie wyrazisz na nie zgody.",
+    "closeLabel": "Zamknij"
+  },
+  "imprint": {
+    "title": "Nota prawna (Impressum)",
+    "infoLine": "Informacje zgodnie z § 5 TMG / europejską dyrektywą o handlu elektronicznym:",
+    "representedByLabel": "Reprezentowany przez",
+    "representedBy": "Zarząd",
+    "contactLabel": "Kontakt",
+    "vatLabel": "Numer VAT",
+    "disputeTitle": "Internetowe rozstrzyganie sporów",
+    "disputeBody": "Komisja Europejska udostępnia platformę internetowego rozstrzygania sporów (ODR): <link>https://ec.europa.eu/consumers/odr</link>. Nie jesteśmy zobowiązani ani skłonni do udziału w postępowaniach w sprawie rozstrzygania sporów przed polubownym sądem konsumenckim."
+  },
+  "privacy": {
+    "title": "Polityka prywatności",
+    "intro": "DealRadar szanuje Twoją prywatność i przetwarza dane osobowe zgodnie z unijnym Ogólnym rozporządzeniem o ochronie danych (GDPR, UE 2016/679). Niniejsza polityka wyjaśnia, jakie dane przetwarzamy, w jakim celu oraz jakie przysługują Ci prawa.",
+    "s1Title": "1. Administrator danych",
+    "s1Body": "Administratorem odpowiedzialnym za przetwarzanie danych w tej witrynie jest operator wskazany w naszej Nocie prawnej. W sprawie wszelkich żądań dotyczących ochrony danych prosimy o kontakt pod adresem e-mail tam podanym.",
+    "s2Title": "2. Przetwarzane dane",
+    "s2Body": "Subskrypcje alertów cenowych: Twój adres e-mail oraz wybrany produkt, wykorzystywane wyłącznie do wysyłania powiadomień o obniżkach cen. Przybliżona lokalizacja: Twój kraj jest szacowany na podstawie nagłówków sieciowych (a wyłącznie za Twoją zgodą — na podstawie lokalizacji przeglądarki), aby wyświetlać lokalne oferty; dokładne współrzędne są przetwarzane tymczasowo i nigdy nie są przechowywane. Preferencje dotyczące plików cookie: Twój wybór dotyczący zgody jest przechowywany, aby uwzględnić go podczas kolejnych wizyt.",
+    "s3Title": "3. Zewnętrzne podmioty przetwarzające",
+    "s3Body": "Korzystamy z następujących podmiotów przetwarzających na podstawie umów o powierzeniu przetwarzania danych: Supabase (hosting bazy danych), Upstash (buforowanie Redis i ograniczanie liczby żądań), Resend (transakcyjne wiadomości e-mail) oraz naszych sieci afiliacyjnych (Awin, Kelkoo, Tradedoubler, Strackr), które otrzymują zanonimizowany identyfikator śledzenia w momencie kliknięcia wychodzącego linku do oferty. Nasz host brzegowy przetwarza dane dzienników serwera (w tym adres IP) w celu bezpiecznego świadczenia usługi (art. 6 ust. 1 lit. f) GDPR).",
+    "s4Title": "4. Pliki cookie",
+    "s4Body": "Stosujemy ściśle niezbędne pliki cookie dotyczące języka i lokalizacji, które nie wymagają zgody. Analityczne pliki cookie są opcjonalne i ustawiane wyłącznie po wyrażeniu przez Ciebie zgody za pomocą banera dotyczącego plików cookie. Zgodę możesz wycofać w dowolnej chwili za pomocą opcji „Ustawienia plików cookie” w stopce.",
+    "s5Title": "5. Twoje prawa wynikające z GDPR",
+    "s5Body": "Masz prawo dostępu do swoich danych osobowych, ich sprostowania, usunięcia (art. 17), ograniczenia przetwarzania oraz ich przenoszenia, a także prawo do wniesienia sprzeciwu lub wycofania zgody w dowolnej chwili, bez wpływu na zgodność z prawem wcześniejszego przetwarzania. Aby skorzystać z tych praw, skontaktuj się pod adresem wskazanym w naszej Nocie prawnej. Masz również prawo wniesienia skargi do organu nadzorczego.",
+    "s6Title": "6. Automatyczne wypisanie i usunięcie danych",
+    "s6Body": "Każda wiadomość e-mail z alertem cenowym zawiera link do wypisania się jednym kliknięciem, zabezpieczony tokenem HMAC. Kliknięcie go natychmiast i bez dalszej weryfikacji usuwa Twoją subskrypcję, realizując prawo do wycofania zgody oraz do usunięcia danych. Subskrypcje są również usuwane automatycznie po upływie określonego okresu przechowywania."
+  },
+  "terms": {
+    "title": "Regulamin",
+    "s1Title": "1. Charakter usługi",
+    "s1Body": "DealRadar to porównywarka cen oraz katalog poleceń afiliacyjnych. Nie sprzedajemy produktów i nie jesteśmy stroną jakiejkolwiek transakcji zakupu. Agregujemy oferty od zewnętrznych sprzedawców i sieci afiliacyjnych oraz kierujemy Cię do sprzedawcy detalicznego.",
+    "s2Title": "2. Umowy zakupu",
+    "s2Body": "Każda umowa zakupu jest zawierana wyłącznie pomiędzy Tobą a danym sprzedawcą, na warunkach określonych w regulaminie tego sprzedawcy. Pytania dotyczące zamówień, płatności, dostawy, zwrotów i gwarancji należy kierować do sprzedawcy.",
+    "s3Title": "3. Dokładność cen",
+    "s3Body": "Ceny i dostępność zmieniają się dynamicznie i są dostarczane przez podmioty zewnętrzne. Wiążąca jest cena i dostępność wyświetlana w witrynie sprzedawcy podczas finalizacji zakupu. DealRadar nie ponosi odpowiedzialności za rozbieżności pomiędzy cenami podanymi a rzeczywistymi.",
+    "s4Title": "4. Linki afiliacyjne",
+    "s4Body": "Linki wychodzące w serwisie DealRadar są linkami afiliacyjnymi. Możemy otrzymać prowizję od kwalifikujących się zakupów, bez dodatkowych kosztów dla Ciebie. Linki afiliacyjne są odpowiednio oznaczone obok przycisku przekierowującego."
+  },
+  "unsubscribe": {
+    "successTitle": "Pomyślnie wypisano z subskrypcji",
+    "successBody": "Nie będziesz już otrzymywać alertów o obniżkach cen dla tej oferty.",
+    "errorTitle": "Nieprawidłowy lub wygasły link do wypisania się",
+    "errorBody": "Nie udało nam się zweryfikować tokena zabezpieczającego. Link może być niekompletny lub wygasły."
+  },
+  "error": {
+    "title": "Coś poszło nie tak",
+    "body": "Nie udało się załadować tej strony. Spróbuj ponownie.",
+    "retry": "Spróbuj ponownie"
+  },
+  "notFound": {
+    "title": "Nie znaleziono strony",
+    "body": "Strona, której szukasz, nie istnieje lub została przeniesiona.",
+    "backHome": "Powrót do ofert"
   }
 }

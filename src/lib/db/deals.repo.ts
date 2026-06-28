@@ -46,7 +46,7 @@ function fromRow(r: Record<string, unknown>): NormalizedDeal {
     source: r.source as string, lastUpdated: r.last_updated as string,
     slug, eanCode: (r.ean_code as string) ?? null, upcCode: (r.upc_code as string) ?? null,
     mpn: (r.mpn as string) ?? null, modelNumber: (r.model_number as string) ?? null,
-    historicalLowPrice: r.historical_low_price ? Number(r.historical_low_price) : null,
+    historicalLowPrice: r.historical_low_price != null ? Number(r.historical_low_price) : null,
     merchantId: (r.merchant_id as string) ?? null, affiliateSubid: (r.affiliate_subid as string) ?? null,
   };
 }
@@ -81,7 +81,12 @@ export async function queryDeals(filters: DealFilters): Promise<NormalizedDeal[]
 
   let q = supabase().from(TABLE).select('*').eq('country', filters.country);
   // City scoping: prefer city matches but never exclude country-wide deals (city IS NULL).
-  if (filters.city) q = q.or(`city.eq.${filters.city},city.is.null`);
+  // Strip PostgREST or()-grammar metacharacters ( , ( ) " ) to prevent filter
+  // injection from the user-supplied city param while keeping real names intact.
+  if (filters.city) {
+    const city = filters.city.replace(/[(),"]/g, '').trim().slice(0, 100);
+    if (city) q = q.or(`city.eq.${city},city.is.null`);
+  }
   if (filters.category) q = q.eq('category', filters.category);
   if (filters.brand) q = q.eq('brand', filters.brand);
   // Token-AND match: each term must appear in the product name or brand, so
@@ -145,6 +150,48 @@ export async function getDealBySlug(slug: string, country?: CountryCode): Promis
     return null;
   }
   return data ? fromRow(data) : null;
+}
+
+/**
+ * Deals whose row was written/updated since `sinceIso`. Used by the
+ * /api/refresh-alerts pass so feed-ingested (AWIN) deals — which never flow
+ * through the per-query refresh path — still trigger price-drop alerts.
+ */
+export async function getRecentlyUpdatedDeals(sinceIso: string): Promise<NormalizedDeal[]> {
+  if (!supabaseConfigured()) return [];
+  const { data, error } = await supabase()
+    .from(TABLE)
+    .select('*')
+    .gte('last_updated', sinceIso)
+    .order('last_updated', { ascending: false })
+    .limit(5000);
+  if (error) {
+    console.error('[deals.repo] getRecentlyUpdatedDeals failed:', error.message);
+    return [];
+  }
+  return (data ?? []).map(fromRow);
+}
+
+/**
+ * All persisted deal slugs (every partner/country) for the sitemap. Slugs are
+ * globally unique, so one query covers Awin/Kelkoo/Tradedoubler/Strackr alike.
+ * Dev/mock fallback samples the registry so the sitemap is non-empty locally.
+ */
+export async function getAllDealSlugs(limit = 5000): Promise<{ slug: string; lastUpdated: string }[]> {
+  if (!supabaseConfigured()) {
+    const deals = await fetchDealsAcrossProviders({ country: 'DE', limit: 200 });
+    return deals.map((d) => ({ slug: d.slug || slugify(d.productName), lastUpdated: d.lastUpdated }));
+  }
+  const { data, error } = await supabase()
+    .from(TABLE)
+    .select('slug,last_updated')
+    .not('slug', 'is', null)
+    .limit(limit);
+  if (error) {
+    console.error('[deals.repo] getAllDealSlugs failed:', error.message);
+    return [];
+  }
+  return (data ?? []).map((r) => ({ slug: r.slug as string, lastUpdated: r.last_updated as string }));
 }
 
 export async function updateHistoricalLows(): Promise<void> {

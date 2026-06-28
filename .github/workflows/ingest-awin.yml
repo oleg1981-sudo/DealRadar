@@ -50,3 +50,20 @@ jobs:
           else
             node scripts/ingest-awin.cjs --upsert
           fi
+
+      # [GAP-2] Feed-ingested deals bypass /api/refresh, so dispatch price-drop
+      # alerts for the rows just written. Non-fatal if the app URL is unset.
+      - name: Dispatch price-drop alerts for ingested deals
+        if: ${{ github.event.inputs.dry_run != 'true' }}
+        env:
+          APP_URL: ${{ secrets.APP_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          if [ -n "$APP_URL" ] && [ -n "$CRON_SECRET" ]; then
+            curl -fsS -X POST "$APP_URL/api/refresh-alerts" \
+              -H "Authorization: Bearer $CRON_SECRET" \
+              -H "Content-Type: application/json" \
+              -d '{"sinceMinutes":180}' || echo "refresh-alerts call failed (non-fatal)"
+          else
+            echo "APP_URL or CRON_SECRET not set — skipping alert dispatch"
+          fi

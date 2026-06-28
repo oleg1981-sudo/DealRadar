@@ -28,7 +28,15 @@
     "today": "Tänään",
     "close": "Sulje",
     "sizes": "Koot",
-    "details": "Tuotetiedot"
+    "details": "Tuotetiedot",
+    "goToShop": "Siirry {shop}-kauppaan",
+    "affiliateBadge": "Kumppanuuslinkki",
+    "affiliateBadgeTooltip": "Voimme ansaita komission tämän linkin kautta tehdyistä ostoksista ilman lisäkustannuksia sinulle.",
+    "priceHistoryTitle": "Hintahistoria",
+    "backToDeals": "Takaisin kaikkiin tarjouksiin",
+    "ninetyDayLow": "Alin hinta 90 päivään DealRadarissa.",
+    "notLowestNote": "90 päivän alin: {price}.",
+    "verifiedAt": "Tarkistettu klo {time} CET."
   },
   "alert": {
     "button": "Saa ilmoitus parhaasta hinnasta",
@@ -89,6 +97,78 @@
     "brands": "Merkit"
   },
   "footer": {
-    "affiliateDisclosure": "DealRadar voi ansaita komission, kun ostat tämän sivuston linkkien kautta — ilman lisäkustannuksia sinulle."
+    "affiliateDisclosure": "DealRadar voi ansaita komission, kun ostat tämän sivuston linkkien kautta — ilman lisäkustannuksia sinulle.",
+    "imprint": "Oikeudelliset tiedot",
+    "privacy": "Tietosuojaseloste",
+    "terms": "Käyttöehdot",
+    "cookieSettings": "Evästeasetukset"
+  },
+  "consent": {
+    "title": "Arvostamme yksityisyyttäsi",
+    "description": "Käytämme välttämättömiä evästeitä DealRadarin toiminnan varmistamiseksi (kieli ja sijainti). Suostumuksellasi käytämme myös analytiikkaevästeitä ymmärtääksemme käyttöä ja parantaaksemme sivustoa. Voit hyväksyä tai hylätä ei-välttämättömät evästeet ja muuttaa valintaasi milloin tahansa kohdasta ”Evästeasetukset”.",
+    "acceptAll": "Hyväksy kaikki",
+    "rejectAll": "Hylkää kaikki",
+    "manage": "Hallitse asetuksia",
+    "save": "Tallenna asetukset",
+    "prefTitle": "Hallitse evästeasetuksia",
+    "prefDescription": "Välttämättömät evästeet ovat aina käytössä. Valitse, sallitko analytiikkaevästeet.",
+    "necessaryTitle": "Ehdottoman välttämättömät evästeet",
+    "necessaryDescription": "Tarvitaan ydintoimintoihin, kuten kieleen ja sijaintiin. Aina käytössä.",
+    "analyticsTitle": "Analytiikkaevästeet",
+    "analyticsDescription": "Auttavat meitä mittaamaan käyttöä nimettömästi, jotta voimme parantaa sivustoa. Pois käytöstä, kunnes sallit ne.",
+    "closeLabel": "Sulje"
+  },
+  "imprint": {
+    "title": "Oikeudelliset tiedot (Impressum)",
+    "infoLine": "Tiedot TMG:n 5 §:n / EU:n sähköisen kaupankäynnin direktiivin mukaisesti:",
+    "representedByLabel": "Edustaja",
+    "representedBy": "Hallitus",
+    "contactLabel": "Yhteystiedot",
+    "vatLabel": "ALV-tunnus",
+    "disputeTitle": "Verkkovälitteinen riidanratkaisu",
+    "disputeBody": "Euroopan komissio tarjoaa verkkovälitteisen riidanratkaisun (ODR) alustan: <link>https://ec.europa.eu/consumers/odr</link>. Emme ole velvollisia emmekä halukkaita osallistumaan kuluttajariitalautakunnan riidanratkaisumenettelyihin."
+  },
+  "privacy": {
+    "title": "Tietosuojaseloste",
+    "intro": "DealRadar kunnioittaa yksityisyyttäsi ja käsittelee henkilötietoja EU:n yleisen tietosuoja-asetuksen (GDPR, EU 2016/679) mukaisesti. Tässä selosteessa kerrotaan, mitä tietoja käsittelemme, miksi ja mitä oikeuksia sinulla on.",
+    "s1Title": "1. Rekisterinpitäjä",
+    "s1Body": "Tämän verkkosivuston tietojen käsittelystä vastaava rekisterinpitäjä on oikeudellisissa tiedoissamme (Impressum) mainittu ylläpitäjä. Ota meihin yhteyttä siellä mainittuun sähköpostiosoitteeseen kaikissa tietosuojaa koskevissa pyynnöissä.",
+    "s2Title": "2. Käsittelemämme tiedot",
+    "s2Body": "Hintahälytysten tilaukset: sähköpostiosoitettasi ja kohdetuotetta käytetään ainoastaan hinnanlaskuilmoitusten lähettämiseen. Likimääräinen sijainti: maasi arvioidaan verkko-otsakkeista (ja vain suostumuksellasi selaimesi sijainnista) paikallisten tarjousten näyttämiseksi; tarkat koordinaatit käsitellään väliaikaisesti eikä niitä koskaan tallenneta. Evästeasetukset: suostumusvalintasi tallennetaan, jotta sitä voidaan noudattaa tulevilla käynneillä.",
+    "s3Title": "3. Kolmannen osapuolen käsittelijät",
+    "s3Body": "Käytämme seuraavia käsittelijöitä tietojenkäsittelysopimusten nojalla: Supabase (tietokannan isännöinti), Upstash (Redis-välimuisti ja pyyntörajoitus), Resend (transaktiosähköpostit) sekä kumppaniverkostomme (Awin, Kelkoo, Tradedoubler, Strackr), jotka saavat anonymisoidun seurantatunnisteen, kun napsautat ulospäin vievää tarjouslinkkiä. Edge-palveluntarjoajamme käsittelee palvelimen lokitietoja (mukaan lukien IP-osoite) palvelun turvallisen toiminnan varmistamiseksi (GDPR 6 artiklan 1 kohdan f alakohta).",
+    "s4Title": "4. Evästeet",
+    "s4Body": "Asetamme ehdottoman välttämättömiä evästeitä kieltä ja sijaintia varten, eivätkä ne edellytä suostumusta. Analytiikkaevästeet ovat valinnaisia, ja ne asetetaan vasta, kun annat suostumuksesi evästebannerin kautta. Voit peruuttaa suostumuksesi milloin tahansa alatunnisteen kohdasta ”Evästeasetukset”.",
+    "s5Title": "5. Oikeutesi GDPR:n mukaan",
+    "s5Body": "Sinulla on oikeus saada pääsy henkilötietoihisi, oikaista ja poistaa ne (17 artikla), rajoittaa ja siirtää niitä sekä vastustaa käsittelyä tai peruuttaa suostumuksesi milloin tahansa vaikuttamatta aiemman käsittelyn lainmukaisuuteen. Käyttääksesi näitä oikeuksia ota yhteyttä oikeudellisissa tiedoissamme (Impressum) mainittuun osoitteeseen. Voit myös tehdä valituksen valvontaviranomaiselle.",
+    "s6Title": "6. Automaattinen tilauksen peruutus ja poisto",
+    "s6Body": "Jokainen hintahälytyssähköposti sisältää yhdellä napsautuksella toimivan tilauksen peruutuslinkin, joka on suojattu HMAC-tunnisteella. Sen seuraaminen poistaa tilauksesi välittömästi ilman lisävarmennusta, mikä täyttää oikeuden peruuttaa suostumus ja oikeuden tietojen poistamiseen. Tilaukset poistetaan myös automaattisesti määritellyn säilytysajan jälkeen."
+  },
+  "terms": {
+    "title": "Käyttöehdot",
+    "s1Title": "1. Palvelun luonne",
+    "s1Body": "DealRadar on hintavertailu- ja kumppanuusviittausindeksi. Emme myy tuotteita emmekä ole osapuolena missään ostotapahtumassa. Kokoamme tarjouksia kolmannen osapuolen kauppiailta ja kumppaniverkostoilta ja ohjaamme sinut jälleenmyyjälle.",
+    "s2Title": "2. Ostosopimukset",
+    "s2Body": "Ostosopimus syntyy yksinomaan sinun ja kyseisen kauppiaan välillä kyseisen kauppiaan ehtojen mukaisesti. Tilauksia, maksamista, toimitusta, palautuksia ja takuita koskevat kysymykset on osoitettava kauppiaalle.",
+    "s3Title": "3. Hintojen paikkansapitävyys",
+    "s3Body": "Hinnat ja saatavuus muuttuvat dynaamisesti, ja ne ovat kolmansien osapuolten toimittamia. Kauppiaan sivustolla kassalla näkyvä hinta ja saatavuus ovat ratkaisevia. DealRadar ei vastaa ilmoitettujen ja todellisten hintojen välisistä eroista.",
+    "s4Title": "4. Kumppanuuslinkit",
+    "s4Body": "DealRadarin ulospäin vievät linkit ovat kumppanuuslinkkejä. Voimme ansaita viittauskomission ehdot täyttävistä ostoksista ilman lisäkustannuksia sinulle. Kumppanuuslinkit on merkitty sellaisiksi ulospäin vievän painikkeen viereen."
+  },
+  "unsubscribe": {
+    "successTitle": "Tilaus peruutettu onnistuneesti",
+    "successBody": "Et saa enää hinnanlaskuhälytyksiä tästä tarjouksesta.",
+    "errorTitle": "Virheellinen tai vanhentunut peruutuslinkki",
+    "errorBody": "Emme voineet vahvistaa suojaustunnistetta. Linkki saattaa olla puutteellinen tai vanhentunut."
+  },
+  "error": {
+    "title": "Jokin meni vikaan",
+    "body": "Sivun lataaminen epäonnistui. Yritä uudelleen.",
+    "retry": "Yritä uudelleen"
+  },
+  "notFound": {
+    "title": "Sivua ei löytynyt",
+    "body": "Etsimääsi sivua ei ole olemassa tai se on siirretty.",
+    "backHome": "Takaisin tarjouksiin"
   }
 }
