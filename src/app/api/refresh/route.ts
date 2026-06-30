@@ -10,7 +10,7 @@
  * Body (optional): { "countries": ["DE","FR"], "categories": ["electronics"] }
  */
 import { NextRequest, NextResponse } from 'next/server';
-import { fetchDealsAcrossProviders } from '@/lib/providers/registry';
+import { fetchDealsAcrossProviders, initProviders } from '@/lib/providers/registry';
 import { upsertDeals } from '@/lib/db/deals.repo';
 import { notifyPriceDrops } from '@/lib/db/alerts.repo';
 import { SUPPORTED_COUNTRIES, CATEGORY_SLUGS, type CategorySlug, type CountryCode } from '@/lib/providers/types';
@@ -32,15 +32,27 @@ export async function POST(req: NextRequest) {
   const categories = body.categories ?? [...CATEGORY_SLUGS];
   const summary: Record<string, number> = {};
   let notified = 0;
+  let skippedMock = 0;
+
+  // Only REAL provider data may reach the system-of-record. Providers without
+  // credentials fall back to mock; persisting that would pollute the deals table
+  // (and fire alert emails on fake prices). AWIN is excluded here too — it's
+  // feed-ingested out of band (scripts/ingest-awin.cjs), so it returns [] on the
+  // query path. When a provider gets real credentials, its isMock flips false
+  // and it starts persisting automatically.
+  const health = await initProviders();
+  const isReal = (source: string) => health.get(source)?.isMock === false;
 
   for (const country of countries) {
     let count = 0;
     for (const category of categories) {
       try {
         const deals = await fetchDealsAcrossProviders({ country, category, limit: 100 });
-        count += await upsertDeals(deals);
+        const realDeals = deals.filter((d) => isReal(d.source));
+        skippedMock += deals.length - realDeals.length;
+        count += await upsertDeals(realDeals);
         // Email anyone whose alert price has now been beaten by these deals.
-        notified += await notifyPriceDrops(deals);
+        notified += await notifyPriceDrops(realDeals);
       } catch (e) {
         console.error(`[api/refresh] ${country}/${category} failed:`, e);
       }
@@ -48,5 +60,5 @@ export async function POST(req: NextRequest) {
     summary[country] = count;
   }
 
-  return NextResponse.json({ ok: true, upserted: summary, alertsSent: notified, at: new Date().toISOString() });
+  return NextResponse.json({ ok: true, upserted: summary, skippedMock, alertsSent: notified, at: new Date().toISOString() });
 }
