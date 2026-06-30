@@ -19,6 +19,7 @@ create table if not exists public.deals (
   gallery           text[],                     -- extra real product images (detail modal)
   description       text,                       -- real product description (detail modal)
   merchant_url      text,                       -- direct shop URL (live price/stock verifier)
+  hidden            boolean       not null default false,  -- verifier hides sold-out / undiscounted (not deleted, so re-ingest can't resurrect)
   country           char(2)       not null,
   city              text,                       -- nullable: country-wide deals
   is_sponsored      boolean       not null default true,
@@ -30,6 +31,7 @@ create table if not exists public.deals (
 alter table public.deals add column if not exists gallery       text[];
 alter table public.deals add column if not exists description    text;
 alter table public.deals add column if not exists merchant_url   text;
+alter table public.deals add column if not exists hidden         boolean not null default false;
 
 -- Hot path: country (+ city) scoped, sorted by discount.
 create index if not exists deals_country_discount_idx
@@ -55,6 +57,7 @@ language sql stable as $$
   from public.deals d
   where d.country = p_country
     and d.brand is not null
+    and d.hidden = false
     and (p_category is null or d.category = p_category)
   order by d.brand;
 $$;

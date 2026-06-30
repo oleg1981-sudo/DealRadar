@@ -71,7 +71,7 @@ export async function queryDeals(filters: DealFilters): Promise<NormalizedDeal[]
     return sortDeals(deals, filters.sort).slice(filters.offset ?? 0, (filters.offset ?? 0) + (filters.limit ?? 24));
   }
 
-  let q = supabase().from(TABLE).select('*').eq('country', filters.country);
+  let q = supabase().from(TABLE).select('*').eq('country', filters.country).eq('hidden', false);
   // City scoping: prefer city matches but never exclude country-wide deals (city IS NULL).
   if (filters.city) q = q.or(`city.eq.${filters.city},city.is.null`);
   if (filters.category) q = q.eq('category', filters.category);

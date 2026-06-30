@@ -2,8 +2,9 @@
 //
 // AWIN's feed lags the merchant's live store (it can show a price/stock that's
 // already wrong). This job checks the REAL shop for each deal and corrects it:
-//   - out of stock                  -> remove the deal (no dead clicks)
-//   - no live discount any more      -> remove the deal
+//   - out of stock                  -> HIDE the deal (kept in DB so the next feed
+//   - no live discount any more      -> HIDE the deal   ingest can't resurrect it;
+//                                       un-hidden automatically if back in stock)
 //   - price / compare-at changed     -> update price + recompute discount
 //
 // AWIN merchants are Shopify, which exposes product data at `…/products/<handle>`:
@@ -151,24 +152,26 @@ async function liveState(deal) {
   return { error: js.error || `http-${js.status}` };
 }
 
-/** Decide the action. `available === null` means stock is unknown (don't remove for it). */
+/**
+ * Desired state from live data. `available === null` means stock is unknown
+ * (assume in stock — only .json was reachable). Sold-out or no-longer-discounted
+ * → HIDE (keep the row so the ingest can't resurrect it); otherwise SHOW with the
+ * live price.
+ */
 function decide(deal, live) {
-  if (live.available === false) return { action: 'remove', reason: 'out-of-stock' };
+  if (live.available === false) return { hide: true, reason: 'out-of-stock' };
   const newSale = round2(live.price);
-  if (!(live.compareAt && live.compareAt > newSale)) return { action: 'remove', reason: 'no-discount' };
+  if (!(live.compareAt && live.compareAt > newSale)) return { hide: true, reason: 'no-discount' };
   const newOrig = round2(live.compareAt);
   const newDisc = Math.round(((newOrig - newSale) / newOrig) * 100);
-  if (newDisc <= 0) return { action: 'remove', reason: 'no-discount' };
-  if (newSale !== deal.sale_price || newOrig !== deal.original_price || newDisc !== deal.discount_percent) {
-    return { action: 'update', sale: newSale, orig: newOrig, disc: newDisc };
-  }
-  return { action: 'ok' };
+  if (newDisc <= 0) return { hide: true, reason: 'no-discount' };
+  return { hide: false, sale: newSale, orig: newOrig, disc: newDisc };
 }
 
 // ── Supabase reads/writes ──────────────────────────────────────────────────────
 async function fetchDeals() {
   const out = [];
-  const cols = 'product_id,merchant_url,sale_price,original_price,discount_percent,currency';
+  const cols = 'product_id,merchant_url,sale_price,original_price,discount_percent,currency,hidden';
   for (let from = 0; ; from += 1000) {
     const r = await fetch(`${BASE}/rest/v1/deals?source=eq.awin&merchant_url=not.is.null&select=${cols}`,
       { headers: { ...SUPA, Range: `${from}-${from + 999}` } });
@@ -180,22 +183,13 @@ async function fetchDeals() {
   return LIMIT ? out.slice(0, LIMIT) : out;
 }
 
-async function applyUpdate(d) {
-  const r = await fetch(`${BASE}/rest/v1/deals?product_id=eq.${encodeURIComponent(d.product_id)}`, {
+async function applyPatch(productId, fields) {
+  const r = await fetch(`${BASE}/rest/v1/deals?product_id=eq.${encodeURIComponent(productId)}`, {
     method: 'PATCH',
     headers: { ...SUPA, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
-    body: JSON.stringify({ sale_price: d.sale, original_price: d.orig, discount_percent: d.disc, last_updated: new Date().toISOString() }),
+    body: JSON.stringify({ ...fields, last_updated: new Date().toISOString() }),
   });
-  if (!r.ok) throw new Error(`update ${d.product_id}: HTTP ${r.status} ${await r.text()}`);
-}
-
-async function applyRemovals(ids) {
-  for (let i = 0; i < ids.length; i += 80) {
-    const chunk = ids.slice(i, i + 80).map((id) => `"${id}"`).join(',');
-    const r = await fetch(`${BASE}/rest/v1/deals?product_id=in.(${encodeURIComponent(chunk)})`,
-      { method: 'DELETE', headers: { ...SUPA, Prefer: 'return=minimal' } });
-    if (!r.ok) throw new Error(`delete batch: HTTP ${r.status} ${await r.text()}`);
-  }
+  if (!r.ok) throw new Error(`patch ${productId}: HTTP ${r.status} ${await r.text()}`);
 }
 
 // ── main ───────────────────────────────────────────────────────────────────────
@@ -211,8 +205,9 @@ function groupByHost(items) {
   const byHost = groupByHost(deals);
   console.log(`[verify] checking ${deals.length} deals across ${byHost.size} shops (apply=${APPLY}, ${DELAY_MS}ms/host)…`);
 
-  const updates = [], removeIds = [], removeReasons = {}, errKinds = {};
-  let ok = 0, errors = 0, done = 0;
+  const patches = []; const reasons = {}, errKinds = {};
+  let ok = 0, errors = 0, done = 0, hidden = 0, unhidden = 0, priceUpdated = 0;
+  const samples = [];
 
   await Promise.all([...byHost.entries()].map(async ([host, list]) => {
     let consec = 0, i = 0;
@@ -226,10 +221,19 @@ function groupByHost(items) {
         consec = live.blocked ? consec + 1 : 0;
       } else {
         consec = 0;
-        const d = decide(deal, live);
-        if (d.action === 'ok') ok++;
-        else if (d.action === 'update') updates.push({ product_id: deal.product_id, sale: d.sale, orig: d.orig, disc: d.disc, from: deal.sale_price });
-        else { removeIds.push(deal.product_id); removeReasons[d.reason] = (removeReasons[d.reason] || 0) + 1; }
+        const want = decide(deal, live);
+        const isHidden = deal.hidden === true;
+        if (want.hide) {
+          if (!isHidden) { patches.push({ id: deal.product_id, fields: { hidden: true } }); hidden++; reasons[want.reason] = (reasons[want.reason] || 0) + 1; }
+          else ok++; // already hidden
+        } else {
+          const fields = {};
+          const priceChanged = want.sale !== deal.sale_price || want.orig !== deal.original_price || want.disc !== deal.discount_percent;
+          if (priceChanged) { fields.sale_price = want.sale; fields.original_price = want.orig; fields.discount_percent = want.disc; priceUpdated++; if (samples.length < 8) samples.push(`${deal.product_id}: ${deal.sale_price} -> ${want.sale} (-${want.disc}%)`); }
+          if (isHidden) { fields.hidden = false; unhidden++; } // a sold-out deal is back in stock
+          if (Object.keys(fields).length) patches.push({ id: deal.product_id, fields });
+          else ok++;
+        }
       }
       await sleep(DELAY_MS);
       if (consec >= ABANDON_AFTER) { i++; break; } // host is blocking — stop hitting it
@@ -244,18 +248,15 @@ function groupByHost(items) {
 
   console.log(`\n[verify] checked ${done} in ${((Date.now() - t0) / 1000).toFixed(1)}s`);
   console.log(`  unchanged: ${ok}`);
-  console.log(`  price updates: ${updates.length}`);
-  console.log(`  removals: ${removeIds.length} ${JSON.stringify(removeReasons)}`);
+  console.log(`  price updates: ${priceUpdated}`);
+  console.log(`  hidden (sold-out / no discount): ${hidden} ${JSON.stringify(reasons)}`);
+  console.log(`  un-hidden (back in stock): ${unhidden}`);
   console.log(`  errors/skipped: ${errors} ${JSON.stringify(errKinds)}`);
-  if (updates.length) {
-    console.log('  sample updates:');
-    updates.slice(0, 8).forEach((u) => console.log(`    ${u.product_id}: ${u.from} -> ${u.sale} (-${u.disc}%)`));
-  }
+  if (samples.length) { console.log('  sample price updates:'); samples.forEach((s) => console.log(`    ${s}`)); }
 
   if (!APPLY) { console.log('\n[verify] dry-run — no writes. Re-run with --apply to commit.'); return; }
-  for (const u of updates) await applyUpdate(u);
-  await applyRemovals(removeIds);
-  console.log(`\n[verify] applied: ${updates.length} updated, ${removeIds.length} removed.`);
+  for (const p of patches) await applyPatch(p.id, p.fields);
+  console.log(`\n[verify] applied ${patches.length} changes (${priceUpdated} prices, ${hidden} hidden, ${unhidden} un-hidden).`);
 })().catch((e) => { console.error('\n[verify] FAILED:', e.message); process.exit(1); });
 
 // ── tiny .env.local loader ─────────────────────────────────────────────────────
