@@ -32,7 +32,7 @@ export function DealDetailModal({ deal, onClose }: { deal: NormalizedDeal; onClo
   const sizes = productSizes(deal);
   const pw = priceWindow(deal);
   const otherStores = otherStoreOffers(deal);
-  const href = decorateAffiliateUrl(deal.shopUrl, deal.source);
+  const href = decorateAffiliateUrl(deal.shopUrl, deal.source, deal.productId);
 
   // Portal target + body scroll lock + Escape to close.
   useEffect(() => {
@@ -151,7 +151,7 @@ export function DealDetailModal({ deal, onClose }: { deal: NormalizedDeal; onClo
                     {otherStores.map((o) => (
                       <li key={o.shopName}>
                         <a
-                          href={decorateAffiliateUrl(o.url, deal.source)}
+                          href={decorateAffiliateUrl(o.url, deal.source, deal.productId)}
                           target="_blank"
                           rel="noopener nofollow sponsored"
                           className="flex items-center justify-between px-3 py-2 text-sm transition-colors hover:bg-zinc-50"

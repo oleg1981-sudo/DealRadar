@@ -23,7 +23,7 @@ export function DealCard({ deal, priority = false }: { deal: NormalizedDeal; pri
   const t = useTranslations('deal');
   const locale = useLocale();
   const [open, setOpen] = useState(false);
-  const href = decorateAffiliateUrl(deal.shopUrl, deal.source);
+  const href = decorateAffiliateUrl(deal.shopUrl, deal.source, deal.productId);
   const pw = priceWindow(deal);
 
   return (
