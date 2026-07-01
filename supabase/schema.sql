@@ -20,6 +20,7 @@ create table if not exists public.deals (
   description       text,                       -- real product description (detail modal)
   merchant_url      text,                       -- direct shop URL (live price/stock verifier)
   hidden            boolean       not null default false,  -- verifier hides sold-out / undiscounted (not deleted, so re-ingest can't resurrect)
+  homepage_hidden   boolean       not null default false,  -- excluded from the homepage only (e.g. merchant's page shows a different price after JS runs); still visible via category/search
   country           char(2)       not null,
   city              text,                       -- nullable: country-wide deals
   is_sponsored      boolean       not null default true,
@@ -32,6 +33,7 @@ alter table public.deals add column if not exists gallery       text[];
 alter table public.deals add column if not exists description    text;
 alter table public.deals add column if not exists merchant_url   text;
 alter table public.deals add column if not exists hidden         boolean not null default false;
+alter table public.deals add column if not exists homepage_hidden boolean not null default false;
 
 -- Hot path: country (+ city) scoped, sorted by discount.
 create index if not exists deals_country_discount_idx

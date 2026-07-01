@@ -59,6 +59,10 @@ export interface DealFilters extends DealQuery {
   minPrice?: number;
   maxPrice?: number;
   sort?: 'discount' | 'price-asc' | 'price-desc' | 'newest';
+  /** Homepage only: also exclude deals flagged `homepage_hidden` (e.g. a merchant
+   *  page whose displayed price changes after JS runs). Category/search pages
+   *  leave this unset so those deals stay findable there. */
+  excludeHomepageHidden?: boolean;
 }
 
 export async function queryDeals(filters: DealFilters): Promise<NormalizedDeal[]> {
@@ -72,6 +76,7 @@ export async function queryDeals(filters: DealFilters): Promise<NormalizedDeal[]
   }
 
   let q = supabase().from(TABLE).select('*').eq('country', filters.country).eq('hidden', false);
+  if (filters.excludeHomepageHidden) q = q.eq('homepage_hidden', false);
   // City scoping: prefer city matches but never exclude country-wide deals (city IS NULL).
   if (filters.city) q = q.or(`city.eq.${filters.city},city.is.null`);
   if (filters.category) q = q.eq('category', filters.category);

@@ -35,7 +35,7 @@ function diversifyByShop(deals: NormalizedDeal[], limit: number): NormalizedDeal
 /** Hero: top deals in the user's country, mixed across stores (server-rendered). */
 export async function HeroDeals({ country, city }: { country: CountryCode; city: string | null }) {
   const t = await getTranslations('home');
-  const pool = await queryDeals({ country, city: city ?? undefined, limit: HERO_POOL, sort: 'discount' });
+  const pool = await queryDeals({ country, city: city ?? undefined, limit: HERO_POOL, sort: 'discount', excludeHomepageHidden: true });
   const deals = diversifyByShop(pool, HERO_COUNT);
 
   return (
