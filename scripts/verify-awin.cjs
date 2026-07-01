@@ -60,17 +60,7 @@ const round2 = (n) => Math.round(n * 100) / 100;
 const hostOf = (u) => { try { return new URL(u).host; } catch { return '?'; } };
 
 // ── Shopify live lookup ────────────────────────────────────────────────────────
-/** Direct shop URL → origin + "/products/<handle>" (no query/hash), or null. */
-function productBase(merchantUrl) {
-  try {
-    const u = new URL(merchantUrl);
-    const p = u.pathname.replace(/\/+$/, '');
-    if (!/\/products\/[^/]+$/.test(p)) return null;
-    return `${u.origin}${p}`;
-  } catch { return null; }
-}
-
-/** GET a URL, one gentle retry on 429. Returns {status, json} or {status, error}. */
+/** GET a URL, one gentle retry on 429. Returns {status, url, json} or {status, url, error}. */
 async function fetchUrl(url, attempt = 0) {
   let res;
   try { res = await fetch(url, { headers: HEADERS }); }
@@ -80,26 +70,8 @@ async function fetchUrl(url, attempt = 0) {
     await sleep(Number.isFinite(ra) ? Math.min(ra * 1000, 5000) : 2000);
     return fetchUrl(url, attempt + 1);
   }
-  if (!res.ok) return { status: res.status, error: `http-${res.status}` };
-  try { return { status: res.status, json: await res.json() }; } catch { return { status: res.status, error: 'bad-json' }; }
-}
-
-/** Follow redirects (HEAD) to the canonical product URL — feeds often link a
- *  localized handle that 301s to the primary store handle. Returns
- *  origin + "/products/<handle>" or null. */
-async function resolveCanonical(url, hops = 0) {
-  if (hops > 3) return null;
-  let res;
-  try { res = await fetch(url, { method: 'HEAD', headers: HEADERS, redirect: 'manual' }); }
-  catch { return null; }
-  if (res.status >= 300 && res.status < 400) {
-    const loc = res.headers.get('location');
-    return loc ? resolveCanonical(new URL(loc, url).toString(), hops + 1) : null;
-  }
-  if (res.status !== 200) return null;
-  const u = new URL(url); u.search = ''; u.hash = '';
-  const p = u.pathname.replace(/\/+$/, '');
-  return /\/products\/[^/]+$/.test(p) ? `${u.origin}${p}` : null;
+  if (!res.ok) return { status: res.status, url: res.url, error: `http-${res.status}` };
+  try { return { status: res.status, url: res.url, json: await res.json() }; } catch { return { status: res.status, url: res.url, error: 'bad-json' }; }
 }
 
 /** Pick the variant: by the ?variant=<id> in the deal URL, else price-closest. */
@@ -115,41 +87,63 @@ function pickVariant(variants, deal, variantId) {
   return best;
 }
 
+const toState = (obj, v, hasStock) => ({
+  ok: true,
+  available: hasStock ? (v.available ?? obj.available ?? true) : null,
+  price: (v.price ?? 0) / 100,
+  compareAt: v.compare_at_price ? v.compare_at_price / 100 : null,
+});
+
 /**
- * Live state for a deal. Tries .js (price + availability), falls back to .json
- * (price only) when .js is blocked/missing. `available` is null when unknown.
- * Returns {ok, available, price, compareAt} | {error, blocked?}.
+ * Live state for a deal — IN THE DEAL'S CURRENCY. Multi-market Shopify stores
+ * (e.g. kuishi.com) serve GBP on the base path and EUR under the `/de/` market
+ * path; reading the wrong one stores a GBP number as EUR. So we read the
+ * localized market path (`<origin>/<cc>/products/<handle>`) first, and only fall
+ * back to the base path for a German/EUR domain (`*.de` / `de.*`). We never read
+ * a foreign-currency storefront, and we drop a market URL that redirects out of
+ * its market (it may have switched currency).
  */
 async function liveState(deal) {
-  let variantId = null;
-  try { variantId = new URL(deal.merchant_url).searchParams.get('variant'); } catch { /* ignore */ }
-  let base = productBase(deal.merchant_url);
-  if (!base) return { error: 'no-product-url' };
+  let u, variantId = null;
+  try { u = new URL(deal.merchant_url); variantId = u.searchParams.get('variant'); } catch { return { error: 'no-product-url' }; }
+  const m = u.pathname.match(/\/products\/([^/?#]+)/);
+  if (!m) return { error: 'no-product-url' };
+  const handle = m[1];
+  const cc = (deal.country || 'DE').toLowerCase();
+  const CC = cc.toUpperCase();
+  const market = `/${cc}/`;
+  const germanDomain = u.host.endsWith('.de') || u.host.startsWith('de.');
 
-  // 1) direct .js (price + availability)
-  let js = await fetchUrl(`${base}.js`);
-  // 2) 404 → the linked handle is a localized alias; resolve the canonical and retry
-  if (!js.json && (js.status === 404 || js.status === 0)) {
-    const canon = await resolveCanonical(base);
-    if (canon && canon !== base) { base = canon; js = await fetchUrl(`${base}.js`); }
-  }
-  if (js.json) {
-    const v = pickVariant(js.json.variants, deal, variantId);
-    if (!v) return { error: 'no-variant' };
-    return { ok: true, available: v.available ?? js.json.available ?? true, price: (v.price ?? 0) / 100, compareAt: v.compare_at_price ? v.compare_at_price / 100 : null };
-  }
-  // 3) blocked or still missing → .json (price only, no stock)
-  if (js.status === 429 || js.status === 403 || js.status === 404 || js.status === 0) {
-    const jn = await fetchUrl(`${base}.json`);
-    if (jn.json) {
-      const p = jn.json.product || jn.json;
-      const v = pickVariant(p.variants, deal, variantId);
-      if (!v) return { error: 'no-variant' };
-      return { ok: true, available: null, price: (v.price ?? 0) / 100, compareAt: v.compare_at_price ? v.compare_at_price / 100 : null };
+  // `?country=<CC>` forces the Shopify market for that country, so prices come
+  // back in the market's currency (e.g. EUR for DE) — WITHOUT it, a UK store
+  // like kuishi.com returns GBP and we'd store a GBP number as EUR.
+  const q = `?country=${CC}`;
+  const candidates = [{ base: `${u.origin}/${cc}/products/${handle}`, isMarket: true }];
+  if (germanDomain) candidates.push({ base: `${u.origin}/products/${handle}`, isMarket: false });
+
+  let blocked = false;
+  const inMarket = (url) => { try { return new URL(url).pathname.startsWith(market); } catch { return false; } };
+
+  for (const { base, isMarket } of candidates) {
+    // .js — price + stock, in the deal's market currency
+    const js = await fetchUrl(`${base}.js${q}`);
+    if (js.status === 429 || js.status === 403) blocked = true;
+    if (js.json && (!isMarket || inMarket(js.url))) {
+      const v = pickVariant(js.json.variants, deal, variantId);
+      if (v) return toState(js.json, v, true);
     }
-    return { error: `blocked-${js.status}`, blocked: js.status === 429 || js.status === 403 };
+    // .json — price only; only for the base German-domain path (EUR-safe).
+    if (!isMarket) {
+      const jn = await fetchUrl(`${base}.json${q}`);
+      if (jn.status === 429 || jn.status === 403) blocked = true;
+      if (jn.json) {
+        const p = jn.json.product || jn.json;
+        const v = pickVariant(p.variants, deal, variantId);
+        if (v) return toState(p, v, false);
+      }
+    }
   }
-  return { error: js.error || `http-${js.status}` };
+  return { error: blocked ? 'blocked' : 'not-found', blocked };
 }
 
 /**
