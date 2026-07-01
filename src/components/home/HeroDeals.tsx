@@ -5,9 +5,23 @@ import { countryInfo } from '@/lib/geo/countries';
 import type { CountryCode, NormalizedDeal } from '@/lib/providers/types';
 
 const HERO_COUNT = 12;
+// Wider than HERO_COUNT so we can shuffle within a pool of genuinely good,
+// already shop-diversified deals — the homepage varies each visit without
+// ever dropping to weak (low-discount) filler.
+const HERO_CANDIDATES = 40;
 // Pool to diversify from. Large enough to reach lower-discount stores (one store
 // can have hundreds of high-discount items that would otherwise fill the hero).
 const HERO_POOL = 500;
+
+/** Fisher–Yates shuffle. */
+function shuffle<T>(items: T[]): T[] {
+  const arr = [...items];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
 
 /**
  * Round-robin a discount-sorted list across shops so a single store can't
@@ -36,7 +50,8 @@ function diversifyByShop(deals: NormalizedDeal[], limit: number): NormalizedDeal
 export async function HeroDeals({ country, city }: { country: CountryCode; city: string | null }) {
   const t = await getTranslations('home');
   const pool = await queryDeals({ country, city: city ?? undefined, limit: HERO_POOL, sort: 'discount', excludeHomepageHidden: true });
-  const deals = diversifyByShop(pool, HERO_COUNT);
+  const candidates = diversifyByShop(pool, HERO_CANDIDATES);
+  const deals = shuffle(candidates).slice(0, HERO_COUNT);
 
   return (
     <section aria-labelledby="hero-heading">
