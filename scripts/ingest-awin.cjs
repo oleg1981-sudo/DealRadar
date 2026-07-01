@@ -94,6 +94,19 @@ const CATEGORY_RULES = [
   [/book|ebook/i, 'books'],
   [/\bcar\b|auto|tyre|tire|motor/i, 'automotive'],
 ];
+// AWIN's own category_name/merchant_category is INCONSISTENT within a single
+// product line — e.g. balcony solar kits get tagged "Power Supplies" for some
+// SKUs and "Power Tools" for others, and the generic `\btools?\b` home-garden
+// rule above then wrongly claims the "Power Tools" ones. Product-NAME keywords
+// are more reliable for these specific, well-known lines; checked before the
+// feed-taxonomy mapping so a bad category_name can't override a clear name match.
+const NAME_CATEGORY_OVERRIDES = [
+  [/balkonkraftwerk|solarmodul|solarpanel|wechselrichter|erweiterungsakku|photovoltaik|\bsolar\b/i, 'electronics'],
+];
+function nameOverrideCategory(productName) {
+  for (const [re, slug] of NAME_CATEGORY_OVERRIDES) if (re.test(productName || '')) return slug;
+  return null;
+}
 function mapCategory(categoryName, merchantCategory) {
   if (CATEGORY_EXACT[categoryName]) return CATEGORY_EXACT[categoryName];
   const hay = `${categoryName} ${merchantCategory}`;
@@ -140,7 +153,7 @@ function normalizeRow(g) {
     sale_price: sale,
     discount_percent: discountPercent,
     currency,
-    category: mapCategory(g('category_name').trim(), g('merchant_category').trim()),
+    category: nameOverrideCategory(g('product_name')) ?? mapCategory(g('category_name').trim(), g('merchant_category').trim()),
     brand: g('brand_name').trim() || null,
     image_url: g('aw_image_url').trim() || g('merchant_image_url').trim() || null, // productserve proxy first
     gallery: gallery.length ? gallery : null,
