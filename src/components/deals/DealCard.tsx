@@ -98,7 +98,7 @@ export function DealCard({ deal, priority = false }: { deal: NormalizedDeal; pri
             ),
           })}
         </a>
-        <p className="mt-1 text-center text-[11px] leading-tight text-zinc-400">{t('priceNote')}</p>
+        <p className="mt-1 whitespace-nowrap text-center text-[8.5px] tracking-[-0.02em] leading-tight text-zinc-400">{t('priceNote')}</p>
 
         <PriceAlertButton
           productId={deal.productId}
