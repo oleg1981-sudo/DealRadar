@@ -4,8 +4,12 @@
 // already wrong). This job checks the REAL shop for each deal and corrects it:
 //   - out of stock                  -> HIDE the deal (kept in DB so the next feed
 //   - no live discount any more      -> HIDE the deal   ingest can't resurrect it;
-//                                       un-hidden automatically if back in stock)
+//   - product page gone (404)        -> HIDE the deal   un-hidden automatically if
+//                                                       it comes back)
 //   - price / compare-at changed     -> update price + recompute discount
+//   - checked & unchanged            -> touch last_updated (confirms the deal is
+//                                       alive, so the ingest's stale-hide never
+//                                       hides a deal this job just verified)
 //
 // AWIN merchants are Shopify, which exposes product data at `…/products/<handle>`:
 //   .js   → live price + compare_at + AVAILABILITY (cents)   ← preferred
@@ -16,7 +20,7 @@
 // daily feed + the on-card freshness note). It never hammers a store.
 //
 // Dependency-free (Node built-ins + Supabase REST). Reads deals from Supabase.
-// Run on a ~2-day cron (see .github/workflows/verify-awin.yml).
+// Run on a daily cron (see .github/workflows/verify-awin.yml).
 //
 //   node scripts/verify-awin.cjs                 # dry-run: report what would change
 //   node scripts/verify-awin.cjs --apply         # write updates + removals
@@ -121,29 +125,41 @@ async function liveState(deal) {
   const candidates = [{ base: `${u.origin}/${cc}/products/${handle}`, isMarket: true }];
   if (germanDomain) candidates.push({ base: `${u.origin}/products/${handle}`, isMarket: false });
 
-  let blocked = false;
+  // Classify every failed attempt so the caller can tell a REMOVED product
+  // (all attempts 404 → hide it) from a flaky/blocking shop (skip, never hide).
+  let blocked = false, any404 = false, anyTransient = false;
+  const note = (r) => {
+    if (r.status === 429 || r.status === 403) blocked = true;
+    else if (r.status === 404) any404 = true;
+    else anyTransient = true; // network error, 5xx, bad JSON — assume temporary
+  };
   const inMarket = (url) => { try { return new URL(url).pathname.startsWith(market); } catch { return false; } };
 
   for (const { base, isMarket } of candidates) {
     // .js — price + stock, in the deal's market currency
     const js = await fetchUrl(`${base}.js${q}`);
-    if (js.status === 429 || js.status === 403) blocked = true;
     if (js.json && (!isMarket || inMarket(js.url))) {
       const v = pickVariant(js.json.variants, deal, variantId);
       if (v) return toState(js.json, v, true);
+      return { error: 'no-variant' };
     }
+    note(js);
     // .json — price only; only for the base German-domain path (EUR-safe).
     if (!isMarket) {
       const jn = await fetchUrl(`${base}.json${q}`);
-      if (jn.status === 429 || jn.status === 403) blocked = true;
       if (jn.json) {
         const p = jn.json.product || jn.json;
         const v = pickVariant(p.variants, deal, variantId);
         if (v) return toState(p, v, false);
+        return { error: 'no-variant' };
       }
+      note(jn);
     }
   }
-  return { error: blocked ? 'blocked' : 'not-found', blocked };
+  if (blocked) return { error: 'blocked', blocked: true };
+  if (anyTransient) return { error: 'unreachable' };
+  if (any404) return { error: 'gone' };
+  return { error: 'unreachable' };
 }
 
 /**
@@ -186,6 +202,21 @@ async function applyPatch(productId, fields) {
   if (!r.ok) throw new Error(`patch ${productId}: HTTP ${r.status} ${await r.text()}`);
 }
 
+/** Refresh last_updated on checked-but-unchanged deals (batched). This is the
+ *  "still alive" heartbeat the ingest's stale-hide relies on. */
+async function touchLastUpdated(ids) {
+  const now = new Date().toISOString();
+  for (let i = 0; i < ids.length; i += 80) {
+    const chunk = ids.slice(i, i + 80).map((id) => `"${id}"`).join(',');
+    const r = await fetch(`${BASE}/rest/v1/deals?product_id=in.(${encodeURIComponent(chunk)})`, {
+      method: 'PATCH',
+      headers: { ...SUPA, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+      body: JSON.stringify({ last_updated: now }),
+    });
+    if (!r.ok) throw new Error(`touch batch: HTTP ${r.status} ${await r.text()}`);
+  }
+}
+
 // ── main ───────────────────────────────────────────────────────────────────────
 function groupByHost(items) {
   const m = new Map();
@@ -199,7 +230,7 @@ function groupByHost(items) {
   const byHost = groupByHost(deals);
   console.log(`[verify] checking ${deals.length} deals across ${byHost.size} shops (apply=${APPLY}, ${DELAY_MS}ms/host)…`);
 
-  const patches = []; const reasons = {}, errKinds = {};
+  const patches = []; const okTouch = []; const reasons = {}, errKinds = {};
   let ok = 0, errors = 0, done = 0, hidden = 0, unhidden = 0, priceUpdated = 0;
   const samples = [];
 
@@ -210,23 +241,28 @@ function groupByHost(items) {
       const live = await liveState(deal);
       done++;
       if (process.stdout.isTTY && done % 25 === 0) process.stdout.write(`\r[verify] ${done}/${deals.length}…`);
-      if (live.error) {
+      const isHidden = deal.hidden === true;
+      if (live.error === 'gone') {
+        // Product page removed at the shop (hard 404, not a transient error).
+        consec = 0;
+        if (!isHidden) { patches.push({ id: deal.product_id, fields: { hidden: true } }); hidden++; reasons.gone = (reasons.gone || 0) + 1; }
+        else { ok++; okTouch.push(deal.product_id); } // stays hidden; confirm it's been checked
+      } else if (live.error) {
         errors++; errKinds[live.error] = (errKinds[live.error] || 0) + 1;
         consec = live.blocked ? consec + 1 : 0;
       } else {
         consec = 0;
         const want = decide(deal, live);
-        const isHidden = deal.hidden === true;
         if (want.hide) {
           if (!isHidden) { patches.push({ id: deal.product_id, fields: { hidden: true } }); hidden++; reasons[want.reason] = (reasons[want.reason] || 0) + 1; }
-          else ok++; // already hidden
+          else { ok++; okTouch.push(deal.product_id); } // already hidden
         } else {
           const fields = {};
           const priceChanged = want.sale !== deal.sale_price || want.orig !== deal.original_price || want.disc !== deal.discount_percent;
           if (priceChanged) { fields.sale_price = want.sale; fields.original_price = want.orig; fields.discount_percent = want.disc; priceUpdated++; if (samples.length < 8) samples.push(`${deal.product_id}: ${deal.sale_price} -> ${want.sale} (-${want.disc}%)`); }
           if (isHidden) { fields.hidden = false; unhidden++; } // a sold-out deal is back in stock
           if (Object.keys(fields).length) patches.push({ id: deal.product_id, fields });
-          else ok++;
+          else { ok++; okTouch.push(deal.product_id); }
         }
       }
       await sleep(DELAY_MS);
@@ -250,7 +286,8 @@ function groupByHost(items) {
 
   if (!APPLY) { console.log('\n[verify] dry-run — no writes. Re-run with --apply to commit.'); return; }
   for (const p of patches) await applyPatch(p.id, p.fields);
-  console.log(`\n[verify] applied ${patches.length} changes (${priceUpdated} prices, ${hidden} hidden, ${unhidden} un-hidden).`);
+  await touchLastUpdated(okTouch);
+  console.log(`\n[verify] applied ${patches.length} changes (${priceUpdated} prices, ${hidden} hidden, ${unhidden} un-hidden); confirmed ${okTouch.length} unchanged.`);
 })().catch((e) => { console.error('\n[verify] FAILED:', e.message); process.exit(1); });
 
 // ── tiny .env.local loader ─────────────────────────────────────────────────────

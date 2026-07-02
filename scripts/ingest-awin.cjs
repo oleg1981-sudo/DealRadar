@@ -318,6 +318,24 @@ async function fetchExistingPrices() {
     }
     process.stdout.write('\n');
     console.log(`[awin] preserved verified prices for ${preserved} existing deals; feed price used for ${all.length - preserved} new ones`);
+
+    // Stale-hide: this upsert refreshed last_updated for every deal still in the
+    // feed, and the daily verifier touches every deal it can confirm live. So a
+    // row untouched for 3+ days has BOTH dropped out of the feed AND been
+    // unverifiable — hide it (not delete: it un-hides automatically if the
+    // verifier later confirms it live again).
+    const cutoff = new Date(Date.now() - 3 * 24 * 3600 * 1000).toISOString();
+    const staleRes = await fetch(
+      `${SUPABASE_URL}/rest/v1/deals?source=eq.awin&hidden=eq.false&last_updated=lt.${encodeURIComponent(cutoff)}`,
+      {
+        method: 'PATCH',
+        headers: supaHeaders({ 'Content-Type': 'application/json', Prefer: 'return=minimal,count=exact' }),
+        body: JSON.stringify({ hidden: true }),
+      },
+    );
+    if (!staleRes.ok) throw new Error(`stale-hide failed: HTTP ${staleRes.status} ${await staleRes.text()}`);
+    const staleCount = (staleRes.headers.get('content-range') || '').split('/')[1] || '0';
+    console.log(`[awin] stale-hide: ${staleCount} deals unseen for 3+ days hidden`);
   }
 
   const secs = ((Date.now() - t0) / 1000).toFixed(1);

@@ -1,7 +1,9 @@
-# Live-shop price/stock verification — runs every ~2 days, independent of the
-# feed ingestion. Checks each AWIN deal against the merchant's live Shopify page
-# and updates prices / removes sold-out or no-longer-discounted items, so deals
-# stay accurate between the (lagging) daily feed pulls.
+# Live-shop price/stock verification — runs daily, two hours after the feed
+# ingestion. Checks each AWIN deal against the merchant's live Shopify page and
+# updates prices / hides sold-out, no-longer-discounted or gone items. Daily
+# (not every 2 days) because the feed mislabels some merchants' currency
+# (e.g. Kuishi GBP-as-EUR): a new product's price is only trustworthy after
+# this has checked it, so the wrong-price window must stay under a day.
 #
 # Required repository secrets (same as the ingestion):
 #   SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
@@ -11,7 +13,7 @@ name: Verify AWIN deals
 
 on:
   schedule:
-    - cron: '0 5 */2 * *' # every 2nd day at 05:00 UTC (after the 03:00 ingest)
+    - cron: '0 5 * * *' # daily at 05:00 UTC (after the 03:00 ingest)
   workflow_dispatch:
     inputs:
       dry_run:
