@@ -11,6 +11,8 @@ export interface EmailMessage {
   to: string;
   subject: string;
   html: string;
+  /** Extra SMTP headers, e.g. List-Unsubscribe (passed through to Resend). */
+  headers?: Record<string, string>;
 }
 
 export async function sendEmail(msg: EmailMessage): Promise<boolean> {
@@ -27,7 +29,7 @@ export async function sendEmail(msg: EmailMessage): Promise<boolean> {
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ from, to: msg.to, subject: msg.subject, html: msg.html }),
+      body: JSON.stringify({ from, to: msg.to, subject: msg.subject, html: msg.html, headers: msg.headers }),
     });
     if (!res.ok) {
       console.error('[email] send failed:', res.status, await res.text());

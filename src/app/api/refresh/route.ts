@@ -12,7 +12,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { fetchDealsAcrossProviders, initProviders } from '@/lib/providers/registry';
 import { upsertDeals } from '@/lib/db/deals.repo';
-import { notifyPriceDrops } from '@/lib/db/alerts.repo';
+import { notifyPriceDrops, notifyPendingAlerts } from '@/lib/db/alerts.repo';
 import { SUPPORTED_COUNTRIES, CATEGORY_SLUGS, type CategorySlug, type CountryCode } from '@/lib/providers/types';
 
 export const runtime = 'nodejs';
@@ -41,7 +41,10 @@ export async function POST(req: NextRequest) {
   // query path. When a provider gets real credentials, its isMock flips false
   // and it starts persisting automatically.
   const health = await initProviders();
-  const isReal = (source: string) => health.get(source)?.isMock === false;
+  // dummyjson reports isMock:false (it IS a real HTTP API) but its catalogue is
+  // synthetic — it must never be persisted. It's excluded from production
+  // registries anyway; this guards a dev machine with CRON_SECRET set locally.
+  const isReal = (source: string) => source !== 'dummyjson' && health.get(source)?.isMock === false;
 
   for (const country of countries) {
     let count = 0;
@@ -58,6 +61,16 @@ export async function POST(req: NextRequest) {
       }
     }
     summary[country] = count;
+  }
+
+  // Reconcile ALL pending price alerts against current DB prices. Prices are
+  // mostly updated out-of-band (AWIN feed ingest + live-shop verifier, both in
+  // GitHub Actions), so this daily pass — not the per-provider loop above — is
+  // what actually delivers alert emails.
+  try {
+    notified += await notifyPendingAlerts();
+  } catch (e) {
+    console.error('[api/refresh] alert reconciliation failed:', e);
   }
 
   return NextResponse.json({ ok: true, upserted: summary, skippedMock, alertsSent: notified, at: new Date().toISOString() });
