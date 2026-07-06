@@ -5,7 +5,8 @@
     "heroDisclosure": "Nous ne vendons pas de produits directement : nous vous aidons à trouver des offres vérifiées et vous redirigeons vers des marchands de confiance.",
     "heroCta": "Rechercher",
     "topDeals": "Meilleures offres en {country}",
-    "noDeals": "Aucune offre disponible pour votre région pour le moment. Revenez bientôt."
+    "noDeals": "Aucune offre disponible pour votre région pour le moment. Revenez bientôt.",
+    "viewAllDeals": "Voir toutes les offres"
   },
   "categories": {
     "heading": "Parcourir par catégorie",
@@ -66,7 +67,8 @@
     "min": "Min",
     "max": "Max",
     "minDiscount": "Remise minimale",
-    "apply": "Appliquer les filtres"
+    "apply": "Appliquer les filtres",
+    "sortRandom": "Aléatoire"
   },
   "geo": {
     "promptTitle": "Afficher les offres près de chez vous ?",

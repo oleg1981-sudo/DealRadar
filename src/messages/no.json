@@ -5,7 +5,8 @@
     "heroDisclosure": "Vi selger ikke produkter direkte — vi hjelper deg å finne verifiserte tilbud og sender deg videre til pålitelige forhandlere.",
     "heroCta": "Søk",
     "topDeals": "Beste tilbud i {country}",
-    "noDeals": "Ingen tilbud for din plassering ennå. Kom tilbake snart."
+    "noDeals": "Ingen tilbud for din plassering ennå. Kom tilbake snart.",
+    "viewAllDeals": "Se alle tilbud"
   },
   "categories": {
     "heading": "Bla gjennom etter kategori",
@@ -66,7 +67,8 @@
     "min": "Min",
     "max": "Maks",
     "minDiscount": "Minimumsrabatt",
-    "apply": "Bruk filtre"
+    "apply": "Bruk filtre",
+    "sortRandom": "Tilfeldig"
   },
   "geo": {
     "promptTitle": "Vise tilbud i nærheten?",

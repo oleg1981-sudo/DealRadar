@@ -58,7 +58,10 @@ export interface DealFilters extends DealQuery {
   brand?: string;
   minPrice?: number;
   maxPrice?: number;
-  sort?: 'discount' | 'price-asc' | 'price-desc' | 'newest';
+  sort?: 'discount' | 'price-asc' | 'price-desc' | 'newest' | 'random';
+  /** Stable shuffle seed for sort:'random' — pagination links carry it so
+   *  pages 2…n continue the SAME shuffle instead of re-rolling per request. */
+  seed?: number;
   /** Homepage only: also exclude deals flagged `homepage_hidden` (e.g. a merchant
    *  page whose displayed price changes after JS runs). Category/search pages
    *  leave this unset so those deals stay findable there. */
@@ -110,6 +113,10 @@ function applyDealFilters(q: any, filters: DealFilters): any {
   return q;
 }
 
+// sort:'random' loads the whole (filtered) result set to shuffle it — cap it.
+// Fine at the current catalogue size; revisit if a single filter set can exceed it.
+const RANDOM_POOL_MAX = 1000;
+
 async function runQuery(filters: DealFilters, withTotal: boolean): Promise<PagedDeals> {
   const limit = filters.limit ?? 24;
 
@@ -119,9 +126,25 @@ async function runQuery(filters: DealFilters, withTotal: boolean): Promise<Paged
     if (filters.brand) deals = deals.filter((d) => d.brand === filters.brand);
     if (filters.minPrice !== undefined) deals = deals.filter((d) => d.salePrice >= filters.minPrice!);
     if (filters.maxPrice !== undefined) deals = deals.filter((d) => d.salePrice <= filters.maxPrice!);
-    const sorted = sortDeals(deals, filters.sort);
+    const sorted = filters.sort === 'random'
+      ? seededShuffle(deals, filters.seed ?? newSeed())
+      : sortDeals(deals, filters.sort);
     const offset = clampOffset(filters.offset ?? 0, sorted.length, limit, withTotal);
     return { deals: sorted.slice(offset, offset + limit), total: withTotal ? sorted.length : -1 };
+  }
+
+  // Random order can't be expressed as a PostgREST `order`, and page N of a
+  // fresh per-request shuffle would repeat/skip items. So: fetch the whole
+  // filtered set once, shuffle it DETERMINISTICALLY from the seed (the pages
+  // carry it in their links), then slice the requested page.
+  if (filters.sort === 'random') {
+    const { data, error } = await applyDealFilters(supabase().from(TABLE).select('*'), filters)
+      .range(0, RANDOM_POOL_MAX - 1);
+    if (error) throw new Error(`[deals.repo] query failed: ${error.message}`);
+    const rows = (data ?? []) as Record<string, unknown>[];
+    const all = seededShuffle(rows.map(fromRow), filters.seed ?? newSeed());
+    const offset = clampOffset(filters.offset ?? 0, all.length, limit, withTotal);
+    return { deals: all.slice(offset, offset + limit), total: withTotal ? all.length : -1 };
   }
 
   let total = -1;
@@ -148,6 +171,30 @@ async function runQuery(filters: DealFilters, withTotal: boolean): Promise<Paged
   const { data, error } = await q;
   if (error) throw new Error(`[deals.repo] query failed: ${error.message}`);
   return { deals: (data ?? []).map(fromRow), total };
+}
+
+const newSeed = () => Math.floor(Math.random() * 2 ** 31);
+
+/** Deterministic PRNG (mulberry32) — same seed, same shuffle, every request. */
+function mulberry32(seed: number): () => number {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function seededShuffle<T>(items: T[], seed: number): T[] {
+  const rnd = mulberry32(seed);
+  const arr = [...items];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(rnd() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
 }
 
 /** Clamp the offset onto the start of the last page. */

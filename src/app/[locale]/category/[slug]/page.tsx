@@ -36,6 +36,10 @@ export default async function CategoryPage({
   const country = loc?.country ?? DEFAULT_COUNTRY;
 
   const requestedPage = Math.max(1, Math.floor(toNum(one(sp.page)) ?? 1));
+  const sort = (one(sp.sort) as DealFilters['sort']) ?? 'discount';
+  // sort:'random': pin a seed so pagination continues ONE shuffle; a fresh
+  // visit (no seed in the URL) rolls a new one — different deals every entry.
+  const seed = sort === 'random' ? Math.floor(toNum(one(sp.seed)) ?? Math.random() * 2 ** 31) : undefined;
 
   // Category is fixed by the route; brand/price/discount/sort/page come from
   // the URL so the FilterPanel and Pagination actually drive the results.
@@ -47,7 +51,8 @@ export default async function CategoryPage({
     minDiscountPercent: toNum(one(sp.minDiscount)),
     minPrice: toNum(one(sp.minPrice)),
     maxPrice: toNum(one(sp.maxPrice)),
-    sort: (one(sp.sort) as DealFilters['sort']) ?? 'discount',
+    sort,
+    seed,
     limit: PAGE_SIZE,
     offset: (requestedPage - 1) * PAGE_SIZE,
   };
@@ -66,6 +71,7 @@ export default async function CategoryPage({
     const v = one(sp[k]);
     if (v) linkParams[k] = v;
   }
+  if (seed !== undefined) linkParams.seed = String(seed); // keep this shuffle across pages
 
   return (
     <div className="grid gap-8 lg:grid-cols-[240px_1fr]">

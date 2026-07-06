@@ -1,4 +1,5 @@
 import { getTranslations } from 'next-intl/server';
+import { Link } from '@/i18n/routing';
 import { DealGrid } from '@/components/deals/DealGrid';
 import { queryDeals } from '@/lib/db/deals.repo';
 import { countryInfo } from '@/lib/geo/countries';
@@ -61,7 +62,19 @@ export async function HeroDeals({ country, city }: { country: CountryCode; city:
         </h1>
       </div>
       {deals.length > 0 ? (
-        <DealGrid deals={deals} />
+        <>
+          <DealGrid deals={deals} />
+          {/* The hero is a curated random sample — this is the bridge to the
+              full, paginated, filterable catalogue (search with no query). */}
+          <div className="mt-8 text-center">
+            <Link
+              href="/search?sort=random"
+              className="inline-flex h-11 items-center justify-center rounded-lg border border-accent px-8 text-sm font-medium text-accent transition-colors hover:bg-accent-soft"
+            >
+              {t('viewAllDeals')}
+            </Link>
+          </div>
+        </>
       ) : (
         <p className="rounded-lg border border-dashed border-zinc-200 p-10 text-center text-zinc-500">
           {t('noDeals')}

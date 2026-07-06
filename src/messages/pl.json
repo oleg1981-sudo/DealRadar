@@ -5,7 +5,8 @@
     "heroDisclosure": "Nie sprzedajemy produktów bezpośrednio — pomagamy znaleźć zweryfikowane okazje i przekierowujemy Cię do zaufanych sklepów.",
     "heroCta": "Szukaj",
     "topDeals": "Najlepsze okazje w {country}",
-    "noDeals": "Brak okazji dla Twojej lokalizacji. Zajrzyj wkrótce."
+    "noDeals": "Brak okazji dla Twojej lokalizacji. Zajrzyj wkrótce.",
+    "viewAllDeals": "Zobacz wszystkie okazje"
   },
   "categories": {
     "heading": "Przeglądaj według kategorii",
@@ -66,7 +67,8 @@
     "min": "Min",
     "max": "Maks",
     "minDiscount": "Minimalny rabat",
-    "apply": "Zastosuj filtry"
+    "apply": "Zastosuj filtry",
+    "sortRandom": "Losowo"
   },
   "geo": {
     "promptTitle": "Pokazać okazje w pobliżu?",

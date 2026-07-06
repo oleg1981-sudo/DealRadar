@@ -5,7 +5,8 @@
     "heroDisclosure": "Nu vindem produse direct — te ajutăm să găsești oferte verificate și te redirecționăm către comercianți de încredere.",
     "heroCta": "Caută",
     "topDeals": "Cele mai bune oferte în {country}",
-    "noDeals": "Încă nu există oferte pentru locația ta. Revino în curând."
+    "noDeals": "Încă nu există oferte pentru locația ta. Revino în curând.",
+    "viewAllDeals": "Vezi toate ofertele"
   },
   "categories": {
     "heading": "Răsfoiește pe categorii",
@@ -66,7 +67,8 @@
     "min": "Min",
     "max": "Max",
     "minDiscount": "Reducere minimă",
-    "apply": "Aplică filtrele"
+    "apply": "Aplică filtrele",
+    "sortRandom": "Aleatoriu"
   },
   "geo": {
     "promptTitle": "Arătăm oferte din apropiere?",
