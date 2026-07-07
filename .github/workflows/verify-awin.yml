@@ -44,3 +44,17 @@ jobs:
           else
             node scripts/verify-awin.cjs --apply
           fi
+
+      # Re-snapshot today's prices now that they are live-verified — same UTC
+      # day as the ingest's snapshot, so this upsert overwrites it and the
+      # verified price is what price_history keeps for the day.
+      - name: Snapshot prices into price_history
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
+            node scripts/snapshot-prices.cjs
+          else
+            node scripts/snapshot-prices.cjs --apply
+          fi

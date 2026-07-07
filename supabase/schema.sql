@@ -95,3 +95,21 @@ create index if not exists price_alerts_pending_idx
   on public.price_alerts (product_id) where notified = false;
 
 alter table public.price_alerts enable row level security;
+
+-- Real recorded price history — one snapshot per product per day, written by
+-- scripts/snapshot-prices.cjs after the daily ingest (03 UTC, feed prices) and
+-- again after the daily verify (05 UTC, live-shop prices; same-day upsert means
+-- the verified price wins). Feeds the per-deal price cardiogram, which shows a
+-- genuine recorded curve once enough days accumulate.
+create table if not exists public.price_history (
+  product_id      text          not null,   -- matches deals.product_id (no FK: deals rows may be purged while history stays)
+  day             date          not null,
+  sale_price      numeric(12,2) not null check (sale_price >= 0),
+  original_price  numeric(12,2) not null check (original_price >= 0),
+  currency        char(3)       not null,
+  recorded_at     timestamptz   not null default now(),
+  primary key (product_id, day)
+);
+-- The PK (product_id, day) already serves the read path: latest N days per product.
+
+alter table public.price_history enable row level security;

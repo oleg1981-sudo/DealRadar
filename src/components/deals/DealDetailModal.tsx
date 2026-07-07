@@ -25,11 +25,28 @@ export function DealDetailModal({ deal, onClose }: { deal: NormalizedDeal; onClo
   const locale = useLocale();
   const [active, setActive] = useState(0);
   const [portalEl, setPortalEl] = useState<HTMLElement | null>(null);
+  // Recorded daily sale prices (oldest → newest) from /api/price-history.
+  // Empty until fetched — the cardiogram shows its honest fallback meanwhile.
+  const [history, setHistory] = useState<number[]>([]);
 
   const gallery = productGallery(deal);
   const sizes = productSizes(deal);
-  const pw = priceWindow(deal);
+  const pw = priceWindow(deal, history);
   const href = decorateAffiliateUrl(deal.shopUrl, deal.source, deal.productId);
+
+  // Load the real price history for this deal (best-effort: on any error the
+  // fallback line simply stays).
+  useEffect(() => {
+    const ctrl = new AbortController();
+    fetch(`/api/price-history?productId=${encodeURIComponent(deal.productId)}`, { signal: ctrl.signal })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((body: { points?: { salePrice: number }[] } | null) => {
+        const prices = (body?.points ?? []).map((p) => p.salePrice).filter((n) => Number.isFinite(n));
+        if (prices.length) setHistory(prices);
+      })
+      .catch(() => {});
+    return () => ctrl.abort();
+  }, [deal.productId]);
 
   // Portal target + body scroll lock + Escape to close.
   useEffect(() => {
