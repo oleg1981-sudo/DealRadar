@@ -16,12 +16,24 @@ create table if not exists public.deals (
   category          text          not null,
   brand             text,
   image_url         text,
+  gallery           text[],                     -- extra real product images (detail modal)
+  description       text,                       -- real product description (detail modal)
+  merchant_url      text,                       -- direct shop URL (live price/stock verifier)
+  hidden            boolean       not null default false,  -- verifier hides sold-out / undiscounted (not deleted, so re-ingest can't resurrect)
+  homepage_hidden   boolean       not null default false,  -- excluded from the homepage only (e.g. merchant's page shows a different price after JS runs); still visible via category/search
   country           char(2)       not null,
   city              text,                       -- nullable: country-wide deals
   is_sponsored      boolean       not null default true,
   source            text          not null,     -- provider id
   last_updated      timestamptz   not null default now()
 );
+
+-- Migration for existing databases (safe to re-run): add the detail columns.
+alter table public.deals add column if not exists gallery       text[];
+alter table public.deals add column if not exists description    text;
+alter table public.deals add column if not exists merchant_url   text;
+alter table public.deals add column if not exists hidden         boolean not null default false;
+alter table public.deals add column if not exists homepage_hidden boolean not null default false;
 
 -- Hot path: country (+ city) scoped, sorted by discount.
 create index if not exists deals_country_discount_idx
@@ -47,6 +59,7 @@ language sql stable as $$
   from public.deals d
   where d.country = p_country
     and d.brand is not null
+    and d.hidden = false
     and (p_category is null or d.category = p_category)
   order by d.brand;
 $$;
@@ -97,16 +110,22 @@ alter table public.deals
 create unique index if not exists deals_slug_idx on public.deals (slug) where slug is not null;
 create index if not exists deals_ean_idx on public.deals (ean_code) where ean_code is not null;
 
--- Historical price tracking over time
+-- Real recorded price history — one snapshot per product per day, written by
+-- scripts/snapshot-prices.cjs after the daily ingest (03 UTC, feed prices) and
+-- again after the daily verify (05 UTC, live-shop prices; same-day upsert means
+-- the verified price wins). Feeds the per-deal price cardiogram, which shows a
+-- genuine recorded curve once enough days accumulate.
 create table if not exists public.price_history (
-  id             uuid          primary key default gen_random_uuid(),
-  product_id     text          not null references public.deals(product_id) on delete cascade,
-  sale_price     numeric(12,2) not null check (sale_price >= 0),
-  original_price numeric(12,2) not null check (original_price >= 0),
-  recorded_at    timestamptz   not null default now()
+  product_id      text          not null,   -- matches deals.product_id (no FK: deals rows may be purged while history stays)
+  day             date          not null,
+  sale_price      numeric(12,2) not null check (sale_price >= 0),
+  original_price  numeric(12,2) not null check (original_price >= 0),
+  currency        char(3)       not null,
+  recorded_at     timestamptz   not null default now(),
+  primary key (product_id, day)
 );
+-- The PK (product_id, day) already serves the read path: latest N days per product.
 
-create index if not exists price_history_product_id_idx on public.price_history (product_id, recorded_at desc);
 alter table public.price_history enable row level security;
 
 -- Affiliate transaction & commission tracking from network postbacks
@@ -128,8 +147,12 @@ create or replace function public.record_price_history()
 returns trigger language plpgsql as $$
 begin
   if (TG_OP = 'INSERT') or (OLD.sale_price <> NEW.sale_price) then
-    insert into public.price_history (product_id, sale_price, original_price, recorded_at)
-    values (NEW.product_id, NEW.sale_price, NEW.original_price, now());
+    insert into public.price_history (product_id, day, sale_price, original_price, currency, recorded_at)
+    values (NEW.product_id, CURRENT_DATE, NEW.sale_price, NEW.original_price, NEW.currency, now())
+    on conflict (product_id, day) do update set 
+      sale_price = EXCLUDED.sale_price, 
+      original_price = EXCLUDED.original_price, 
+      recorded_at = EXCLUDED.recorded_at;
   end if;
   return NEW;
 end;

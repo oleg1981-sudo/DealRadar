@@ -1,0 +1,211 @@
+'use client';
+
+/**
+ * Detailed-card modal: opens from a deal card. Gallery top-left, price + action
+ * buttons (Go to deal, Receive best price alert) stacked beside it, and a
+ * specs/sizes section below. A centered, medium floating panel — not full page.
+ */
+import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
+import Image from 'next/image';
+import { useTranslations, useLocale } from 'next-intl';
+import { X } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { PriceHeatBar } from './PriceHeatBar';
+import { PriceAlertButton } from './PriceAlertButton';
+import { formatPrice, formatDiscount } from '@/lib/utils/format';
+import { priceWindow } from '@/lib/utils/price-history';
+import { decorateAffiliateUrl } from '@/lib/utils/affiliate';
+import { displayShopName } from '@/lib/utils/shop';
+import { productGallery, productSizes } from '@/lib/utils/product-details';
+import type { NormalizedDeal } from '@/lib/providers/types';
+
+export function DealDetailModal({ deal, onClose }: { deal: NormalizedDeal; onClose: () => void }) {
+  const t = useTranslations('deal');
+  const locale = useLocale();
+  const [active, setActive] = useState(0);
+  const [portalEl, setPortalEl] = useState<HTMLElement | null>(null);
+  // Recorded daily sale prices (oldest → newest) from /api/price-history.
+  // Empty until fetched — the cardiogram shows its honest fallback meanwhile.
+  const [history, setHistory] = useState<number[]>([]);
+
+  const gallery = productGallery(deal);
+  const sizes = productSizes(deal);
+  const pw = priceWindow(deal, history);
+  const href = decorateAffiliateUrl(deal.shopUrl, deal.source, deal.productId);
+
+  // Load the real price history for this deal (best-effort: on any error the
+  // fallback line simply stays).
+  useEffect(() => {
+    const ctrl = new AbortController();
+    fetch(`/api/price-history?productId=${encodeURIComponent(deal.productId)}`, { signal: ctrl.signal })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((body: { points?: { salePrice: number }[] } | null) => {
+        const prices = (body?.points ?? []).map((p) => p.salePrice).filter((n) => Number.isFinite(n));
+        if (prices.length) setHistory(prices);
+      })
+      .catch(() => {});
+    return () => ctrl.abort();
+  }, [deal.productId]);
+
+  // Portal target + body scroll lock + Escape to close.
+  useEffect(() => {
+    const el = document.createElement('div');
+    el.setAttribute('data-deal-modal', '');
+    document.body.appendChild(el);
+    setPortalEl(el);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      document.body.style.overflow = prevOverflow;
+      document.body.removeChild(el);
+    };
+  }, [onClose]);
+
+  if (!portalEl) return null;
+
+  return createPortal(
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <button aria-label={t('close')} onClick={onClose} className="absolute inset-0 bg-zinc-900/50" />
+
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={deal.productName}
+        className="relative z-10 max-h-[85vh] w-full max-w-3xl overflow-y-auto rounded-2xl bg-white p-5 shadow-card-hover sm:p-6 md:flex md:h-[700px] md:flex-col md:overflow-hidden"
+      >
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label={t('close')}
+          className="absolute right-3 top-3 z-20 rounded-full bg-white/90 p-1.5 text-zinc-600 shadow ring-1 ring-zinc-200 transition-colors hover:bg-white"
+        >
+          <X className="h-5 w-5" aria-hidden />
+        </button>
+
+        <div className="grid gap-6 md:shrink-0 md:grid-cols-2">
+          {/* Gallery — top-left */}
+          <div>
+            <div className="relative aspect-[4/3] overflow-hidden rounded-xl bg-white">
+              {gallery[active] && (
+                <Image
+                  src={gallery[active]}
+                  alt={deal.productName}
+                  fill
+                  sizes="(max-width: 768px) 90vw, 360px"
+                  className="object-contain p-4"
+                />
+              )}
+              <Badge variant="deal" className="absolute left-2 top-2 text-sm">
+                {formatDiscount(deal.discountPercent)}
+              </Badge>
+            </div>
+            {gallery.length > 1 && (
+              <div className="mt-2 flex gap-2">
+                {gallery.map((src, i) => (
+                  <button
+                    key={src}
+                    type="button"
+                    onClick={() => setActive(i)}
+                    aria-label={`${deal.productName} ${i + 1}`}
+                    className={`relative h-16 w-16 shrink-0 overflow-hidden rounded-lg border-2 bg-white transition-colors ${
+                      i === active ? 'border-accent' : 'border-zinc-200 hover:border-zinc-300'
+                    }`}
+                  >
+                    <Image src={src} alt="" fill sizes="64px" className="object-contain p-1" />
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Info + actions — same level as the gallery */}
+          <div className="flex flex-col">
+            <h2 className="pr-8 text-lg font-semibold leading-snug text-zinc-900">{deal.productName}</h2>
+            <p className="mt-1 text-sm text-zinc-500">
+              {deal.brand ? `${deal.brand} · ` : ''}
+              {displayShopName(deal.shopName)}
+            </p>
+
+            <div className="mt-3 flex items-baseline gap-2">
+              <span className="text-2xl font-bold text-zinc-900">
+                {formatPrice(deal.salePrice, deal.currency, locale)}
+              </span>
+              <s className="text-sm text-zinc-400">
+                {formatPrice(deal.originalPrice, deal.currency, locale)}
+              </s>
+            </div>
+
+            <div className="mt-3">
+              <PriceHeatBar
+                window={pw}
+                currency={deal.currency}
+                locale={locale}
+                captionLabel={t('priceHistory')}
+                todayLabel={t('today')}
+              />
+            </div>
+
+            {sizes && sizes.length > 0 && (
+              <div className="mt-4">
+                <p className="text-xs font-medium uppercase tracking-wide text-zinc-400">{t('sizes')}</p>
+                <div className="mt-1.5 flex flex-wrap gap-1.5">
+                  {sizes.map(({ size, available }) => (
+                    <span
+                      key={size}
+                      aria-disabled={!available}
+                      className={`rounded-md border px-2.5 py-1 text-xs font-medium ${
+                        available
+                          ? 'border-zinc-200 text-zinc-700'
+                          : 'border-zinc-100 text-zinc-300 line-through'
+                      }`}
+                    >
+                      {size}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="mt-auto pt-4">
+              <p className="mb-1.5 text-center text-xs text-zinc-400">{t('priceNote')}</p>
+              <a
+                href={href}
+                target="_blank"
+                rel="noopener nofollow sponsored"
+                className="inline-flex h-10 w-full items-center justify-center gap-1.5 rounded-lg bg-accent text-sm font-medium text-white transition-colors hover:bg-accent-hover"
+              >
+                {t.rich('goToDeal', {
+                  shop: displayShopName(deal.shopName),
+                  chip: (chunks) => (
+                    <span className="rounded-md bg-white px-2 py-1 font-semibold text-accent">{chunks}</span>
+                  ),
+                })}
+              </a>
+              <PriceAlertButton
+                productId={deal.productId}
+                productName={deal.productName}
+                price={deal.salePrice}
+                currency={deal.currency}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Description — real product copy from the feed; the scroll area on desktop. */}
+        {deal.description && (
+          <div className="mt-6 border-t border-zinc-100 pt-4 md:flex md:min-h-0 md:flex-1 md:flex-col">
+            <h3 className="mb-2 text-sm font-semibold text-zinc-900 md:shrink-0">{t('details')}</h3>
+            <p className="overscroll-contain whitespace-pre-line pr-1 text-sm leading-relaxed text-zinc-600 md:min-h-0 md:flex-1 md:overflow-y-auto">
+              {deal.description}
+            </p>
+          </div>
+        )}
+      </div>
+    </div>,
+    portalEl,
+  );
+}

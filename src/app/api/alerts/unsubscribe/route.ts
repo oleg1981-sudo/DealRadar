@@ -56,7 +56,7 @@ export async function GET(req: NextRequest) {
 
 /**
  * RFC 8058 one-click unsubscribe. Mail clients (Gmail/Yahoo) POST
- * `List-Unsubscribe=One-Click` to the List-Unsubscribe URL; reply 200, no redirect.
+ * \`List-Unsubscribe=One-Click\` to the List-Unsubscribe URL; reply 200, no redirect.
  */
 export async function POST(req: NextRequest) {
   const { searchParams } = req.nextUrl;

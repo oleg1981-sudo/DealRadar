@@ -5,7 +5,7 @@
  * product's sale price drops below `price`.
  */
 import { NextRequest, NextResponse } from 'next/server';
-import { createPriceAlert } from '@/lib/db/alerts.repo';
+import { createPriceAlert, countActiveAlerts, MAX_ALERTS_PER_EMAIL } from '@/lib/db/alerts.repo';
 import { rateLimitAlerts } from '@/lib/cache/redis';
 import { clientIp } from '@/lib/utils/request-ip';
 import { LOCALES, type Locale } from '@/i18n/routing';
@@ -44,6 +44,11 @@ export async function POST(req: NextRequest) {
   }
 
   try {
+    // Per-email cap: prevents abusing this open endpoint to flood a third
+    // party's inbox with alert subscriptions (each would email on a price drop).
+    if ((await countActiveAlerts(email)) >= MAX_ALERTS_PER_EMAIL) {
+      return NextResponse.json({ error: 'too_many_alerts' }, { status: 429 });
+    }
     await createPriceAlert({ email, productId, productName, targetPrice: price, currency, locale });
     return NextResponse.json({ ok: true });
   } catch (e) {

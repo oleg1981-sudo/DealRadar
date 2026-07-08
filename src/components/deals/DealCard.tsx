@@ -11,7 +11,6 @@ import { PriceAlertButton } from './PriceAlertButton';
 import { SponsoredBadge } from './SponsoredBadge';
 import { formatPrice, formatDiscount } from '@/lib/utils/format';
 import { priceWindow } from '@/lib/utils/price-history';
-import { productModel } from '@/lib/utils/product-details';
 import { decorateAffiliateUrl } from '@/lib/utils/affiliate';
 import { displayShopName } from '@/lib/utils/shop';
 import { slugify } from '@/lib/utils/slug';
@@ -65,8 +64,6 @@ export function DealCard({ deal, priority = false }: { deal: NormalizedDeal; pri
             <img src={deal.shopLogoUrl} alt="" className="h-4 w-4 rounded-sm object-contain" />
           )}
           <span>{displayShopName(deal.shopName)}</span>
-          <span aria-hidden>·</span>
-          <span className="text-zinc-400">{productModel(deal)}</span>
         </div>
 
         <div className="mt-auto flex items-baseline gap-2 pt-2">
@@ -102,6 +99,7 @@ export function DealCard({ deal, priority = false }: { deal: NormalizedDeal; pri
             ),
           })}
         </a>
+        <p className="mt-1 whitespace-nowrap text-center text-[8.5px] tracking-[-0.02em] leading-tight text-zinc-400">{t('priceNote')}</p>
 
         <PriceAlertButton
           productId={deal.productId}

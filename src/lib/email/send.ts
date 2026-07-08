@@ -11,6 +11,7 @@ export interface EmailMessage {
   to: string;
   subject: string;
   html: string;
+  /** Extra SMTP headers, e.g. List-Unsubscribe (passed through to Resend). */
   headers?: Record<string, string>;
 }
 

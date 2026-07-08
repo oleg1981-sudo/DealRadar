@@ -1,0 +1,60 @@
+# Live-shop price/stock verification — runs daily, two hours after the feed
+# ingestion. Checks each AWIN deal against the merchant's live Shopify page and
+# updates prices / hides sold-out, no-longer-discounted or gone items. Daily
+# (not every 2 days) because the feed mislabels some merchants' currency
+# (e.g. Kuishi GBP-as-EUR): a new product's price is only trustworthy after
+# this has checked it, so the wrong-price window must stay under a day.
+#
+# Required repository secrets (same as the ingestion):
+#   SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
+#
+# Run manually from the Actions tab any time; tick "dry_run" to preview.
+name: Verify AWIN deals
+
+on:
+  schedule:
+    - cron: '0 5 * * *' # daily at 05:00 UTC (after the 03:00 ingest)
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run (no writes)'
+        type: boolean
+        default: false
+
+concurrency:
+  group: verify-awin
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Verify deals against live shops
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
+            node scripts/verify-awin.cjs
+          else
+            node scripts/verify-awin.cjs --apply
+          fi
+
+      # Re-snapshot today's prices now that they are live-verified — same UTC
+      # day as the ingest's snapshot, so this upsert overwrites it and the
+      # verified price is what price_history keeps for the day.
+      - name: Snapshot prices into price_history
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
+            node scripts/snapshot-prices.cjs
+          else
+            node scripts/snapshot-prices.cjs --apply
+          fi

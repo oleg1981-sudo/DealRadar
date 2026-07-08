@@ -1,11 +1,14 @@
 /**
  * Affiliate link decoration + sub-id round-trip.
  *
- * We append a structured sub-id `dealradar_<country>_<category>_<productHex>`
- * for attribution where the network supports it. The productId is hex-encoded
- * (delimiter-free), so the postback handler recovers the EXACT original
- * productId losslessly via decodeSubId — even when the productId itself
- * contains ':' '-' '.' or other separators.
+ * Kelkoo/AWIN/Tradedoubler URLs already arrive monetized (goUrl / aw_deep_link)
+ * with our publisher ID baked in, so commission is attributed regardless.
+ * On top of that, we append a structured sub-id `dealradar_<country>_<category>_<productHex>`
+ * for granular conversion attribution.
+ *
+ * The productId is hex-encoded (delimiter-free), so the postback handler recovers
+ * the EXACT original productId losslessly via decodeSubId — even when the productId
+ * itself contains ':' '-' '.' or other separators.
  *
  * Browser-safe: used by client components, so no Buffer (TextEncoder only).
  */
