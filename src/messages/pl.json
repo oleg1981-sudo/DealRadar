@@ -5,7 +5,8 @@
     "heroDisclosure": "Nie sprzedajemy produktów bezpośrednio — pomagamy znaleźć zweryfikowane okazje i przekierowujemy Cię do zaufanych sklepów.",
     "heroCta": "Szukaj",
     "topDeals": "Najlepsze okazje w {country}",
-    "noDeals": "Brak okazji dla Twojej lokalizacji. Zajrzyj wkrótce."
+    "noDeals": "Brak okazji dla Twojej lokalizacji. Zajrzyj wkrótce.",
+    "viewAllDeals": "Zobacz wszystkie okazje"
   },
   "categories": {
     "heading": "Przeglądaj według kategorii",
@@ -28,7 +29,8 @@
     "today": "Dziś",
     "close": "Zamknij",
     "sizes": "Rozmiary",
-    "details": "Szczegóły produktu"
+    "details": "Szczegóły produktu",
+    "priceNote": "Price and availability may change — confirm at the store."
   },
   "alert": {
     "button": "Otrzymuj alert o najlepszej cenie",
@@ -46,7 +48,9 @@
     "seeAll": "Zobacz wszystkie wyniki",
     "resultsFor": "Wyniki dla „{q}”",
     "allResults": "Wszystkie okazje",
-    "noResults": "Żadna okazja nie pasuje do filtrów. Spróbuj poszerzyć zakres cen lub obniżyć minimalny rabat."
+    "noResults": "Żadna okazja nie pasuje do filtrów. Spróbuj poszerzyć zakres cen lub obniżyć minimalny rabat.",
+    "prevPage": "Poprzednia strona",
+    "nextPage": "Następna strona"
   },
   "filters": {
     "heading": "Filtry",
@@ -63,7 +67,8 @@
     "min": "Min",
     "max": "Maks",
     "minDiscount": "Minimalny rabat",
-    "apply": "Zastosuj filtry"
+    "apply": "Zastosuj filtry",
+    "sortRandom": "Losowo"
   },
   "geo": {
     "promptTitle": "Pokazać okazje w pobliżu?",

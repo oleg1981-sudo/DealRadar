@@ -5,7 +5,8 @@
     "heroDisclosure": "Vi selger ikke produkter direkte — vi hjelper deg å finne verifiserte tilbud og sender deg videre til pålitelige forhandlere.",
     "heroCta": "Søk",
     "topDeals": "Beste tilbud i {country}",
-    "noDeals": "Ingen tilbud for din plassering ennå. Kom tilbake snart."
+    "noDeals": "Ingen tilbud for din plassering ennå. Kom tilbake snart.",
+    "viewAllDeals": "Se alle tilbud"
   },
   "categories": {
     "heading": "Bla gjennom etter kategori",
@@ -28,7 +29,8 @@
     "today": "I dag",
     "close": "Lukk",
     "sizes": "Størrelser",
-    "details": "Produktdetaljer"
+    "details": "Produktdetaljer",
+    "priceNote": "Price and availability may change — confirm at the store."
   },
   "alert": {
     "button": "Få varsel om beste pris",
@@ -46,7 +48,9 @@
     "seeAll": "Se alle resultater",
     "resultsFor": "Resultater for «{q}»",
     "allResults": "Alle tilbud",
-    "noResults": "Ingen tilbud samsvarer med filtrene dine. Prøv å utvide prisintervallet eller senke minimumsrabatten."
+    "noResults": "Ingen tilbud samsvarer med filtrene dine. Prøv å utvide prisintervallet eller senke minimumsrabatten.",
+    "prevPage": "Forrige side",
+    "nextPage": "Neste side"
   },
   "filters": {
     "heading": "Filtre",
@@ -63,7 +67,8 @@
     "min": "Min",
     "max": "Maks",
     "minDiscount": "Minimumsrabatt",
-    "apply": "Bruk filtre"
+    "apply": "Bruk filtre",
+    "sortRandom": "Tilfeldig"
   },
   "geo": {
     "promptTitle": "Vise tilbud i nærheten?",

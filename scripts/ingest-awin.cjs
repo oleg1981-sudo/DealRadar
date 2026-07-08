@@ -43,6 +43,15 @@ if (!FEED_URL) {
   console.error('AWIN_FEED_URL is not set. Put the AWIN datafeed download URL in .env.local or the environment.');
   process.exit(1);
 }
+// Tolerate a SUPABASE_URL secret that's missing the scheme or has a trailing slash.
+function normalizeBaseUrl(u) {
+  u = (u || '').trim();
+  if (!u) return u;
+  if (!/^https?:\/\//i.test(u)) u = 'https://' + u;
+  return u.replace(/\/+$/, '');
+}
+const SUPABASE_URL = normalizeBaseUrl(process.env.SUPABASE_URL);
+const KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 
 // ── category mapping: AWIN `category_name` (clean English taxonomy) → our slug ──
 // Exact matches first (precise for the high-volume categories), regex fallback
@@ -85,6 +94,19 @@ const CATEGORY_RULES = [
   [/book|ebook/i, 'books'],
   [/\bcar\b|auto|tyre|tire|motor/i, 'automotive'],
 ];
+// AWIN's own category_name/merchant_category is INCONSISTENT within a single
+// product line — e.g. balcony solar kits get tagged "Power Supplies" for some
+// SKUs and "Power Tools" for others, and the generic `\btools?\b` home-garden
+// rule above then wrongly claims the "Power Tools" ones. Product-NAME keywords
+// are more reliable for these specific, well-known lines; checked before the
+// feed-taxonomy mapping so a bad category_name can't override a clear name match.
+const NAME_CATEGORY_OVERRIDES = [
+  [/balkonkraftwerk|solarmodul|solarpanel|wechselrichter|erweiterungsakku|photovoltaik|\bsolar\b/i, 'electronics'],
+];
+function nameOverrideCategory(productName) {
+  for (const [re, slug] of NAME_CATEGORY_OVERRIDES) if (re.test(productName || '')) return slug;
+  return null;
+}
 function mapCategory(categoryName, merchantCategory) {
   if (CATEGORY_EXACT[categoryName]) return CATEGORY_EXACT[categoryName];
   const hay = `${categoryName} ${merchantCategory}`;
@@ -113,6 +135,14 @@ function normalizeRow(g) {
   const deepLink = g('aw_deep_link').trim();
   if (!awId || !deepLink) return null;
 
+  // Real gallery: the card image (productserve proxy) + any merchant images the
+  // feed ships. Deduped, http(s) only.
+  const gallery = [...new Set([
+    g('aw_image_url'), g('large_image'), g('alternate_image'),
+    g('alternate_image_two'), g('alternate_image_three'), g('alternate_image_four'),
+  ].map((u) => (u || '').trim()).filter((u) => /^https?:\/\//.test(u)))];
+  const description = g('description').trim().replace(/\s+/g, ' ').slice(0, 1500) || null;
+
   return {
     product_id: `awin:${awId}`,
     product_name: g('product_name').trim(),
@@ -123,9 +153,12 @@ function normalizeRow(g) {
     sale_price: sale,
     discount_percent: discountPercent,
     currency,
-    category: mapCategory(g('category_name').trim(), g('merchant_category').trim()),
+    category: nameOverrideCategory(g('product_name')) ?? mapCategory(g('category_name').trim(), g('merchant_category').trim()),
     brand: g('brand_name').trim() || null,
     image_url: g('aw_image_url').trim() || g('merchant_image_url').trim() || null, // productserve proxy first
+    gallery: gallery.length ? gallery : null,
+    description,
+    merchant_url: g('merchant_deep_link').trim() || null, // direct shop URL for the live verifier
     country: COUNTRY,
     city: null,
     is_sponsored: true,
@@ -190,22 +223,37 @@ function ingest(url, onHeader, onRow, redirects = 0) {
   });
 }
 
-// ── Supabase REST upsert (no @supabase/supabase-js needed) ─────────────────────
+// ── Supabase REST (no @supabase/supabase-js needed) ────────────────────────────
+function supaHeaders(extra) {
+  return { apikey: KEY, Authorization: `Bearer ${KEY}`, ...extra };
+}
+
 async function upsertBatch(rows) {
-  const base = process.env.SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!base || !key) throw new Error('--upsert needs SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY');
-  const res = await fetch(`${base}/rest/v1/deals?on_conflict=product_id`, {
+  if (!SUPABASE_URL || !KEY) throw new Error('--upsert needs SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY');
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/deals?on_conflict=product_id`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      apikey: key,
-      Authorization: `Bearer ${key}`,
-      Prefer: 'resolution=merge-duplicates,return=minimal',
-    },
+    headers: supaHeaders({ 'Content-Type': 'application/json', Prefer: 'resolution=merge-duplicates,return=minimal' }),
     body: JSON.stringify(rows),
   });
   if (!res.ok) throw new Error(`Supabase upsert failed: HTTP ${res.status} ${await res.text()}`);
+}
+
+/**
+ * Existing AWIN deals' prices, keyed by product_id. The live-shop verifier owns
+ * prices, so re-ingesting the (lagging) feed must NOT clobber verified
+ * corrections — we preserve the stored price for any product we've seen before.
+ */
+async function fetchExistingPrices() {
+  const out = new Map();
+  for (let from = 0; ; from += 1000) {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/deals?source=eq.awin&select=product_id,sale_price,original_price,discount_percent`,
+      { headers: supaHeaders({ Range: `${from}-${from + 999}` }) });
+    if (!res.ok) throw new Error(`read existing failed: HTTP ${res.status} ${await res.text()}`);
+    const rows = await res.json();
+    for (const r of rows) out.set(r.product_id, { sale_price: Number(r.sale_price), original_price: Number(r.original_price), discount_percent: Number(r.discount_percent) });
+    if (rows.length < 1000) break;
+  }
+  return out;
 }
 
 // ── main ───────────────────────────────────────────────────────────────────────
@@ -252,12 +300,42 @@ async function upsertBatch(rows) {
   // Upsert in batches AFTER parsing (the parser callback is synchronous).
   if (DO_UPSERT) {
     const all = batch; batch = [];
+    // Preserve verified prices for products we already have; the feed price is
+    // only used for brand-new products (until the verifier first checks them).
+    const existing = await fetchExistingPrices();
+    let preserved = 0;
+    for (const d of all) {
+      const e = existing.get(d.product_id);
+      if (e && Number.isFinite(e.sale_price)) {
+        d.sale_price = e.sale_price; d.original_price = e.original_price; d.discount_percent = e.discount_percent;
+        preserved++;
+      }
+    }
     for (let i = 0; i < all.length; i += BATCH) {
       batch = all.slice(i, i + BATCH);
       await flush();
       process.stdout.write(`\r[awin] upserted ${upserted}/${all.length}…`);
     }
     process.stdout.write('\n');
+    console.log(`[awin] preserved verified prices for ${preserved} existing deals; feed price used for ${all.length - preserved} new ones`);
+
+    // Stale-hide: this upsert refreshed last_updated for every deal still in the
+    // feed, and the daily verifier touches every deal it can confirm live. So a
+    // row untouched for 3+ days has BOTH dropped out of the feed AND been
+    // unverifiable — hide it (not delete: it un-hides automatically if the
+    // verifier later confirms it live again).
+    const cutoff = new Date(Date.now() - 3 * 24 * 3600 * 1000).toISOString();
+    const staleRes = await fetch(
+      `${SUPABASE_URL}/rest/v1/deals?source=eq.awin&hidden=eq.false&last_updated=lt.${encodeURIComponent(cutoff)}`,
+      {
+        method: 'PATCH',
+        headers: supaHeaders({ 'Content-Type': 'application/json', Prefer: 'return=minimal,count=exact' }),
+        body: JSON.stringify({ hidden: true }),
+      },
+    );
+    if (!staleRes.ok) throw new Error(`stale-hide failed: HTTP ${staleRes.status} ${await staleRes.text()}`);
+    const staleCount = (staleRes.headers.get('content-range') || '').split('/')[1] || '0';
+    console.log(`[awin] stale-hide: ${staleCount} deals unseen for 3+ days hidden`);
   }
 
   const secs = ((Date.now() - t0) / 1000).toFixed(1);

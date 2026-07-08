@@ -5,7 +5,8 @@
     "heroDisclosure": "Vi säljer inga produkter direkt — vi hjälper dig att hitta verifierade erbjudanden och skickar dig vidare till pålitliga butiker.",
     "heroCta": "Sök",
     "topDeals": "Bästa erbjudandena i {country}",
-    "noDeals": "Inga erbjudanden för din plats ännu. Kom tillbaka snart."
+    "noDeals": "Inga erbjudanden för din plats ännu. Kom tillbaka snart.",
+    "viewAllDeals": "Visa alla erbjudanden"
   },
   "categories": {
     "heading": "Bläddra efter kategori",
@@ -28,7 +29,8 @@
     "today": "Idag",
     "close": "Stäng",
     "sizes": "Storlekar",
-    "details": "Produktdetaljer"
+    "details": "Produktdetaljer",
+    "priceNote": "Price and availability may change — confirm at the store."
   },
   "alert": {
     "button": "Få prisbevakning",
@@ -46,7 +48,9 @@
     "seeAll": "Visa alla resultat",
     "resultsFor": "Resultat för ”{q}”",
     "allResults": "Alla erbjudanden",
-    "noResults": "Inga erbjudanden matchar dina filter. Försök bredda prisintervallet eller sänka minsta rabatt."
+    "noResults": "Inga erbjudanden matchar dina filter. Försök bredda prisintervallet eller sänka minsta rabatt.",
+    "prevPage": "Föregående sida",
+    "nextPage": "Nästa sida"
   },
   "filters": {
     "heading": "Filter",
@@ -63,7 +67,8 @@
     "min": "Min",
     "max": "Max",
     "minDiscount": "Minsta rabatt",
-    "apply": "Tillämpa filter"
+    "apply": "Tillämpa filter",
+    "sortRandom": "Slumpmässigt"
   },
   "geo": {
     "promptTitle": "Visa erbjudanden nära dig?",

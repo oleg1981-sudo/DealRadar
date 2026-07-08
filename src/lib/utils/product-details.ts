@@ -1,14 +1,13 @@
 /**
- * Synthetic product-detail data for the detailed-card modal.
+ * Product-detail helpers for the detailed-card modal.
  *
- * Providers expose a single image and no specs/sizes, so — until a richer feed
- * exists — we derive a small gallery, a spec table, and (for apparel) sizes
- * deterministically from the deal's stable `productId`, matching the rest of
- * the app's seeded-mock approach. Swap these for real data when available.
+ * Real data — gallery images and the description — comes from the provider feed
+ * and is carried on the deal (`gallery`, `description`). We no longer fabricate a
+ * spec table, fake "also available at" offers, or a synthetic model code: a
+ * single feed has one price per product and no structured specs, so inventing
+ * them would mislead.
  */
 import type { NormalizedDeal } from '../providers/types';
-import { specLabel, specValue } from '../product-details-i18n';
-import { mockImages } from './mock-images';
 
 function seeded(seed: string): () => number {
   let h = 2166136261;
@@ -23,107 +22,10 @@ function seeded(seed: string): () => number {
   };
 }
 
-const pick = <T>(arr: T[], r: () => number): T => arr[Math.floor(r() * arr.length)];
-
-/** Main image + a few category-matched variants for the gallery. */
+/** Real product images for the gallery: the feed's gallery, else the card image. */
 export function productGallery(deal: NormalizedDeal): string[] {
-  const variants = mockImages(`${deal.productId}-gallery`, 3, deal.category);
-  return [deal.imageUrl, ...variants].filter((u): u is string => Boolean(u));
-}
-
-export interface Spec {
-  label: string;
-  value: string;
-}
-
-/** Stable synthetic model code — shown on the card and in the spec table. */
-export function productModel(deal: NormalizedDeal): string {
-  const r = seeded(`${deal.productId}:model`);
-  const prefix = (deal.brand ?? '').replace(/[^A-Za-z]/g, '').slice(0, 2).toUpperCase() || 'DR';
-  return `${prefix}-${Math.floor(r() * 9000) + 1000}`;
-}
-
-export function productSpecs(deal: NormalizedDeal, locale = 'en'): Spec[] {
-  const r = seeded(`${deal.productId}:spec`);
-  const colors = ['Black', 'White', 'Silver', 'Graphite', 'Blue', 'Green', 'Red'];
-  const warranties = ['1 year', '2 years', '3 years'];
-  const origins = ['Germany', 'China', 'Poland', 'Vietnam', 'Czechia'];
-
-  // Localized label / value helpers (English is the canonical seeded value).
-  const L = (label: string) => specLabel(label, locale);
-  const V = (value: string) => specValue(value, locale);
-
-  const specs: Spec[] = [];
-  if (deal.brand) specs.push({ label: L('Brand'), value: deal.brand });
-  specs.push({ label: L('Model'), value: productModel(deal) });
-  specs.push({ label: L('Color'), value: V(pick(colors, r)) });
-  specs.push({ label: L('Condition'), value: V('New') });
-  specs.push({ label: L('Warranty'), value: V(pick(warranties, r)) });
-  specs.push({ label: L('Weight'), value: `${(0.3 + r() * 6).toFixed(1)} kg` });
-  specs.push({ label: L('Availability'), value: `${Math.floor(r() * 40) + 5} ${V('in stock')}` });
-
-  // Electronics carry a long spec sheet — realistic, and it exercises the
-  // scrollable details section in the detailed card.
-  if (deal.category === 'electronics') {
-    specs.push({ label: L('Screen size'), value: `${pick([40, 43, 50, 55, 65, 75], r)}"` });
-    specs.push({ label: L('Resolution'), value: pick(['Full HD', '4K UHD', '8K UHD'], r) });
-    specs.push({ label: L('Refresh rate'), value: pick(['60 Hz', '120 Hz', '144 Hz'], r) });
-    specs.push({ label: L('Panel'), value: pick(['IPS', 'OLED', 'QLED', 'VA'], r) });
-    specs.push({ label: 'HDR', value: pick(['HDR10', 'HDR10+', 'Dolby Vision'], r) });
-    specs.push({ label: L('Connectivity'), value: pick(['Wi-Fi 5', 'Wi-Fi 6', 'Wi-Fi 6E'], r) });
-    specs.push({ label: 'Bluetooth', value: pick(['5.0', '5.2', '5.3'], r) });
-    specs.push({ label: L('HDMI ports'), value: String(pick([2, 3, 4], r)) });
-    specs.push({ label: L('USB ports'), value: String(pick([1, 2, 3], r)) });
-    specs.push({ label: L('Battery life'), value: `${pick([8, 10, 12, 20], r)} h` });
-    specs.push({ label: L('Power'), value: `${pick([45, 65, 90, 120], r)} W` });
-    specs.push({ label: L('Energy class'), value: pick(['A', 'B', 'C', 'D'], r) });
-    specs.push({ label: L('Operating system'), value: V(pick(['Android', 'webOS', 'Tizen', 'Proprietary'], r)) });
-    specs.push({ label: L('Voice control'), value: V(pick(['Alexa', 'Google', 'Both'], r)) });
-    specs.push({ label: L('Smart features'), value: V(pick(['Yes', 'Yes', 'No'], r)) });
-  }
-
-  specs.push({ label: L('Material'), value: V(pick(['Aluminium', 'Plastic', 'Steel', 'Composite'], r)) });
-  specs.push({ label: L('Dimensions'), value: `${pick([20, 30, 40, 60], r)}×${pick([15, 20, 30], r)}×${pick([4, 8, 12], r)} cm` });
-  specs.push({ label: L('Country of origin'), value: V(pick(origins, r)) });
-  specs.push({ label: 'SKU', value: `SKU-${Math.floor(r() * 900000) + 100000}` });
-  specs.push({ label: L('Returns'), value: V('30-day free returns') });
-  specs.push({ label: L('Shipping'), value: V(pick(['Free', '€2.99', '€4.99'], r)) });
-  return specs;
-}
-
-export interface StoreOffer {
-  shopName: string;
-  price: number;
-  currency: string;
-  url: string;
-}
-
-const OTHER_SHOPS = ['MediaMarkt', 'Otto', 'Saturn', 'Amazon', 'Cyberport', 'Coolblue', 'Conrad', 'Notebooksbilliger'];
-
-/**
- * "Also available at" offers for the detail modal. SYNTHETIC for now — a single
- * provider feed (and the DummyJSON test feed) has one price per product, so we
- * derive a few other stores deterministically, all PRICIER than our deal (we
- * show the best price). When a real comparison feed (e.g. Kelkoo) returns the
- * same product from multiple merchants, replace this with those real offers.
- */
-export function otherStoreOffers(deal: NormalizedDeal): StoreOffer[] {
-  const r = seeded(`${deal.productId}:stores`);
-  const avail = OTHER_SHOPS.filter((s) => s !== deal.shopName);
-  const start = Math.floor(r() * avail.length);
-  const n = 3 + Math.floor(r() * 3); // 3–5 other stores
-  const offers: StoreOffer[] = [];
-  for (let i = 0; i < n && i < avail.length; i++) {
-    const shopName = avail[(start + i) % avail.length];
-    const price = Math.round(deal.salePrice * (1 + 0.02 + r() * 0.18) * 100) / 100; // 2–20% dearer
-    offers.push({
-      shopName,
-      price,
-      currency: deal.currency,
-      url: `https://www.google.com/search?q=${encodeURIComponent(`${deal.productName} ${shopName}`)}`,
-    });
-  }
-  return offers.sort((a, b) => a.price - b.price);
+  if (deal.gallery && deal.gallery.length) return deal.gallery;
+  return deal.imageUrl ? [deal.imageUrl] : [];
 }
 
 export interface SizeOption {
@@ -136,10 +38,8 @@ const APPAREL_RE = /\b(shirt|t-?shirt|tee|jacket|coat|overcoat|vest|dress|trouse
 
 /**
  * Sizes for the detailed card. Footwear gets numeric (EU) sizes, apparel gets
- * letter sizes, everything else returns null (no size selector). Each size
- * carries an `available` flag — the modal greys out + strikes through the
- * unavailable ones. When a real product feed exists, map its size/stock data
- * to this same shape and the UI stays identical.
+ * letter sizes, everything else returns null (no size selector). Still synthetic
+ * availability until a feed ships real size/stock data — map it to this shape.
  */
 export function productSizes(deal: NormalizedDeal): SizeOption[] | null {
   const name = deal.productName;

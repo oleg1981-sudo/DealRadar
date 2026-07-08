@@ -5,7 +5,8 @@
     "heroDisclosure": "Wij verkopen geen producten rechtstreeks — we helpen je geverifieerde deals te vinden en sturen je door naar betrouwbare winkels.",
     "heroCta": "Zoeken",
     "topDeals": "Topdeals in {country}",
-    "noDeals": "Nog geen deals beschikbaar voor jouw locatie. Kom snel terug."
+    "noDeals": "Nog geen deals beschikbaar voor jouw locatie. Kom snel terug.",
+    "viewAllDeals": "Bekijk alle aanbiedingen"
   },
   "categories": {
     "heading": "Bladeren per categorie",
@@ -28,7 +29,8 @@
     "today": "Vandaag",
     "close": "Sluiten",
     "sizes": "Maten",
-    "details": "Productdetails"
+    "details": "Productdetails",
+    "priceNote": "Price and availability may change — confirm at the store."
   },
   "alert": {
     "button": "Ontvang beste-prijsmelding",
@@ -46,7 +48,9 @@
     "seeAll": "Alle resultaten bekijken",
     "resultsFor": "Resultaten voor ‘{q}’",
     "allResults": "Alle deals",
-    "noResults": "Geen deals voldoen aan je filters. Verruim het prijsbereik of verlaag de minimale korting."
+    "noResults": "Geen deals voldoen aan je filters. Verruim het prijsbereik of verlaag de minimale korting.",
+    "prevPage": "Vorige pagina",
+    "nextPage": "Volgende pagina"
   },
   "filters": {
     "heading": "Filters",
@@ -63,7 +67,8 @@
     "min": "Min",
     "max": "Max",
     "minDiscount": "Minimale korting",
-    "apply": "Filters toepassen"
+    "apply": "Filters toepassen",
+    "sortRandom": "Willekeurig"
   },
   "geo": {
     "promptTitle": "Deals bij jou in de buurt tonen?",

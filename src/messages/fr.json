@@ -5,7 +5,8 @@
     "heroDisclosure": "Nous ne vendons pas de produits directement : nous vous aidons à trouver des offres vérifiées et vous redirigeons vers des marchands de confiance.",
     "heroCta": "Rechercher",
     "topDeals": "Meilleures offres en {country}",
-    "noDeals": "Aucune offre disponible pour votre région pour le moment. Revenez bientôt."
+    "noDeals": "Aucune offre disponible pour votre région pour le moment. Revenez bientôt.",
+    "viewAllDeals": "Voir toutes les offres"
   },
   "categories": {
     "heading": "Parcourir par catégorie",
@@ -28,7 +29,8 @@
     "today": "Aujourd'hui",
     "close": "Fermer",
     "sizes": "Tailles",
-    "details": "Détails du produit"
+    "details": "Détails du produit",
+    "priceNote": "Price and availability may change — confirm at the store."
   },
   "alert": {
     "button": "Recevoir une alerte de prix",
@@ -46,7 +48,9 @@
     "seeAll": "Voir tous les résultats",
     "resultsFor": "Résultats pour « {q} »",
     "allResults": "Toutes les offres",
-    "noResults": "Aucune offre ne correspond à vos filtres. Essayez d'élargir la fourchette de prix ou de réduire la remise minimale."
+    "noResults": "Aucune offre ne correspond à vos filtres. Essayez d'élargir la fourchette de prix ou de réduire la remise minimale.",
+    "prevPage": "Page précédente",
+    "nextPage": "Page suivante"
   },
   "filters": {
     "heading": "Filtres",
@@ -63,7 +67,8 @@
     "min": "Min",
     "max": "Max",
     "minDiscount": "Remise minimale",
-    "apply": "Appliquer les filtres"
+    "apply": "Appliquer les filtres",
+    "sortRandom": "Aléatoire"
   },
   "geo": {
     "promptTitle": "Afficher les offres près de chez vous ?",

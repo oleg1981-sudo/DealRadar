@@ -11,6 +11,7 @@ const nextConfig = {
       { protocol: 'https', hostname: '**.kelkoogroup.net' },
       { protocol: 'https', hostname: '**.awin1.com' },
       { protocol: 'https', hostname: '**.productserve.com' },  // AWIN feed image CDN (aw_image_url)
+      { protocol: 'https', hostname: 'cdn.shopify.com' },      // AWIN merchant gallery images (alternate_image)
       { protocol: 'https', hostname: '**.tradedoubler.com' },
       { protocol: 'https', hostname: '**.strackr.com' },
     ],

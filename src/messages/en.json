@@ -5,7 +5,8 @@
     "heroDisclosure": "We don't sell products directly — we help you find verified deals and redirect you to trusted retailers.",
     "heroCta": "Search",
     "topDeals": "Top deals in {country}",
-    "noDeals": "No deals available for your location yet. Check back soon."
+    "noDeals": "No deals available for your location yet. Check back soon.",
+    "viewAllDeals": "View all deals"
   },
   "categories": {
     "heading": "Browse by category",
@@ -28,7 +29,8 @@
     "today": "Today",
     "close": "Close",
     "sizes": "Sizes",
-    "details": "Product details"
+    "details": "Product details",
+    "priceNote": "Price and availability may change — confirm at the store."
   },
   "alert": {
     "button": "Receive best price alert",
@@ -46,7 +48,9 @@
     "seeAll": "See all results",
     "resultsFor": "Results for “{q}”",
     "allResults": "All deals",
-    "noResults": "No deals match your filters. Try widening the price range or lowering the minimum discount."
+    "noResults": "No deals match your filters. Try widening the price range or lowering the minimum discount.",
+    "prevPage": "Previous page",
+    "nextPage": "Next page"
   },
   "filters": {
     "heading": "Filters",
@@ -63,7 +67,8 @@
     "min": "Min",
     "max": "Max",
     "minDiscount": "Minimum discount",
-    "apply": "Apply filters"
+    "apply": "Apply filters",
+    "sortRandom": "Shuffle"
   },
   "geo": {
     "promptTitle": "Show deals near you?",

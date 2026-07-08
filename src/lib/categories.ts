@@ -28,8 +28,9 @@ export const CATEGORIES: Category[] = [
       { name: 'Home Audio', children: ['Speakers', 'Headphones', 'Hi-Fi Systems', 'Microphones'] },
       { name: 'Phones & Wearables', children: ['Smartphones', 'Smartwatches', 'Tablets', 'Cases & Chargers'] },
       { name: 'Gaming', children: ['Consoles', 'Video Games', 'Controllers', 'Gaming PCs', 'VR Headsets'] },
-      { name: 'Cameras', children: ['Digital Cameras', 'Lenses', 'Drones', 'Action Cameras'] },
+      { name: 'Cameras', children: ['Digital Cameras', 'Lenses', 'Drones', 'Action Cameras', 'Kamera'] },
       { name: 'Home Appliances', children: ['Washing Machines', 'Fridges', 'Vacuum Cleaners', 'Coffee Machines'] },
+      { name: 'Solar', children: ['Balkonkraftwerk', 'Solarmodul', 'Solar-Erweiterungsset', 'Wechselrichter', 'Erweiterungsakku', 'Halterung'] },
     ],
   },
   {
@@ -49,9 +50,9 @@ export const CATEGORIES: Category[] = [
     icon: 'Sofa',
     children: [
       { name: 'Furniture', children: ['Sofas', 'Beds', 'Tables & Chairs', 'Storage', 'Office Furniture'] },
-      { name: 'Kitchen', children: ['Cookware', 'Tableware', 'Small Appliances', 'Knives', 'Food Storage'] },
+      { name: 'Kitchen', children: ['Cookware', 'Tableware', 'Small Appliances', 'Knives', 'Food Storage', 'Vorratsdosen'] },
       { name: 'Home Decor', children: ['Lighting', 'Rugs', 'Curtains', 'Wall Art', 'Candles'] },
-      { name: 'Bed & Bath', children: ['Bedding', 'Towels', 'Mattresses', 'Bathroom Accessories'] },
+      { name: 'Bed & Bath', children: ['Bedding', 'Towels', 'Mattresses', 'Bathroom Accessories', 'Seifenspender'] },
       { name: 'DIY & Tools', children: ['Power Tools', 'Hand Tools', 'Paint', 'Hardware'] },
       { name: 'Garden', children: ['Plants', 'Garden Furniture', 'BBQ & Grills', 'Garden Tools', 'Lawn Care'] },
     ],
@@ -77,6 +78,7 @@ export const CATEGORIES: Category[] = [
       { name: 'Fragrance', children: ["Women's Perfume", "Men's Aftershave", 'Gift Sets'] },
       { name: 'Hair Care', children: ['Shampoo', 'Styling', 'Hair Tools', 'Hair Colour'] },
       { name: 'Personal Care', children: ['Electric Shavers', 'Oral Care', 'Bath & Body'] },
+      { name: 'Health', children: ['Teststreifen'] },
     ],
   },
   {

@@ -25,10 +25,10 @@ export default async () => {
 };
 
 export const config = {
-  // Once daily, ~6am Central Europe. Netlify cron is UTC with no DST handling,
-  // so 04:00 UTC = 06:00 in Berlin during summer (CEST) / 05:00 in winter (CET).
-  // This also gives one price snapshot per day to build real price history.
-  // NOTE: true per-country 06:00-local would need several schedules (or an
-  // hourly run that only refreshes the countries whose local time is 6am).
-  schedule: '0 4 * * *',
+  // Once daily at 06:00 UTC — deliberately AFTER the GitHub Actions that
+  // maintain the data (AWIN feed ingest 03:00, live-shop verify 05:00), because
+  // /api/refresh ends with the price-alert reconciliation pass: subscribers
+  // must be compared against the freshly corrected prices, not yesterday's.
+  // 06:00 UTC ≈ 07:00–08:00 Berlin, a reasonable hour for alert emails.
+  schedule: '0 6 * * *',
 };

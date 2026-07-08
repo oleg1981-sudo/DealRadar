@@ -9,7 +9,7 @@ import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import Image from 'next/image';
 import { useTranslations, useLocale } from 'next-intl';
-import { X, ChevronDown } from 'lucide-react';
+import { X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { PriceHeatBar } from './PriceHeatBar';
 import { PriceAlertButton } from './PriceAlertButton';
@@ -17,7 +17,7 @@ import { formatPrice, formatDiscount } from '@/lib/utils/format';
 import { priceWindow } from '@/lib/utils/price-history';
 import { decorateAffiliateUrl } from '@/lib/utils/affiliate';
 import { displayShopName } from '@/lib/utils/shop';
-import { productGallery, productSpecs, productSizes, otherStoreOffers } from '@/lib/utils/product-details';
+import { productGallery, productSizes } from '@/lib/utils/product-details';
 import type { NormalizedDeal } from '@/lib/providers/types';
 
 export function DealDetailModal({ deal, onClose }: { deal: NormalizedDeal; onClose: () => void }) {
@@ -25,14 +25,28 @@ export function DealDetailModal({ deal, onClose }: { deal: NormalizedDeal; onClo
   const locale = useLocale();
   const [active, setActive] = useState(0);
   const [portalEl, setPortalEl] = useState<HTMLElement | null>(null);
-  const [showStores, setShowStores] = useState(false);
+  // Recorded daily sale prices (oldest → newest) from /api/price-history.
+  // Empty until fetched — the cardiogram shows its honest fallback meanwhile.
+  const [history, setHistory] = useState<number[]>([]);
 
   const gallery = productGallery(deal);
-  const specs = productSpecs(deal, locale);
   const sizes = productSizes(deal);
-  const pw = priceWindow(deal);
-  const otherStores = otherStoreOffers(deal);
-  const href = decorateAffiliateUrl(deal.shopUrl, deal.source);
+  const pw = priceWindow(deal, history);
+  const href = decorateAffiliateUrl(deal.shopUrl, deal.source, deal.productId);
+
+  // Load the real price history for this deal (best-effort: on any error the
+  // fallback line simply stays).
+  useEffect(() => {
+    const ctrl = new AbortController();
+    fetch(`/api/price-history?productId=${encodeURIComponent(deal.productId)}`, { signal: ctrl.signal })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((body: { points?: { salePrice: number }[] } | null) => {
+        const prices = (body?.points ?? []).map((p) => p.salePrice).filter((n) => Number.isFinite(n));
+        if (prices.length) setHistory(prices);
+      })
+      .catch(() => {});
+    return () => ctrl.abort();
+  }, [deal.productId]);
 
   // Portal target + body scroll lock + Escape to close.
   useEffect(() => {
@@ -135,39 +149,6 @@ export function DealDetailModal({ deal, onClose }: { deal: NormalizedDeal; onClo
               />
             </div>
 
-            {otherStores.length > 0 && (
-              <div className="relative mt-3">
-                <button
-                  type="button"
-                  onClick={() => setShowStores((v) => !v)}
-                  aria-expanded={showStores}
-                  className="flex w-full items-center justify-between rounded-lg border border-zinc-200 px-3 py-2 text-sm font-medium text-zinc-700 transition-colors hover:bg-zinc-50"
-                >
-                  <span>{t('otherStores')} ({otherStores.length})</span>
-                  <ChevronDown className={`h-4 w-4 transition-transform ${showStores ? 'rotate-180' : ''}`} aria-hidden />
-                </button>
-                {showStores && (
-                  <ul className="absolute left-0 right-0 top-full z-20 mt-1 max-h-56 divide-y divide-zinc-100 overflow-auto rounded-lg border border-zinc-200 bg-white shadow-lg">
-                    {otherStores.map((o) => (
-                      <li key={o.shopName}>
-                        <a
-                          href={decorateAffiliateUrl(o.url, deal.source)}
-                          target="_blank"
-                          rel="noopener nofollow sponsored"
-                          className="flex items-center justify-between px-3 py-2 text-sm transition-colors hover:bg-zinc-50"
-                        >
-                          <span className="text-zinc-700">{o.shopName}</span>
-                          <span className="font-semibold tabular-nums text-zinc-900">
-                            {formatPrice(o.price, o.currency, locale)}
-                          </span>
-                        </a>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            )}
-
             {sizes && sizes.length > 0 && (
               <div className="mt-4">
                 <p className="text-xs font-medium uppercase tracking-wide text-zinc-400">{t('sizes')}</p>
@@ -190,6 +171,7 @@ export function DealDetailModal({ deal, onClose }: { deal: NormalizedDeal; onClo
             )}
 
             <div className="mt-auto pt-4">
+              <p className="mb-1.5 text-center text-xs text-zinc-400">{t('priceNote')}</p>
               <a
                 href={href}
                 target="_blank"
@@ -213,18 +195,15 @@ export function DealDetailModal({ deal, onClose }: { deal: NormalizedDeal; onClo
           </div>
         </div>
 
-        {/* Technical details — the only scroll area on desktop. */}
-        <div className="mt-6 border-t border-zinc-100 pt-4 md:flex md:min-h-0 md:flex-1 md:flex-col">
-          <h3 className="mb-2 text-sm font-semibold text-zinc-900 md:shrink-0">{t('details')}</h3>
-          <dl className="grid grid-cols-1 gap-x-8 overscroll-contain pr-1 sm:grid-cols-2 md:min-h-0 md:flex-1 md:overflow-y-auto">
-            {specs.map((s) => (
-              <div key={s.label} className="flex justify-between gap-4 border-b border-zinc-100 py-1.5 text-sm">
-                <dt className="text-zinc-500">{s.label}</dt>
-                <dd className="text-right font-medium text-zinc-800">{s.value}</dd>
-              </div>
-            ))}
-          </dl>
-        </div>
+        {/* Description — real product copy from the feed; the scroll area on desktop. */}
+        {deal.description && (
+          <div className="mt-6 border-t border-zinc-100 pt-4 md:flex md:min-h-0 md:flex-1 md:flex-col">
+            <h3 className="mb-2 text-sm font-semibold text-zinc-900 md:shrink-0">{t('details')}</h3>
+            <p className="overscroll-contain whitespace-pre-line pr-1 text-sm leading-relaxed text-zinc-600 md:min-h-0 md:flex-1 md:overflow-y-auto">
+              {deal.description}
+            </p>
+          </div>
+        )}
       </div>
     </div>,
     portalEl,

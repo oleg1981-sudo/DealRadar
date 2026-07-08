@@ -50,3 +50,30 @@ jobs:
           else
             node scripts/ingest-awin.cjs --upsert
           fi
+
+      # New variants of known-buggy merchant pages (price swaps after JS) must
+      # inherit the homepage exclusion — the ingest alone leaves them visible.
+      - name: Sync homepage-hidden flags
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
+            node scripts/flag-homepage-hidden.cjs
+          else
+            node scripts/flag-homepage-hidden.cjs --apply
+          fi
+
+      # Record today's prices into price_history (real cardiogram data). The
+      # verify workflow re-snapshots the same UTC day later with live-checked
+      # prices — idempotent upsert, so that pass wins.
+      - name: Snapshot prices into price_history
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
+            node scripts/snapshot-prices.cjs
+          else
+            node scripts/snapshot-prices.cjs --apply
+          fi

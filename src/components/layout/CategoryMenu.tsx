@@ -154,13 +154,7 @@ export function CategoryMenu() {
       {active && (
         <div className="absolute left-0 right-0 top-full z-40 mt-2 max-h-[72vh] overflow-y-auto rounded-xl border border-zinc-200 bg-white shadow-card-hover">
           <div className="flex items-center justify-between border-b border-zinc-100 px-4 py-3">
-            <Link
-              href={`/category/${active.slug}`}
-              onClick={close}
-              className="text-sm font-semibold text-accent hover:underline"
-            >
-              {t(active.slug)}
-            </Link>
+            <span className="text-sm font-semibold text-zinc-900">{t(active.slug)}</span>
           </div>
 
           <div className="grid sm:grid-cols-[220px_1fr]">

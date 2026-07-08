@@ -5,7 +5,8 @@
     "heroDisclosure": "Emme myy tuotteita suoraan — autamme sinua löytämään vahvistettuja tarjouksia ja ohjaamme sinut luotettaviin kauppoihin.",
     "heroCta": "Hae",
     "topDeals": "Parhaat tarjoukset – {country}",
-    "noDeals": "Sijainnillesi ei ole vielä tarjouksia. Tarkista pian uudelleen."
+    "noDeals": "Sijainnillesi ei ole vielä tarjouksia. Tarkista pian uudelleen.",
+    "viewAllDeals": "Näytä kaikki tarjoukset"
   },
   "categories": {
     "heading": "Selaa kategorioittain",
@@ -28,7 +29,8 @@
     "today": "Tänään",
     "close": "Sulje",
     "sizes": "Koot",
-    "details": "Tuotetiedot"
+    "details": "Tuotetiedot",
+    "priceNote": "Price and availability may change — confirm at the store."
   },
   "alert": {
     "button": "Saa ilmoitus parhaasta hinnasta",
@@ -46,7 +48,9 @@
     "seeAll": "Näytä kaikki tulokset",
     "resultsFor": "Tulokset haulle ”{q}”",
     "allResults": "Kaikki tarjoukset",
-    "noResults": "Mikään tarjous ei vastaa suodattimiasi. Kokeile laajentaa hintaväliä tai laskea vähimmäisalennusta."
+    "noResults": "Mikään tarjous ei vastaa suodattimiasi. Kokeile laajentaa hintaväliä tai laskea vähimmäisalennusta.",
+    "prevPage": "Edellinen sivu",
+    "nextPage": "Seuraava sivu"
   },
   "filters": {
     "heading": "Suodattimet",
@@ -63,7 +67,8 @@
     "min": "Min",
     "max": "Maks",
     "minDiscount": "Vähimmäisalennus",
-    "apply": "Käytä suodattimia"
+    "apply": "Käytä suodattimia",
+    "sortRandom": "Satunnainen"
   },
   "geo": {
     "promptTitle": "Näytetäänkö tarjoukset lähelläsi?",

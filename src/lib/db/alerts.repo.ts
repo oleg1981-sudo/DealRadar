@@ -9,12 +9,18 @@
  */
 import 'server-only';
 import { supabase, supabaseConfigured } from './supabase';
+import { dealsByIds } from './deals.repo';
 import { sendEmail } from '../email/send';
+import { unsubscribeUrl } from '../email/unsubscribe';
 import { formatPrice } from '../utils/format';
 import { generateUnsubscribeToken } from '../utils/crypto';
+import { decorateAffiliateUrl } from '../utils/affiliate';
 import type { NormalizedDeal } from '../providers/types';
 
 const TABLE = 'price_alerts';
+
+/** Cap active alerts per email — blocks using /api/alerts to email-bomb someone. */
+export const MAX_ALERTS_PER_EMAIL = 50;
 
 export interface PriceAlertInput {
   email: string;
@@ -23,6 +29,18 @@ export interface PriceAlertInput {
   /** Notify once the product's sale price drops below this. */
   targetPrice: number;
   currency: string;
+}
+
+/** Active (not-yet-notified) alert count for an email — for the per-email cap. */
+export async function countActiveAlerts(email: string): Promise<number> {
+  if (!supabaseConfigured()) return 0;
+  const { count, error } = await supabase()
+    .from(TABLE)
+    .select('id', { count: 'exact', head: true })
+    .eq('email', email)
+    .eq('notified', false);
+  if (error) throw new Error(`[alerts.repo] count failed: ${error.message}`);
+  return count ?? 0;
 }
 
 export async function createPriceAlert(a: PriceAlertInput): Promise<void> {
@@ -75,10 +93,9 @@ export async function notifyPriceDrops(deals: NormalizedDeal[]): Promise<number>
       to: recipientEmail,
       subject: `Price drop: ${deal.productName}`,
       html: priceDropEmail(deal, Number(row.target_price), unsubUrl),
-      headers: {
-        'List-Unsubscribe': `<${unsubUrl}>`,
-        'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
-      },
+      headers: unsubUrl
+        ? { 'List-Unsubscribe': `<${unsubUrl}>`, 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' }
+        : undefined,
     });
     if (ok) {
       await supabase()
@@ -91,16 +108,39 @@ export async function notifyPriceDrops(deals: NormalizedDeal[]): Promise<number>
   return sent;
 }
 
-function priceDropEmail(deal: NormalizedDeal, targetPrice: number, unsubUrl: string): string {
+/**
+ * Reconcile ALL pending alerts against current DB prices and email matches.
+ * Called by the daily cron — this is the ONLY notification trigger, because
+ * prices are updated out-of-band (feed ingest + live-shop verifier), not by a
+ * per-deal code path that could notify inline.
+ */
+export async function notifyPendingAlerts(): Promise<number> {
+  if (!supabaseConfigured()) return 0;
+  const { data, error } = await supabase()
+    .from(TABLE)
+    .select('product_id')
+    .eq('notified', false)
+    .limit(1000);
+  if (error) throw new Error(`[alerts.repo] pending query failed: ${error.message}`);
+  const ids = [...new Set((data ?? []).map((r) => r.product_id as string))];
+  if (ids.length === 0) return 0;
+  return notifyPriceDrops(await dealsByIds(ids));
+}
+
+function priceDropEmail(deal: NormalizedDeal, targetPrice: number, unsubUrl: string | null): string {
   const now = formatPrice(deal.salePrice, deal.currency, 'en');
   const was = formatPrice(targetPrice, deal.currency, 'en');
   const name = escapeHtml(deal.productName);
   const shop = escapeHtml(deal.shopName);
+  const dealUrl = decorateAffiliateUrl(deal.shopUrl, deal.source, deal.productId);
+  const unsubFooter = unsubUrl
+    ? ` · <a href="${unsubUrl}" style="color:#71717a">Unsubscribe</a>`
+    : '';
   return `<div style="font-family:system-ui,sans-serif;max-width:480px;color:#18181b">
   <h2 style="margin:0 0 12px">Good news — the price dropped 🎉</h2>
   <p style="margin:0 0 12px"><strong>${name}</strong> is now <strong>${now}</strong> (was ${was}) at ${shop}.</p>
-  <p style="margin:0 0 20px"><a href="${deal.shopUrl}" style="display:inline-block;background:#EA580C;color:#fff;padding:10px 18px;border-radius:8px;text-decoration:none;font-weight:500">View the deal</a></p>
-  <p style="color:#71717a;font-size:12px;margin:0">You're receiving this because you set a price alert on DealRadar. <a href="${unsubUrl}" style="color:#71717a;text-decoration:underline">Unsubscribe</a></p>
+  <p style="margin:0 0 20px"><a href="${dealUrl}" style="display:inline-block;background:#EA580C;color:#fff;padding:10px 18px;border-radius:8px;text-decoration:none;font-weight:500">View the deal</a></p>
+  <p style="color:#71717a;font-size:12px;margin:0">You're receiving this because you set a price alert on DealRadar.${unsubFooter}</p>
 </div>`;
 }
 
