@@ -142,16 +142,23 @@ create table if not exists public.transactions (
 create index if not exists transactions_product_id_idx on public.transactions (product_id) where product_id is not null;
 alter table public.transactions enable row level security;
 
--- Trigger to automatically capture price snapshot on update
+-- Trigger to automatically capture price snapshot on price change.
+-- THE ONLY definition of record_price_history in this file (T-DB-0 / RSK-14):
+-- a second create-or-replace would silently win under last-definition-wins and
+-- previously broke every price-changing upsert by omitting day/currency (23502).
+-- NULL-safe (IS DISTINCT FROM); trigger narrowed to `of sale_price` so verifier
+-- hidden-patches/heartbeats don't fire it. Daily fill (one row per visible deal
+-- per UTC day even when the price is unchanged) is deliberately NOT this
+-- trigger's job — scripts/snapshot-prices.cjs owns it (see v3.1 FR-ING-7).
 create or replace function public.record_price_history()
 returns trigger language plpgsql as $$
 begin
-  if (TG_OP = 'INSERT') or (OLD.sale_price <> NEW.sale_price) then
+  if (TG_OP = 'INSERT') or (OLD.sale_price is distinct from NEW.sale_price) then
     insert into public.price_history (product_id, day, sale_price, original_price, currency, recorded_at)
     values (NEW.product_id, CURRENT_DATE, NEW.sale_price, NEW.original_price, NEW.currency, now())
-    on conflict (product_id, day) do update set 
-      sale_price = EXCLUDED.sale_price, 
-      original_price = EXCLUDED.original_price, 
+    on conflict (product_id, day) do update set
+      sale_price = EXCLUDED.sale_price,
+      original_price = EXCLUDED.original_price,
       recorded_at = EXCLUDED.recorded_at;
   end if;
   return NEW;
@@ -160,7 +167,7 @@ $$;
 
 drop trigger if exists trigger_record_price_history on public.deals;
 create trigger trigger_record_price_history
-  after insert or update on public.deals
+  after insert or update of sale_price on public.deals
   for each row execute function public.record_price_history();
 
 -- RPC function to batch calculate and update 90-day historical low prices
@@ -245,29 +252,14 @@ do $$ begin
   end if;
 end $$;
 
--- [R-ING-5 / S1-trigger-fn] Record a snapshot on price change OR once per day,
--- NULL-safe (IS DISTINCT FROM), fired only when sale_price actually changes.
-create or replace function public.record_price_history()
-returns trigger language plpgsql as $$
-begin
-  if (TG_OP = 'INSERT')
-     or (OLD.sale_price is distinct from NEW.sale_price)
-     or not exists (
-       select 1 from public.price_history
-        where product_id = NEW.product_id
-          and recorded_at::date = current_date)
-  then
-    insert into public.price_history (product_id, sale_price, original_price, recorded_at)
-    values (NEW.product_id, NEW.sale_price, NEW.original_price, now());
-  end if;
-  return NEW;
-end;
-$$;
-
-drop trigger if exists trigger_record_price_history on public.deals;
-create trigger trigger_record_price_history
-  after insert or update of sale_price on public.deals
-  for each row execute function public.record_price_history();
+-- [R-ING-5 / S1-trigger-fn] RESOLVED INTO THE SINGLE DEFINITION ABOVE (T-DB-0,
+-- 2026-07-09): the remediation-era duplicate of record_price_history() that
+-- lived here inserted WITHOUT the NOT-NULL day/currency columns of the
+-- redesigned day-keyed price_history table and, winning via create-or-replace,
+-- aborted every price-changing upsert. Its NULL-safe IS DISTINCT FROM guard and
+-- `of sale_price` trigger narrowing are folded into the definition at the top of
+-- this section; its once-per-day fill branch is deliberately superseded by
+-- scripts/snapshot-prices.cjs (see v3.1 FR-ING-7 + CHANGELOG).
 
 -- [R-MAIL-5 / NFR-PRIV-1] Automated GDPR retention for price_alerts.
 -- Deletes subscriptions past the retention window, and notified rows past a
