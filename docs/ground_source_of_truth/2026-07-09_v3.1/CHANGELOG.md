@@ -163,3 +163,11 @@ The 9 verification minors, applied by the main session after the fix pass:
 | tasks + prd | T-ING-5 Verify, §8.2 snapshot row | stale `snapshot-prices.cjs:3` comment given a fix owner; §8.2 parenthetical future-proofed for the T-ING-6 restore | minor (completeness) |
 | tasks | T-ING-5 | ⛔ ASK FIRST added: ALTER-in-place vs rename-aside migration path is a human decision post-probe (audit-plan sequencing note 3 — the second proposed human gate, previously unadopted) | minor (completeness) |
 | CHANGELOG | Consciously-NOT-changed | daily-fill semantics inversion recorded (change-only trigger + snapshot-owned daily-fill vs the remediation's per-day trigger fill) | minor (completeness) |
+
+## Execution log — 2026-07-09 (audit-plan P0-A/B/C, user-approved)
+
+| commit | task | what landed |
+|---|---|---|
+| `7f0ffa9` | T-INF-12 (P0-A) | Both gsot suites + `docs/recovered/` + `audit/2026-07-09_consolidation/` committed (17 files). T-INF-12 **ticked**; only tooling files (`.agents/`, `.claude/skills/`, `.mcp.json`, `skills-lock.json`) remain untracked, out of scope. |
+| `c2d9794` | T-DB-0 (P0-B), on-disk half | Duplicate `record_price_history` deleted; `IS DISTINCT FROM` + `of sale_price` folded into the single day-based definition; tombstone comment; db-migrate.yml single-definition pre-apply guard (tested pass + catch). Unticked pending staging drill + prod probes. |
+| `3ed5859` | T-ING-6 (P0-C), restore half | Main's `ingest-awin.cjs` + `ingest-awin.yml` restored (`git diff main..HEAD` = empty); behaviors verified present; **finding:** main's ingest composes no deal slug (D11-conformant) → `deals_set_slug` trigger backstop is load-bearing → T-INF-1 ordering matters. Unticked pending M1 live-feed clauses (G1). |

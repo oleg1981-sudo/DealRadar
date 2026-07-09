@@ -11,22 +11,22 @@ Effort: S (< 1h), M (half-day), L (1+ day).
 
 ## P0 — do first, in this order
 
-### P0-A. Commit the at-risk docs (data-loss prevention) — findings P0-3
-- **Status update (2026-07-09):** partially delivered at `b53bb3e` — `docs/specs/url-structure/2026-07-08_v2/` + `tasks/plan.md`/`tasks/todo.md` are committed. Remaining untracked set below.
+### P0-A. ✅ EXECUTED (`7f0ffa9`, 2026-07-09) — Commit the at-risk docs (data-loss prevention) — findings P0-3
+- **Status update (2026-07-09):** partially delivered at `b53bb3e` — `docs/specs/url-structure/2026-07-08_v2/` + `tasks/plan.md`/`tasks/todo.md` are committed. **Completed at `7f0ffa9`** — both gsot suites, `docs/recovered/`, and this audit directory committed; `grep -E '^\?\? (docs|tasks|audit)/'` → empty.
 - **What:** `git add` + commit `docs/ground_source_of_truth/2026-07-08_v3/` **and `2026-07-09_v3.1/`**, `docs/recovered/2026-07-09/`, and this `audit/2026-07-09_consolidation/` directory on the current branch. No content edits to the frozen/recovered trees — commit as-is.
 - **Why:** these are the only surviving copies of the ground-source-of-truth and the reconstructed spec; a second pull can destroy them exactly as EVENT 3 did. Cheapest, highest-leverage action in the whole plan.
 - **Where:** `/Users/danielmanzela/DealRadar/docs/ground_source_of_truth/2026-07-08_v3/`, `/Users/danielmanzela/DealRadar/docs/recovered/2026-07-09/` (fidelity notes in its `README.md`), `/Users/danielmanzela/DealRadar/audit/2026-07-09_consolidation/`.
 - **Effort:** S
 - **v3 IDs:** **RSK-13** *(new — untracked-doc destruction, already occurred)*, owned by **T-INF-12** *(new, M0, FIRST task executed)*; enriches A-19 (repointed to the recovered docs). T-INF-12 acceptance: `git status` shows no untracked files under `docs/` or `tasks/`; the v3.1 suite is committed in the same change; >5-file rule waived/noted for a docs-only commit.
 
-### P0-B. Fix the duplicate `record_price_history()` in schema.sql — findings P0-1 (EVENT 2)
+### P0-B. ✅ EXECUTED on-disk (`c2d9794`, 2026-07-09; prod probes pending) — Fix the duplicate `record_price_history()` in schema.sql — findings P0-1 (EVENT 2)
 - **What:** delete the second definition + trigger block at `/Users/danielmanzela/DealRadar/supabase/schema.sql:248-270`; if the remediation's NULL-safe `IS DISTINCT FROM` comparison and the narrower `after insert or update of sale_price` trigger are wanted, fold them into def#1 (`:146-164`) instead of keeping two definitions. Before AND after any apply, verify the live DB: `select prosrc from pg_proc where proname='record_price_history';` and check the actual `price_history` shape (`day`/`currency` columns present?).
 - **Why:** def#2 wins under last-definition-wins execution and inserts without `day` (NOT NULL, PK) and `currency` (NOT NULL) → every deals INSERT / sale_price UPDATE aborts → ingest (500-row batches, `scripts/ingest-awin.cjs:226-237`), `/api/refresh` persists (`src/lib/db/deals.repo.ts:65`), and verifier price corrections (`scripts/verify-awin.cjs:196-203`) all break. `.github/workflows/db-migrate.yml:11-17,38-46` auto-applies the file on push to main, so the break self-deploys on merge.
 - **Where:** `supabase/schema.sql:146-164` (keep) vs `:248-270` (remove/merge); `db-migrate.yml`.
 - **Effort:** S (fix) + S (live-DB verification, needs prod credentials — three-state: on-disk fix ≠ prod fixed).
 - **v3 IDs:** **FR-ING-7** (rewritten to the day-keyed model), **DSN-ING-6** (redesigned seams), **T-ING-5** + **T-INF-1** (both new-defect-blocked; T-INF-1 gains the ⛔ "do NOT merge schema.sql to main until :249-270 is deleted" note + single-definition acceptance), **RSK-14** *(new — ours-biased merge regressions)*, **M0 exit gate** (adds `record_price_history` count = 1). In the url-slug track this is **T-DB-0** *(new)*, sequenced ahead of todo B1.
 
-### P0-C. Restore main's ingest script + workflow — findings P0-2
+### P0-C. ✅ EXECUTED (`3ed5859`, 2026-07-09; one-cycle re-verification pending) — Restore main's ingest script + workflow — findings P0-2
 - **What:** `git checkout main -- scripts/ingest-awin.cjs .github/workflows/ingest-awin.yml`, then diff-review to confirm the remediation guards (slug parity, guarded discount) survive — both versions already carry them — and that the restored workflow steps (post-ingest snapshot, flag-homepage-hidden sync) point at the right scripts. Fixes findings P1-7 as a side effect.
 - **Why:** merge `155cf06` silently reverted both files to 91140c9, destroying: merchant_url/gallery/description extraction (new deals permanently skipped by the verifier, which selects `merchant_url=not.is.null`); verified-price preservation (feed clobbers verifier-corrected prices daily 03:00-05:00, re-opening Kuishi GBP-as-EUR); stale-hide (feed-dropped deals visible forever; verifier heartbeat write-only); the flag-homepage-hidden + snapshot workflow steps.
 - **Where:** `/Users/danielmanzela/DealRadar/scripts/ingest-awin.cjs` (HEAD `:139-162,240-299` vs main `:138-161,245-256,326-338`), `/Users/danielmanzela/DealRadar/.github/workflows/ingest-awin.yml`.
