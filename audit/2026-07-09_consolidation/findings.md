@@ -292,3 +292,29 @@ Grounded on the LOSSY reconstruction (`/Users/danielmanzela/DealRadar/docs/recov
 - **New structural findings surfaced by enrichment**: T-SEO-3 and T-SEO-4 are **now-done merged-on-branch** (genuine v3 status flips upward); FR-CMP-8/T-CMP-5/T-CMP-7 are largely built (alerts + unsubscribe) with two named residual defects; M0's exit gate is formally unreachable without two pre-gate tasks (T-INF-12; schema dedup + T-ING-6); the url-slug track gains **T-DB-0** ahead of B1; todo D3's pg_cron should be replaced by a lifecycle-unification task (three overlapping expiry mechanisms).
 - **Defect register unchanged in membership and severity** (3 P0, 7 P1, 16 P2); pass 2 refined their v3-ID ownership only — see the companion `audit-plan.md`, whose "v3 IDs" entries are now exact instead of best-guess.
 - Resolved pass-1 "To enrich" items 1 and 2 (invalidation map; spec conformance); items 3-5 (prod state, GSC, spec-package recovery) moved to "Still open (needs user/prod access)".
+
+---
+
+## 7. Prod probe results — 2026-07-10 (via Supabase MCP, project `jtlxeyfsuoepxdjmyhvo`)
+
+The "prod DB shape UNKNOWN" caveats above are now resolved. Probes: `pg_proc`, `information_schema.columns`, `pg_trigger`/`pg_constraint`/`pg_policies`/`pg_indexes`, role configs, row counts, advisors, 24h postgres+API logs.
+
+### 7.1 The P0 questions — answered
+
+| Question | Answer |
+|---|---|
+| Which `record_price_history` body does prod run? | **NONE — the function does not exist in prod.** No version (broken or fixed) was ever applied; prod has **zero user triggers**. The broken merged schema never reached prod; the on-disk fix (`c2d9794`) fully closes the risk. |
+| Prod `price_history` shape? | **Already day-keyed**: PK `(product_id, day)`, `currency NOT NULL` — identical to main's redesign. **P1-A (ALTER-vs-rename migration + its human gate) is MOOT** — no old→new migration exists to perform. All rows come from `snapshot-prices.cjs` (802 rows/day, perfectly regular Jul 7–9). |
+
+### 7.2 The bigger finding — prod schema is main-lineage only; the remediation layer was NEVER applied
+
+Prod has exactly 3 tables (`deals`, `price_alerts`, `price_history`) and 1 user function (`distinct_brands`, main's hidden-aware version). **Missing vs the on-disk schema.sql:** `deals.slug` + all metadata columns (`ean_code`/`upc_code`/`mpn`/`model_number`/`historical_low_price`/`merchant_id`/`affiliate_subid`); the **entire `transactions` table** (postbacks have nowhere to land); `price_alerts.locale`; ALL functions/triggers (`deal_slug`, `deals_set_slug`, `record_price_history`, `update_historical_lows_batch`, `purge_stale_price_alerts`); the slug/ean indexes. `supabase_migrations.schema_migrations` doesn't exist → no migration history; schema was applied ad hoc.
+
+**⛔ NEW HARD SEQUENCING RULE (supersedes any looser ordering): T-INF-1 (apply schema) strictly BEFORE T-INF-2 (deploy branch build).** The branch build's `toRow()` writes `slug`/`ean_code`/… (PGRST204 unknown-column → every `/api/refresh` upsert fails) and `getDealBySlug` filters `.eq('slug', …)` (→ every PDP errors). Deploying the branch onto today's prod schema takes the site down; the reverse order is safe (schema.sql is additive; the deployed main-lineage build never touches the new columns).
+
+### 7.3 Prod health & data state (verified-live, 2026-07-10)
+
+- **Deployed build = main-lineage, healthy**: API logs show `hidden=eq.false&homepage_hidden=eq.false` filters, offset/limit-48 pagination + HEAD counts, `limit=1000` search reads, `distinct_brands` RPC — **zero 4xx/5xx in the 24h sample**; only postgres ERROR is the benign `schema_migrations` lookup from tooling.
+- **Data**: 835 deals — 100% `source=awin`, 100% `DE`, 100% `EUR` (the M1 thin-slice shape already exists as data); 100% carry `gallery`+`description`+`merchant_url` (main's rich ingest ran); staleness ≤ 21 h; 33 `hidden`, 152 `homepage_hidden`. `price_history`: 2,406 rows = 802 products × 3 days, no orphans. `price_alerts`: **8 real subscriber emails (PII)**, 2 notified, oldest 25 days — retention is currently manual-only (no purge function in prod, `pg_cron` not installed, and the deployed build predates `/api/purge-alerts`).
+- **Security posture**: RLS enabled deny-all (0 policies) on all 3 tables — intended service-role-only design. Advisors: 2 WARN (`distinct_brands` mutable search_path; `pg_trgm` installed in `public`), 3 INFO (RLS-no-policy). No auth users, no storage buckets, no edge functions.
+- **Platform config**: PostgREST 14.5; statement timeouts anon=3s / authenticated=8s / authenticator=8s / service_role=unset; no `pgrst.db_max_rows` override → platform default (1000) — **A2's PostgREST max-rows answer = 1000**, so unpaginated reads (`.limit(5000)` in `getAllDealSlugs`) will silently cap at 1000 at scale. `unaccent` NOT installed (url-slug B1 must `create extension`; it is available). DB size 24.3 MB (deals 13 MB) — deep inside free tier.

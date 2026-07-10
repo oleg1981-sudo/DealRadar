@@ -42,7 +42,8 @@ Effort: S (< 1h), M (half-day), L (1+ day).
 
 ## P1 — next
 
-### P1-A. `price_history` old→new migration guard — findings P1-1
+### P1-A. ✅ MOOT (2026-07-10 prod probe) — `price_history` old→new migration guard — findings P1-1
+> **Probe result (findings §7):** prod `price_history` is **already day-keyed** (`(product_id, day)` PK + `currency NOT NULL`); no remediation-shape table exists anywhere. There is no old→new migration to perform and the ALTER-vs-rename human gate dissolves. The guarded-migration clauses in T-ING-5/T-INF-1 become no-ops to be verified, not built. Original item kept below for the record.
 - **What:** add an explicit guarded migration to schema.sql: if `price_history` lacks the `day` column, either ALTER in place (add `day date default (recorded_at::date)`, add `currency`, backfill, dedupe to one row per product/day, swap PK) or rename the old table aside and create the new shape. Determine the prod DB's actual shape FIRST (blocked on P0-B's verification query).
 - **Why:** `create table if not exists` (schema.sql:118-126) silently keeps a remediation-shape DB → `snapshot-prices.cjs:53-60` 400s every batch and `/api/price-history` 500s (`price-history.repo.ts:23-28`) while workflows look green.
 - **Where:** `supabase/schema.sql:118-126`; old shape at `91140c9:supabase/schema.sql`.
@@ -117,7 +118,7 @@ Effort: S (< 1h), M (half-day), L (1+ day).
 ## Still open (needs user/prod access)
 
 - ~~Time Machine recovery (P0-D)~~ — **RESOLVED**: restored + committed at `b53bb3e`. Residual: fidelity spot-check of findings-§6 + re-scope P1-C/D/E against the committed `spec.md`/register where they diverge from the reconstruction (code-side verdicts unaffected).
-- **Prod verification**: deployed commit on dealradar.me (PDP/JSON-LD/hreflang not yet spot-checked); prod DB `price_history` shape + `record_price_history` prosrc (gates P0-B's fix shape and P1-A's path); PostgREST max-rows; workflow secrets (APP_URL/CRON_SECRET/WEBHOOK_SECRET/RESEND_API_KEY/Supabase); Netlify cron + build env (`NEXT_PUBLIC_APP_URL` evidently unset at build — the local artifact emits `.eu`).
+- **Prod verification**: ~~prod DB `price_history` shape + `record_price_history` prosrc~~ + ~~PostgREST max-rows~~ — **ANSWERED 2026-07-10 (findings §7)**: no trigger/function exists in prod at all; `price_history` already day-keyed (P1-A moot); max-rows = platform default 1000; **prod schema lacks the entire remediation layer (no slug/metadata columns, NO `transactions` table) → T-INF-1 must run strictly BEFORE T-INF-2 or the branch build breaks every upsert + PDP read.** Still open: deployed commit SHA on dealradar.me (PDP/JSON-LD/hreflang spot-check); workflow secrets (APP_URL/CRON_SECRET/WEBHOOK_SECRET/RESEND_API_KEY/Supabase); Netlify cron + build env (`NEXT_PUBLIC_APP_URL` evidently unset at build — the local artifact emits `.eu`).
 - **GSC read**: coverage / sitemap processing / rich-result status, before and after the P1-C sitemap replacement; RRT on both a live and a hidden deal.
 - ~~v3.1 authoring itself~~ — **DONE (2026-07-09)**: the suite exists at `docs/ground_source_of_truth/2026-07-09_v3.1/` ({README,prd,requirements,design,tasks,CHANGELOG}.md), adversarially verified (3 reviewers → 5 blocker/major fixes applied → 9 minors closed in an editorial pass). It carries the full §5/§6 propagation, both-direction trace matrices (61 DSN / 60 T), and the M0 pre-gate re-baseline.
 
