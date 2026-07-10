@@ -5,7 +5,8 @@
     "heroDisclosure": "Emme myy tuotteita suoraan — autamme sinua löytämään vahvistettuja tarjouksia ja ohjaamme sinut luotettaviin kauppoihin.",
     "heroCta": "Hae",
     "topDeals": "Parhaat tarjoukset – {country}",
-    "noDeals": "Sijainnillesi ei ole vielä tarjouksia. Tarkista pian uudelleen."
+    "noDeals": "Sijainnillesi ei ole vielä tarjouksia. Tarkista pian uudelleen.",
+    "viewAllDeals": "Näytä kaikki tarjoukset"
   },
   "categories": {
     "heading": "Selaa kategorioittain",
@@ -36,7 +37,8 @@
     "backToDeals": "Takaisin kaikkiin tarjouksiin",
     "ninetyDayLow": "Alin hinta 90 päivään DealRadarissa.",
     "notLowestNote": "90 päivän alin: {price}.",
-    "verifiedAt": "Tarkistettu klo {time} CET."
+    "verifiedAt": "Tarkistettu klo {time} CET.",
+    "priceNote": "Price and availability may change — confirm at the store."
   },
   "alert": {
     "button": "Saa ilmoitus parhaasta hinnasta",
@@ -54,7 +56,10 @@
     "seeAll": "Näytä kaikki tulokset",
     "resultsFor": "Tulokset haulle ”{q}”",
     "allResults": "Kaikki tarjoukset",
-    "noResults": "Mikään tarjous ei vastaa suodattimiasi. Kokeile laajentaa hintaväliä tai laskea vähimmäisalennusta."
+    "noResults": "Mikään tarjous ei vastaa suodattimiasi. Kokeile laajentaa hintaväliä tai laskea vähimmäisalennusta.",
+    "nextPage": "Seuraava sivu",
+    "prevPage": "Edellinen sivu",
+    "searching": "Haetaan…"
   },
   "filters": {
     "heading": "Suodattimet",
@@ -71,7 +76,9 @@
     "min": "Min",
     "max": "Maks",
     "minDiscount": "Vähimmäisalennus",
-    "apply": "Käytä suodattimia"
+    "apply": "Käytä suodattimia",
+    "minPrice": "Vähimmäishinta",
+    "maxPrice": "Enimmäishinta"
   },
   "geo": {
     "promptTitle": "Näytetäänkö tarjoukset lähelläsi?",

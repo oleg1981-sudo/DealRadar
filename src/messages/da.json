@@ -5,7 +5,8 @@
     "heroDisclosure": "Vi sælger ikke produkter direkte — vi hjælper dig med at finde verificerede tilbud og sender dig videre til betroede forhandlere.",
     "heroCta": "Søg",
     "topDeals": "Bedste tilbud i {country}",
-    "noDeals": "Der er endnu ingen tilbud for din placering. Kom snart tilbage."
+    "noDeals": "Der er endnu ingen tilbud for din placering. Kom snart tilbage.",
+    "viewAllDeals": "Se alle tilbud"
   },
   "categories": {
     "heading": "Gennemse efter kategori",
@@ -36,7 +37,8 @@
     "backToDeals": "Tilbage til alle tilbud",
     "ninetyDayLow": "Laveste pris i 90 dage på DealRadar.",
     "notLowestNote": "Laveste pris i 90 dage: {price}.",
-    "verifiedAt": "Verificeret kl. {time} CET."
+    "verifiedAt": "Verificeret kl. {time} CET.",
+    "priceNote": "Price and availability may change — confirm at the store."
   },
   "alert": {
     "button": "Få besked om bedste pris",
@@ -54,7 +56,10 @@
     "seeAll": "Se alle resultater",
     "resultsFor": "Resultater for “{q}”",
     "allResults": "Alle tilbud",
-    "noResults": "Ingen tilbud matcher dine filtre. Prøv at udvide prisintervallet eller sænke minimumsrabatten."
+    "noResults": "Ingen tilbud matcher dine filtre. Prøv at udvide prisintervallet eller sænke minimumsrabatten.",
+    "nextPage": "Næste side",
+    "prevPage": "Forrige side",
+    "searching": "Søger…"
   },
   "filters": {
     "heading": "Filtre",
@@ -71,7 +76,9 @@
     "min": "Min",
     "max": "Maks",
     "minDiscount": "Minimumsrabat",
-    "apply": "Anvend filtre"
+    "apply": "Anvend filtre",
+    "minPrice": "Minimumspris",
+    "maxPrice": "Maksimumspris"
   },
   "geo": {
     "promptTitle": "Vis tilbud i nærheden?",

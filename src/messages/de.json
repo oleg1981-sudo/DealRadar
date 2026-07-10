@@ -5,7 +5,8 @@
     "heroDisclosure": "Wir verkaufen keine Produkte direkt — wir helfen dir, geprüfte Angebote zu finden, und leiten dich zu vertrauenswürdigen Händlern weiter.",
     "heroCta": "Suchen",
     "topDeals": "Top-Angebote in {country}",
-    "noDeals": "Für deinen Standort sind noch keine Angebote verfügbar. Schau bald wieder vorbei."
+    "noDeals": "Für deinen Standort sind noch keine Angebote verfügbar. Schau bald wieder vorbei.",
+    "viewAllDeals": "Alle Angebote ansehen"
   },
   "categories": {
     "heading": "Nach Kategorie stöbern",
@@ -36,7 +37,8 @@
     "backToDeals": "Zurück zu allen Angeboten",
     "ninetyDayLow": "Niedrigster Preis seit 90 Tagen auf DealRadar.",
     "notLowestNote": "90-Tage-Tief: {price}.",
-    "verifiedAt": "Geprüft um {time} MEZ."
+    "verifiedAt": "Geprüft um {time} MEZ.",
+    "priceNote": "Preis und Verfügbarkeit können sich ändern — beim Shop prüfen."
   },
   "alert": {
     "button": "Preisalarm erhalten",
@@ -54,7 +56,10 @@
     "seeAll": "Alle Ergebnisse anzeigen",
     "resultsFor": "Ergebnisse für „{q}“",
     "allResults": "Alle Angebote",
-    "noResults": "Keine Angebote entsprechen deinen Filtern. Erweitere die Preisspanne oder senke den Mindestrabatt."
+    "noResults": "Keine Angebote entsprechen deinen Filtern. Erweitere die Preisspanne oder senke den Mindestrabatt.",
+    "nextPage": "Nächste Seite",
+    "prevPage": "Vorherige Seite",
+    "searching": "Suche läuft…"
   },
   "filters": {
     "heading": "Filter",
@@ -71,7 +76,9 @@
     "min": "Min",
     "max": "Max",
     "minDiscount": "Mindestrabatt",
-    "apply": "Filter anwenden"
+    "apply": "Filter anwenden",
+    "minPrice": "Mindestpreis",
+    "maxPrice": "Höchstpreis"
   },
   "geo": {
     "promptTitle": "Angebote in deiner Nähe anzeigen?",

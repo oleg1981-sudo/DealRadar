@@ -32,6 +32,7 @@ export async function GET(req: NextRequest) {
     minPrice: num(p.get('minPrice')),
     maxPrice: num(p.get('maxPrice')),
     sort: (p.get('sort') as DealFilters['sort']) ?? 'discount',
+    seed: num(p.get('seed')),
     limit: Math.min(num(p.get('limit')) ?? 24, 100),
     offset: num(p.get('offset')) ?? 0,
   };
@@ -40,7 +41,7 @@ export async function GET(req: NextRequest) {
     country: filters.country, city: filters.city, category: filters.category,
     q: filters.q, brand: filters.brand, minDiscount: filters.minDiscountPercent,
     minPrice: filters.minPrice, maxPrice: filters.maxPrice,
-    sort: filters.sort, limit: filters.limit, offset: filters.offset,
+    sort: filters.sort, seed: filters.seed, limit: filters.limit, offset: filters.offset,
   });
 
   const cached = await cacheGet<unknown[]>(key);

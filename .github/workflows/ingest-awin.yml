@@ -51,19 +51,29 @@ jobs:
             node scripts/ingest-awin.cjs --upsert
           fi
 
-      # [GAP-2] Feed-ingested deals bypass /api/refresh, so dispatch price-drop
-      # alerts for the rows just written. Non-fatal if the app URL is unset.
-      - name: Dispatch price-drop alerts for ingested deals
-        if: ${{ github.event.inputs.dry_run != 'true' }}
+      # New variants of known-buggy merchant pages (price swaps after JS) must
+      # inherit the homepage exclusion — the ingest alone leaves them visible.
+      - name: Sync homepage-hidden flags
         env:
-          APP_URL: ${{ secrets.APP_URL }}
-          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: |
-          if [ -n "$APP_URL" ] && [ -n "$CRON_SECRET" ]; then
-            curl -fsS -X POST "$APP_URL/api/refresh-alerts" \
-              -H "Authorization: Bearer $CRON_SECRET" \
-              -H "Content-Type: application/json" \
-              -d '{"sinceMinutes":180}' || echo "refresh-alerts call failed (non-fatal)"
+          if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
+            node scripts/flag-homepage-hidden.cjs
           else
-            echo "APP_URL or CRON_SECRET not set — skipping alert dispatch"
+            node scripts/flag-homepage-hidden.cjs --apply
+          fi
+
+      # Record today's prices into price_history (real cardiogram data). The
+      # verify workflow re-snapshots the same UTC day later with live-checked
+      # prices — idempotent upsert, so that pass wins.
+      - name: Snapshot prices into price_history
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
+            node scripts/snapshot-prices.cjs
+          else
+            node scripts/snapshot-prices.cjs --apply
           fi

@@ -5,7 +5,8 @@
     "heroDisclosure": "Nous ne vendons pas de produits directement : nous vous aidons à trouver des offres vérifiées et vous redirigeons vers des marchands de confiance.",
     "heroCta": "Rechercher",
     "topDeals": "Meilleures offres en {country}",
-    "noDeals": "Aucune offre disponible pour votre région pour le moment. Revenez bientôt."
+    "noDeals": "Aucune offre disponible pour votre région pour le moment. Revenez bientôt.",
+    "viewAllDeals": "Voir toutes les offres"
   },
   "categories": {
     "heading": "Parcourir par catégorie",
@@ -36,7 +37,8 @@
     "backToDeals": "Retour à toutes les offres",
     "ninetyDayLow": "Prix le plus bas sur 90 jours sur DealRadar.",
     "notLowestNote": "Prix le plus bas sur 90 jours : {price}.",
-    "verifiedAt": "Vérifié à {time} CET."
+    "verifiedAt": "Vérifié à {time} CET.",
+    "priceNote": "Price and availability may change — confirm at the store."
   },
   "alert": {
     "button": "Recevoir une alerte de prix",
@@ -54,7 +56,10 @@
     "seeAll": "Voir tous les résultats",
     "resultsFor": "Résultats pour « {q} »",
     "allResults": "Toutes les offres",
-    "noResults": "Aucune offre ne correspond à vos filtres. Essayez d'élargir la fourchette de prix ou de réduire la remise minimale."
+    "noResults": "Aucune offre ne correspond à vos filtres. Essayez d'élargir la fourchette de prix ou de réduire la remise minimale.",
+    "nextPage": "Page suivante",
+    "prevPage": "Page précédente",
+    "searching": "Recherche…"
   },
   "filters": {
     "heading": "Filtres",
@@ -71,7 +76,9 @@
     "min": "Min",
     "max": "Max",
     "minDiscount": "Remise minimale",
-    "apply": "Appliquer les filtres"
+    "apply": "Appliquer les filtres",
+    "minPrice": "Prix minimum",
+    "maxPrice": "Prix maximum"
   },
   "geo": {
     "promptTitle": "Afficher les offres près de chez vous ?",

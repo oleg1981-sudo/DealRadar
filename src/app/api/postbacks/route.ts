@@ -23,7 +23,10 @@ const TERTIARY_SUBID_FIELD: Record<string, string> = {
 
 const str = (v: unknown): string => (typeof v === 'string' ? v : '');
 
-export async function POST(req: NextRequest) {
+/** Shared secret check — the secret always travels in the query string, never
+ *  the body, so it never lands in `raw_payload`. Returns an error response, or
+ *  null when authorized. */
+function checkAuth(req: NextRequest): NextResponse | null {
   // Dedicated webhook secret — no CRON_SECRET fallback (postbacks ≠ cron auth).
   const expected = process.env.WEBHOOK_SECRET;
   if (!expected) {
@@ -34,6 +37,27 @@ export async function POST(req: NextRequest) {
   if (!timingSafeEqualStr(provided, expected)) {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   }
+  return null;
+}
+
+/**
+ * GET /api/postbacks?secret=…&transaction_id=…&… — query-string postbacks.
+ * Some networks (Strackr) default to GET pixels rather than POST/JSON. Fields
+ * arrive as query params; `secret` is stripped so it never enters raw_payload.
+ */
+export async function GET(req: NextRequest) {
+  const unauthorized = checkAuth(req);
+  if (unauthorized) return unauthorized;
+  const body: Record<string, unknown> = {};
+  for (const [k, v] of req.nextUrl.searchParams) {
+    if (k !== 'secret') body[k] = v;
+  }
+  return processPostback(body);
+}
+
+export async function POST(req: NextRequest) {
+  const unauthorized = checkAuth(req);
+  if (unauthorized) return unauthorized;
 
   let body: Record<string, unknown>;
   try {
@@ -41,7 +65,10 @@ export async function POST(req: NextRequest) {
   } catch {
     return NextResponse.json({ error: 'bad_request' }, { status: 400 });
   }
+  return processPostback(body);
+}
 
+async function processPostback(body: Record<string, unknown>): Promise<NextResponse> {
   const transactionId = str(body.transaction_id) || str(body.id);
   if (!transactionId) {
     return NextResponse.json({ error: 'missing_transaction_id' }, { status: 400 });

@@ -8,7 +8,7 @@ import { getTranslations, setRequestLocale } from 'next-intl/server';
 const ORG = {
   name: 'DealRadar Europe Ltd.',
   address: ['DealRadar Systems', 'Tech Park Hub, Rue de la Loi 200', '1040 Brussels, Belgium'],
-  email: 'contact@dealradar.eu',
+  email: 'contact@dealradar.me',
   vat: 'BE 0123.456.789',
 };
 const ODR_URL = 'https://ec.europa.eu/consumers/odr';

@@ -5,7 +5,8 @@
     "heroDisclosure": "Wij verkopen geen producten rechtstreeks — we helpen je geverifieerde deals te vinden en sturen je door naar betrouwbare winkels.",
     "heroCta": "Zoeken",
     "topDeals": "Topdeals in {country}",
-    "noDeals": "Nog geen deals beschikbaar voor jouw locatie. Kom snel terug."
+    "noDeals": "Nog geen deals beschikbaar voor jouw locatie. Kom snel terug.",
+    "viewAllDeals": "Bekijk alle aanbiedingen"
   },
   "categories": {
     "heading": "Bladeren per categorie",
@@ -36,7 +37,8 @@
     "backToDeals": "Terug naar alle deals",
     "ninetyDayLow": "Laagste prijs in 90 dagen op DealRadar.",
     "notLowestNote": "Laagste prijs in 90 dagen: {price}.",
-    "verifiedAt": "Geverifieerd om {time} CET."
+    "verifiedAt": "Geverifieerd om {time} CET.",
+    "priceNote": "Price and availability may change — confirm at the store."
   },
   "alert": {
     "button": "Ontvang beste-prijsmelding",
@@ -54,7 +56,10 @@
     "seeAll": "Alle resultaten bekijken",
     "resultsFor": "Resultaten voor ‘{q}’",
     "allResults": "Alle deals",
-    "noResults": "Geen deals voldoen aan je filters. Verruim het prijsbereik of verlaag de minimale korting."
+    "noResults": "Geen deals voldoen aan je filters. Verruim het prijsbereik of verlaag de minimale korting.",
+    "nextPage": "Volgende pagina",
+    "prevPage": "Vorige pagina",
+    "searching": "Zoeken…"
   },
   "filters": {
     "heading": "Filters",
@@ -71,7 +76,9 @@
     "min": "Min",
     "max": "Max",
     "minDiscount": "Minimale korting",
-    "apply": "Filters toepassen"
+    "apply": "Filters toepassen",
+    "minPrice": "Minimumprijs",
+    "maxPrice": "Maximumprijs"
   },
   "geo": {
     "promptTitle": "Deals bij jou in de buurt tonen?",

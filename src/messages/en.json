@@ -5,7 +5,8 @@
     "heroDisclosure": "We don't sell products directly — we help you find verified deals and redirect you to trusted retailers.",
     "heroCta": "Search",
     "topDeals": "Top deals in {country}",
-    "noDeals": "No deals available for your location yet. Check back soon."
+    "noDeals": "No deals available for your location yet. Check back soon.",
+    "viewAllDeals": "View all deals"
   },
   "categories": {
     "heading": "Browse by category",
@@ -36,7 +37,8 @@
     "backToDeals": "Back to all deals",
     "ninetyDayLow": "Lowest price in 90 days on DealRadar.",
     "notLowestNote": "90-day low: {price}.",
-    "verifiedAt": "Verified at {time} CET."
+    "verifiedAt": "Verified at {time} CET.",
+    "priceNote": "Price and availability may change — confirm at the store."
   },
   "alert": {
     "button": "Receive best price alert",
@@ -54,7 +56,10 @@
     "seeAll": "See all results",
     "resultsFor": "Results for “{q}”",
     "allResults": "All deals",
-    "noResults": "No deals match your filters. Try widening the price range or lowering the minimum discount."
+    "noResults": "No deals match your filters. Try widening the price range or lowering the minimum discount.",
+    "nextPage": "Next page",
+    "prevPage": "Previous page",
+    "searching": "Searching…"
   },
   "filters": {
     "heading": "Filters",
@@ -71,7 +76,9 @@
     "min": "Min",
     "max": "Max",
     "minDiscount": "Minimum discount",
-    "apply": "Apply filters"
+    "apply": "Apply filters",
+    "minPrice": "Minimum price",
+    "maxPrice": "Maximum price"
   },
   "geo": {
     "promptTitle": "Show deals near you?",

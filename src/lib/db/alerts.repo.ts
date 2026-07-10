@@ -9,13 +9,22 @@
  */
 import 'server-only';
 import { supabase, supabaseConfigured } from './supabase';
+import { dealsByIds } from './deals.repo';
 import { sendEmail } from '../email/send';
 import { formatPrice } from '../utils/format';
 import { generateUnsubscribeToken } from '../utils/crypto';
 import { decorateAffiliateUrl } from '../utils/affiliate';
+import { siteUrl } from '../utils/site-url';
 import type { NormalizedDeal } from '../providers/types';
 
 const TABLE = 'price_alerts';
+
+/** Cap on ids per PostgREST `.in()` — keeps the GET query-string well under any
+ *  URL length limit (a full 1000-id `.in()` would be a multi-KB URL → 414). */
+const IN_CHUNK = 200;
+
+/** Cap active alerts per email — blocks using /api/alerts to email-bomb someone. */
+export const MAX_ALERTS_PER_EMAIL = 50;
 
 export interface PriceAlertInput {
   email: string;
@@ -26,6 +35,18 @@ export interface PriceAlertInput {
   currency: string;
   /** Subscriber locale, for localized emails + unsubscribe page. */
   locale?: string;
+}
+
+/** Active (not-yet-notified) alert count for an email — for the per-email cap. */
+export async function countActiveAlerts(email: string): Promise<number> {
+  if (!supabaseConfigured()) return 0;
+  const { count, error } = await supabase()
+    .from(TABLE)
+    .select('id', { count: 'exact', head: true })
+    .eq('email', email)
+    .eq('notified', false);
+  if (error) throw new Error(`[alerts.repo] count failed: ${error.message}`);
+  return count ?? 0;
 }
 
 export async function createPriceAlert(a: PriceAlertInput): Promise<void> {
@@ -73,14 +94,21 @@ export async function notifyPriceDrops(deals: NormalizedDeal[]): Promise<number>
   if (!supabaseConfigured() || deals.length === 0) return 0;
 
   const byId = new Map(deals.map((d) => [d.productId, d]));
-  const { data, error } = await supabase()
-    .from(TABLE)
-    .select('id, email, target_price, product_id, locale')
-    .in('product_id', [...byId.keys()])
-    .eq('notified', false);
-  if (error) throw new Error(`[alerts.repo] query failed: ${error.message}`);
+  // Chunk the id set: notifyPendingAlerts can pass up to 1000 ids, and a single
+  // `.in()` with all of them is a multi-KB GET URL that risks a 414 at the edge.
+  const ids = [...byId.keys()];
+  const data: { id: unknown; email: unknown; target_price: unknown; product_id: unknown; locale: unknown }[] = [];
+  for (let i = 0; i < ids.length; i += IN_CHUNK) {
+    const { data: rows, error } = await supabase()
+      .from(TABLE)
+      .select('id, email, target_price, product_id, locale')
+      .in('product_id', ids.slice(i, i + IN_CHUNK))
+      .eq('notified', false);
+    if (error) throw new Error(`[alerts.repo] query failed: ${error.message}`);
+    if (rows) data.push(...rows);
+  }
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://dealradar.eu';
+  const appUrl = siteUrl();
   let sent = 0;
   for (const row of data ?? []) {
     const deal = byId.get(row.product_id as string);
@@ -98,10 +126,9 @@ export async function notifyPriceDrops(deals: NormalizedDeal[]): Promise<number>
       to: recipientEmail,
       subject: `Price drop: ${deal.productName}`,
       html: priceDropEmail(deal, Number(row.target_price), unsubUrl, ctaUrl, locale),
-      headers: {
-        'List-Unsubscribe': `<${unsubUrl}>`,
-        'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
-      },
+      headers: unsubUrl
+        ? { 'List-Unsubscribe': `<${unsubUrl}>`, 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click' }
+        : undefined,
     });
     if (ok) {
       await supabase()
@@ -114,10 +141,29 @@ export async function notifyPriceDrops(deals: NormalizedDeal[]): Promise<number>
   return sent;
 }
 
+/**
+ * Reconcile ALL pending alerts against current DB prices and email matches.
+ * Called by the daily cron — this is the ONLY notification trigger, because
+ * prices are updated out-of-band (feed ingest + live-shop verifier), not by a
+ * per-deal code path that could notify inline.
+ */
+export async function notifyPendingAlerts(): Promise<number> {
+  if (!supabaseConfigured()) return 0;
+  const { data, error } = await supabase()
+    .from(TABLE)
+    .select('product_id')
+    .eq('notified', false)
+    .limit(1000);
+  if (error) throw new Error(`[alerts.repo] pending query failed: ${error.message}`);
+  const ids = [...new Set((data ?? []).map((r) => r.product_id as string))];
+  if (ids.length === 0) return 0;
+  return notifyPriceDrops(await dealsByIds(ids));
+}
+
 function priceDropEmail(
   deal: NormalizedDeal,
   targetPrice: number,
-  unsubUrl: string,
+  unsubUrl: string | null,
   ctaUrl: string,
   locale: string,
 ): string {
@@ -125,11 +171,14 @@ function priceDropEmail(
   const was = formatPrice(targetPrice, deal.currency, locale);
   const name = escapeHtml(deal.productName);
   const shop = escapeHtml(deal.shopName);
+  const unsubFooter = unsubUrl
+    ? ` · <a href="${escapeHtml(unsubUrl)}" style="color:#71717a">Unsubscribe</a>`
+    : '';
   return `<div style="font-family:system-ui,sans-serif;max-width:480px;color:#18181b">
   <h2 style="margin:0 0 12px">Good news — the price dropped 🎉</h2>
   <p style="margin:0 0 12px"><strong>${name}</strong> is now <strong>${now}</strong> (was ${was}) at ${shop}.</p>
   <p style="margin:0 0 20px"><a href="${escapeHtml(ctaUrl)}" rel="noopener noreferrer nofollow sponsored" style="display:inline-block;background:#EA580C;color:#fff;padding:10px 18px;border-radius:8px;text-decoration:none;font-weight:500">View the deal</a></p>
-  <p style="color:#71717a;font-size:12px;margin:0">You're receiving this because you set a price alert on DealRadar. <a href="${escapeHtml(unsubUrl)}" style="color:#71717a;text-decoration:underline">Unsubscribe</a></p>
+  <p style="color:#71717a;font-size:12px;margin:0">You're receiving this because you set a price alert on DealRadar.${unsubFooter}</p>
 </div>`;
 }
 

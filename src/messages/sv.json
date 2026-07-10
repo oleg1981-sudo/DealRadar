@@ -5,7 +5,8 @@
     "heroDisclosure": "Vi säljer inga produkter direkt — vi hjälper dig att hitta verifierade erbjudanden och skickar dig vidare till pålitliga butiker.",
     "heroCta": "Sök",
     "topDeals": "Bästa erbjudandena i {country}",
-    "noDeals": "Inga erbjudanden för din plats ännu. Kom tillbaka snart."
+    "noDeals": "Inga erbjudanden för din plats ännu. Kom tillbaka snart.",
+    "viewAllDeals": "Visa alla erbjudanden"
   },
   "categories": {
     "heading": "Bläddra efter kategori",
@@ -36,7 +37,8 @@
     "backToDeals": "Tillbaka till alla erbjudanden",
     "ninetyDayLow": "Lägsta priset på 90 dagar på DealRadar.",
     "notLowestNote": "Lägsta pris på 90 dagar: {price}.",
-    "verifiedAt": "Verifierat kl. {time} CET."
+    "verifiedAt": "Verifierat kl. {time} CET.",
+    "priceNote": "Price and availability may change — confirm at the store."
   },
   "alert": {
     "button": "Få prisbevakning",
@@ -54,7 +56,10 @@
     "seeAll": "Visa alla resultat",
     "resultsFor": "Resultat för ”{q}”",
     "allResults": "Alla erbjudanden",
-    "noResults": "Inga erbjudanden matchar dina filter. Försök bredda prisintervallet eller sänka minsta rabatt."
+    "noResults": "Inga erbjudanden matchar dina filter. Försök bredda prisintervallet eller sänka minsta rabatt.",
+    "nextPage": "Nästa sida",
+    "prevPage": "Föregående sida",
+    "searching": "Söker…"
   },
   "filters": {
     "heading": "Filter",
@@ -71,7 +76,9 @@
     "min": "Min",
     "max": "Max",
     "minDiscount": "Minsta rabatt",
-    "apply": "Tillämpa filter"
+    "apply": "Tillämpa filter",
+    "minPrice": "Lägsta pris",
+    "maxPrice": "Högsta pris"
   },
   "geo": {
     "promptTitle": "Visa erbjudanden nära dig?",

@@ -10,9 +10,9 @@
  * Body (optional): { "countries": ["DE","FR"], "categories": ["electronics"] }
  */
 import { NextRequest, NextResponse } from 'next/server';
-import { fetchDealsAcrossProviders } from '@/lib/providers/registry';
+import { fetchDealsAcrossProviders, initProviders } from '@/lib/providers/registry';
 import { upsertDeals, updateHistoricalLows } from '@/lib/db/deals.repo';
-import { notifyPriceDrops } from '@/lib/db/alerts.repo';
+import { notifyPriceDrops, notifyPendingAlerts } from '@/lib/db/alerts.repo';
 import { SUPPORTED_COUNTRIES, CATEGORY_SLUGS, type CategorySlug, type CountryCode } from '@/lib/providers/types';
 import { timingSafeEqualStr } from '@/lib/utils/crypto';
 
@@ -33,6 +33,19 @@ export async function POST(req: NextRequest) {
   const categories = body.categories ?? [...CATEGORY_SLUGS];
   const summary: Record<string, number> = {};
   let notified = 0;
+  let skippedMock = 0;
+
+  // Only REAL provider data may reach the system-of-record. Providers without
+  // credentials fall back to mock; persisting that would pollute the deals table
+  // (and fire alert emails on fake prices). AWIN is excluded here too — it's
+  // feed-ingested out of band (scripts/ingest-awin.cjs), so it returns [] on the
+  // query path. When a provider gets real credentials, its isMock flips false
+  // and it starts persisting automatically.
+  const health = await initProviders();
+  // dummyjson reports isMock:false (it IS a real HTTP API) but its catalogue is
+  // synthetic — it must never be persisted. It's excluded from production
+  // registries anyway; this guards a dev machine with CRON_SECRET set locally.
+  const isReal = (source: string) => source !== 'dummyjson' && health.get(source)?.isMock === false;
 
   // Fan out (country × category) through a bounded worker pool so a full sync
   // (16 countries × 10 categories = 160 tasks) runs in parallel without
@@ -51,9 +64,14 @@ export async function POST(req: NextRequest) {
       const { country, category } = tasks[cursor++];
       try {
         const deals = await fetchDealsAcrossProviders({ country, category, limit: 100 });
-        summary[country] += await upsertDeals(deals);
-        // Email anyone whose alert price has now been beaten by these deals.
-        notified += await notifyPriceDrops(deals);
+        const realDeals = deals.filter((d) => isReal(d.source));
+        skippedMock += deals.length - realDeals.length;
+        // Resolve BEFORE the compound-assign: `x += await …` captures x's value
+        // pre-await, so concurrent workers would clobber each other's counts.
+        const upserted = await upsertDeals(realDeals);
+        const emailed = await notifyPriceDrops(realDeals);
+        summary[country] += upserted;
+        notified += emailed;
       } catch (e) {
         console.error(`[api/refresh] ${country}/${category} failed:`, e);
       }
@@ -63,5 +81,15 @@ export async function POST(req: NextRequest) {
 
   await updateHistoricalLows();
 
-  return NextResponse.json({ ok: true, upserted: summary, alertsSent: notified, at: new Date().toISOString() });
+  // Reconcile ALL pending price alerts against current DB prices. Prices are
+  // mostly updated out-of-band (AWIN feed ingest + live-shop verifier, both in
+  // GitHub Actions), so this daily pass — not the per-provider loop above — is
+  // what actually delivers alert emails.
+  try {
+    notified += await notifyPendingAlerts();
+  } catch (e) {
+    console.error('[api/refresh] alert reconciliation failed:', e);
+  }
+
+  return NextResponse.json({ ok: true, upserted: summary, skippedMock, alertsSent: notified, at: new Date().toISOString() });
 }

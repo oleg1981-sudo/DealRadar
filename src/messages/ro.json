@@ -5,7 +5,8 @@
     "heroDisclosure": "Nu vindem produse direct — te ajutăm să găsești oferte verificate și te redirecționăm către comercianți de încredere.",
     "heroCta": "Caută",
     "topDeals": "Cele mai bune oferte în {country}",
-    "noDeals": "Încă nu există oferte pentru locația ta. Revino în curând."
+    "noDeals": "Încă nu există oferte pentru locația ta. Revino în curând.",
+    "viewAllDeals": "Vezi toate ofertele"
   },
   "categories": {
     "heading": "Răsfoiește pe categorii",
@@ -36,7 +37,8 @@
     "backToDeals": "Înapoi la toate ofertele",
     "ninetyDayLow": "Cel mai mic preț din ultimele 90 de zile pe DealRadar.",
     "notLowestNote": "Minim în 90 de zile: {price}.",
-    "verifiedAt": "Verificat la ora {time} CET."
+    "verifiedAt": "Verificat la ora {time} CET.",
+    "priceNote": "Price and availability may change — confirm at the store."
   },
   "alert": {
     "button": "Primește alertă de preț",
@@ -54,7 +56,10 @@
     "seeAll": "Vezi toate rezultatele",
     "resultsFor": "Rezultate pentru „{q}”",
     "allResults": "Toate ofertele",
-    "noResults": "Nicio ofertă nu corespunde filtrelor tale. Încearcă să lărgești intervalul de preț sau să reduci reducerea minimă."
+    "noResults": "Nicio ofertă nu corespunde filtrelor tale. Încearcă să lărgești intervalul de preț sau să reduci reducerea minimă.",
+    "nextPage": "Pagina următoare",
+    "prevPage": "Pagina anterioară",
+    "searching": "Se caută…"
   },
   "filters": {
     "heading": "Filtre",
@@ -71,7 +76,9 @@
     "min": "Min",
     "max": "Max",
     "minDiscount": "Reducere minimă",
-    "apply": "Aplică filtrele"
+    "apply": "Aplică filtrele",
+    "minPrice": "Preț minim",
+    "maxPrice": "Preț maxim"
   },
   "geo": {
     "promptTitle": "Arătăm oferte din apropiere?",

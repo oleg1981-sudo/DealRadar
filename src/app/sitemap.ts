@@ -2,8 +2,13 @@ import { MetadataRoute } from 'next';
 import { getAllDealSlugs } from '@/lib/db/deals.repo';
 import { CATEGORY_SLUGS } from '@/lib/providers/types';
 import { LOCALES, routing } from '@/i18n/routing';
+import { siteUrl } from '@/lib/utils/site-url';
 
-const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://dealradar.eu';
+// Deals ingest hourly out-of-band; without this the sitemap is frozen at the
+// last deploy and new deals stay invisible to crawlers until the next build.
+export const revalidate = 3600;
+
+const BASE_URL = siteUrl();
 
 /** Per-URL hreflang map: every supported locale + x-default → default locale. */
 function alternates(path: string) {

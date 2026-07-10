@@ -83,6 +83,7 @@ export function FilterPanel({ brands, category }: { brands: string[]; category?:
           <option value="price-asc">{t('filters.sortPriceAsc')}</option>
           <option value="price-desc">{t('filters.sortPriceDesc')}</option>
           <option value="newest">{t('filters.sortNewest')}</option>
+          <option value="random">{t('filters.sortRandom')}</option>
         </select>
       </div>
 

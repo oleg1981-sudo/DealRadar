@@ -46,11 +46,23 @@ const TERMS: Record<string, T> = {
   'Lenses': { de: 'Objektive', es: 'Objetivos', fr: 'Objectifs', it: 'Obiettivi', nl: 'Lenzen', pl: 'Obiektywy', pt: 'Objetivas', sv: 'Objektiv', ro: 'Obiective' },
   'Drones': { de: 'Drohnen', es: 'Drones', fr: 'Drones', it: 'Droni', nl: 'Drones', pl: 'Drony', pt: 'Drones', sv: 'Drönare', ro: 'Drone' },
   'Action Cameras': { de: 'Action-Kameras', es: 'Cámaras de acción', fr: "Caméras d'action", it: 'Action cam', nl: "Actioncamera's", pl: 'Kamery sportowe', pt: 'Câmaras de ação', sv: 'Actionkameror', ro: 'Camere de acțiune' },
+  'Kamera': { en: 'Trail Cameras', de: 'Wildkameras' },
   'Home Appliances': { de: 'Haushaltsgeräte', es: 'Electrodomésticos', fr: 'Électroménager', it: 'Elettrodomestici', nl: 'Huishoudelijke apparaten', pl: 'Sprzęt AGD', pt: 'Eletrodomésticos', sv: 'Vitvaror', ro: 'Electrocasnice' },
   'Washing Machines': { de: 'Waschmaschinen', es: 'Lavadoras', fr: 'Lave-linge', it: 'Lavatrici', nl: 'Wasmachines', pl: 'Pralki', pt: 'Máquinas de lavar', sv: 'Tvättmaskiner', ro: 'Mașini de spălat' },
   'Fridges': { de: 'Kühlschränke', es: 'Frigoríficos', fr: 'Réfrigérateurs', it: 'Frigoriferi', nl: 'Koelkasten', pl: 'Lodówki', pt: 'Frigoríficos', sv: 'Kylskåp', ro: 'Frigidere' },
   'Vacuum Cleaners': { de: 'Staubsauger', es: 'Aspiradoras', fr: 'Aspirateurs', it: 'Aspirapolvere', nl: 'Stofzuigers', pl: 'Odkurzacze', pt: 'Aspiradores', sv: 'Dammsugare', ro: 'Aspiratoare' },
   'Coffee Machines': { de: 'Kaffeemaschinen', es: 'Cafeteras', fr: 'Machines à café', it: 'Macchine da caffè', nl: 'Koffiezetapparaten', pl: 'Ekspresy do kawy', pt: 'Máquinas de café', sv: 'Kaffemaskiner', ro: 'Espressoare' },
+  // Raw keys below are the real German search terms (product data is German for
+  // this line) — 'en' overrides give English users a proper label; other
+  // locales fall back to the raw (German) term, which is still meaningful.
+  'Balkonkraftwerk': { en: 'Balcony Power Plants', de: 'Balkonkraftwerke' },
+  'Solarmodul': { en: 'Solar Panels', de: 'Solarmodule' },
+  'Solar-Erweiterungsset': { en: 'Solar Expansion Kits', de: 'Solar-Erweiterungssets' },
+  'Wechselrichter': { en: 'Inverters', de: 'Wechselrichter' },
+  'Erweiterungsakku': { en: 'Battery Storage', de: 'Erweiterungsakkus' },
+  'Halterung': { en: 'Mounting Brackets', de: 'Halterungen' },
+  'Seifenspender': { en: 'Soap Dispensers', de: 'Seifenspender' },
+  'Vorratsdosen': { en: 'Storage Containers', de: 'Vorratsdosen' },
 
   // ── Fashion ──────────────────────────────────────────────────
   'Women': { de: 'Damen', es: 'Mujer', fr: 'Femme', it: 'Donna', nl: 'Dames', pl: 'Kobiety', pt: 'Mulher', sv: 'Dam', ro: 'Femei' },
@@ -181,6 +193,8 @@ const TERMS: Record<string, T> = {
   'Electric Shavers': { de: 'Elektrorasierer', es: 'Afeitadoras eléctricas', fr: 'Rasoirs électriques', it: 'Rasoi elettrici', nl: 'Scheerapparaten', pl: 'Golarki elektryczne', pt: 'Máquinas de barbear', sv: 'Rakapparater', ro: 'Aparate de ras' },
   'Oral Care': { de: 'Zahnpflege', es: 'Higiene bucal', fr: 'Soins bucco-dentaires', it: 'Igiene orale', nl: 'Mondverzorging', pl: 'Higiena jamy ustnej', pt: 'Higiene oral', sv: 'Munvård', ro: 'Igienă orală' },
   'Bath & Body': { de: 'Bad & Körper', es: 'Baño y cuerpo', fr: 'Bain et corps', it: 'Bagno e corpo', nl: 'Bad & lichaam', pl: 'Kąpiel i ciało', pt: 'Banho e corpo', sv: 'Bad & kropp', ro: 'Baie și corp' },
+  'Health': { de: 'Gesundheit' },
+  'Teststreifen': { en: 'Test Strips', de: 'Teststreifen' },
 
   // ── Food & Grocery ───────────────────────────────────────────
   'Coffee & Tea': { de: 'Kaffee & Tee', es: 'Café y té', fr: 'Café et thé', it: 'Caffè e tè', nl: 'Koffie & thee', pl: 'Kawa i herbata', pt: 'Café e chá', sv: 'Kaffe & te', ro: 'Cafea și ceai' },
@@ -640,7 +654,11 @@ const NORDIC: Record<string, { da: string; fi: string; no: string }> = {
 
 /** Localized display label for a subcategory term; falls back to English. */
 export function categoryTerm(name: string, locale: string): string {
-  if (locale === 'en') return name;
+  // Almost all raw keys already ARE the English label (canonical value), so
+  // English normally shows them verbatim. A few raw keys are non-English words
+  // (real search terms straight from a German-language feed) — those get an
+  // explicit 'en' override so English users see a proper label too.
+  if (locale === 'en') return TERMS[name]?.en ?? name;
   return (
     TERMS[name]?.[locale as Locale] ??
     NORDIC[name]?.[locale as 'da' | 'fi' | 'no'] ??

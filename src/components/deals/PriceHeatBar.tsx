@@ -3,10 +3,11 @@ import type { PriceWindow } from '@/lib/utils/price-history';
 
 /**
  * Price cardiogram. Price is the vertical axis — expensive at the top (red),
- * cheap at the bottom (green). The line drops from the regular/no-discount
- * price down to today's price, and the dot marks today's price on the line.
- * Data-driven: with only two known prices it's a straight drop; once the daily
- * refresh records real snapshots the same line becomes a jagged curve.
+ * cheap at the bottom (green). Two modes:
+ *  - `series` given (recorded price history, oldest → newest, ending at today):
+ *    a chronological curve, dot on the last (= today's) point.
+ *  - no `series`: the price-range fallback — a straight line across the window
+ *    with the dot at today's position within it.
  */
 const VB_W = 100;
 const VB_H = 40;
@@ -15,12 +16,15 @@ const PAD_Y = 4;
 
 export function PriceHeatBar({
   window,
+  series,
   currency,
   locale,
   captionLabel,
   todayLabel,
 }: {
   window: PriceWindow;
+  /** Chronological recorded prices (≥2 points, last = today). Omit for the range fallback. */
+  series?: number[];
   currency: string;
   locale: string;
   captionLabel: string;
@@ -30,20 +34,23 @@ export function PriceHeatBar({
   const high = formatPrice(window.high, currency, locale);
   const today = formatPrice(window.current, currency, locale);
 
-  // Cheapest → dearest, left to right (and bottom → top on the price axis), so
-  // the line runs from the green bottom-left up to the red top-right.
-  const series = [window.low, window.high];
-  const last = series.length - 1;
+  // Chronological mode plots the recorded curve oldest → newest. The fallback
+  // draws cheapest → dearest, left to right (and bottom → top on the price
+  // axis), so the line runs from the green bottom-left up to the red top-right.
+  const chronological = series !== undefined && series.length >= 2;
+  const points = chronological ? series : [window.low, window.high];
+  const last = points.length - 1;
   const span = window.high - window.low || 1;
   const x = (i: number) => PAD_X + (i / last) * (VB_W - 2 * PAD_X);
   const y = (v: number) => PAD_Y + (1 - (v - window.low) / span) * (VB_H - 2 * PAD_Y); // high→top, low→bottom
 
-  const pts = series.map((v, i) => `${x(i).toFixed(2)},${y(v).toFixed(2)}`);
+  const pts = points.map((v, i) => `${x(i).toFixed(2)},${y(v).toFixed(2)}`);
   const line = `M${pts.join(' L')}`;
   const area = `${line} L${x(last).toFixed(2)},${VB_H} L${x(0).toFixed(2)},${VB_H} Z`;
-  // Today's price along the range: x by its price position, y at that price.
+  // Today's dot: on the curve's last point (chronological), or along the range
+  // at today's price position (fallback). viewBox units 0–100 ≈ percent.
   const pos = Math.min(1, Math.max(0, window.position));
-  const dotLeft = PAD_X + pos * (VB_W - 2 * PAD_X); // viewBox units 0–100 ≈ percent
+  const dotLeft = chronological ? x(last) : PAD_X + pos * (VB_W - 2 * PAD_X);
   const dotTop = (y(window.current) / VB_H) * 100;
 
   return (

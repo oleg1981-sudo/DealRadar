@@ -12,12 +12,13 @@ import { PriceHeatBar } from '@/components/deals/PriceHeatBar';
 import { SponsoredBadge } from '@/components/deals/SponsoredBadge';
 import { Badge } from '@/components/ui/badge';
 import { routing } from '@/i18n/routing';
+import { siteUrl } from '@/lib/utils/site-url';
 
 interface Props {
   readonly params: { readonly locale: string; readonly slug: string };
 }
 
-const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://dealradar.eu';
+const BASE_URL = siteUrl();
 
 // Deduplicate the lookup across generateMetadata + the page render (one request).
 const getDeal = cache((slug: string) => getDealBySlug(slug));
@@ -55,7 +56,9 @@ export default async function DealDetailPage({ params }: Props) {
   const pw = priceWindow(deal);
   const dealUrl = `${BASE_URL}/${params.locale}/deal/${params.slug}`;
 
-  // [FR-GEO-1 / P-3] Product + AggregateOffer + itemCondition — built per-item from the deal record.
+  // [FR-GEO-1 / P-3] Product + single Offer + itemCondition — built per-item from
+  // the deal record. A single-seller deal is a plain Offer, not an AggregateOffer
+  // (which models multiple sellers and triggers Search Console warnings at offerCount:1).
   const jsonLd = {
     '@context': 'https://schema.org/',
     '@type': 'Product',
@@ -65,29 +68,19 @@ export default async function DealDetailPage({ params }: Props) {
     ...(deal.brand ? { brand: { '@type': 'Brand', name: deal.brand } } : {}),
     ...(deal.eanCode ? { gtin: deal.eanCode } : {}),
     offers: {
-      '@type': 'AggregateOffer',
+      '@type': 'Offer',
+      price: deal.salePrice.toFixed(2),
       priceCurrency: deal.currency,
-      lowPrice: deal.salePrice.toFixed(2),
-      highPrice: deal.originalPrice.toFixed(2),
-      offerCount: 1,
       availability: 'https://schema.org/InStock',
-      offers: [
-        {
-          '@type': 'Offer',
-          price: deal.salePrice.toFixed(2),
-          priceCurrency: deal.currency,
-          availability: 'https://schema.org/InStock',
-          itemCondition: 'https://schema.org/NewCondition',
-          url: dealUrl,
-          seller: { '@type': 'Organization', name: deal.shopName },
-          priceSpecification: {
-            '@type': 'PriceSpecification',
-            price: deal.salePrice.toFixed(2),
-            priceCurrency: deal.currency,
-            valueAddedTaxIncluded: true,
-          },
-        },
-      ],
+      itemCondition: 'https://schema.org/NewCondition',
+      url: dealUrl,
+      seller: { '@type': 'Organization', name: deal.shopName },
+      priceSpecification: {
+        '@type': 'PriceSpecification',
+        price: deal.salePrice.toFixed(2),
+        priceCurrency: deal.currency,
+        valueAddedTaxIncluded: true,
+      },
     },
   };
 
@@ -103,9 +96,13 @@ export default async function DealDetailPage({ params }: Props) {
     timeZone: 'Europe/Berlin', hour: '2-digit', minute: '2-digit',
   });
 
+  // Escape `<` so a feed value containing `</script>` (productName/shopName come
+  // from third-party affiliate feeds) can't break out of the JSON-LD block — XSS.
+  const jsonLdHtml = JSON.stringify(jsonLd).replace(/</g, '\\u003c');
+
   return (
     <div className="mx-auto max-w-4xl px-4 py-8">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdHtml }} />
       <div className="mb-4">
         <Link href={`/${params.locale}`} className="text-sm text-zinc-500 hover:underline">
           &larr; {t('backToDeals')}

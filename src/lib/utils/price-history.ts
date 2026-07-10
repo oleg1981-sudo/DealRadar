@@ -1,15 +1,12 @@
 /**
- * Price-window derivation for the per-deal heat bar.
+ * Price-window/series derivation for the per-deal cardiogram.
  *
- * We only show prices we actually know. A provider gives a current `salePrice`
- * and a reference `originalPrice` (the regular/struck price) — that's it. So the
- * graph is an HONEST straight line from the regular price down to today's price,
- * NOT a fabricated walk. `low` = the lowest price we know (today's sale price),
- * `high` = the regular price.
- *
- * When the daily refresh starts recording real snapshots (a price_history
- * table), feed that recorded series into `priceSeries()` and the line will
- * develop genuine shape over time — no other change needed here.
+ * We only show prices we actually know. Without recorded history, a provider
+ * gives a current `salePrice` and a reference `originalPrice` — so the graph is
+ * an HONEST straight line from the regular price down to today's price, NOT a
+ * fabricated walk. Once the daily snapshot job has recorded real prices
+ * (`price_history` table, served by /api/price-history), pass those recorded
+ * sale prices in and the same line becomes a genuine curve.
  */
 import type { NormalizedDeal } from '../providers/types';
 
@@ -23,22 +20,31 @@ export interface PriceWindow {
 
 const round2 = (n: number) => Math.round(n * 100) / 100;
 
-export function priceWindow(deal: NormalizedDeal): PriceWindow {
+/**
+ * @param history recorded daily sale prices, oldest → newest (may be empty).
+ * The window spans everything we know: recorded lows may sit BELOW today's
+ * price, so "low" is no longer always the current price.
+ */
+export function priceWindow(deal: NormalizedDeal, history: number[] = []): PriceWindow {
   const current = round2(deal.salePrice);
-  const high = round2(Math.max(deal.originalPrice, deal.salePrice));
-  const low = current; // the lowest price we actually know is today's sale price
+  const high = round2(Math.max(deal.originalPrice, current, ...history));
+  const low = round2(Math.min(current, ...history));
   const span = high - low;
   const position = span > 0 ? Math.min(1, Math.max(0, (current - low) / span)) : 0;
   return { low, high, current, position };
 }
 
 /**
- * The real known prices as a series (oldest → newest): the regular price, then
- * today's sale price — a straight line. Returns two equal points (flat) when
- * there's no discount. Replace with the recorded daily series once stored.
+ * The known prices as a chronological series (oldest → newest), always ending
+ * at today's price. With ≥2 recorded days this is the real recorded curve;
+ * otherwise it degrades to the regular price then today's price — a straight
+ * line (two equal points when there's no discount).
  */
-export function priceSeries(deal: NormalizedDeal): number[] {
+export function priceSeries(deal: NormalizedDeal, history: number[] = []): number[] {
   const current = round2(deal.salePrice);
-  const high = round2(Math.max(deal.originalPrice, deal.salePrice));
+  const pts = history.map(round2);
+  if (pts.length === 0 || pts[pts.length - 1] !== current) pts.push(current);
+  if (pts.length >= 2) return pts;
+  const high = round2(Math.max(deal.originalPrice, current));
   return high > current ? [high, current] : [current, current];
 }
