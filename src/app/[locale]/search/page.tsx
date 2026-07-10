@@ -4,6 +4,7 @@ import { DealGrid } from '@/components/deals/DealGrid';
 import { FilterPanel } from '@/components/search/FilterPanel';
 import { Pagination } from '@/components/search/Pagination';
 import { queryDealsPaged, distinctBrands, type DealFilters } from '@/lib/db/deals.repo';
+import { randomSeed } from '@/lib/utils/rng';
 import { parseLocationCookie, LOCATION_COOKIE } from '@/lib/geo/resolve';
 import { DEFAULT_COUNTRY } from '@/lib/geo/countries';
 import { CATEGORY_SLUGS, type CategorySlug } from '@/lib/providers/types';
@@ -46,7 +47,7 @@ export default async function SearchPage({
   const sort = (one(sp.sort) as DealFilters['sort']) ?? 'discount';
   // sort:'random': pin a seed so pagination continues ONE shuffle; a fresh
   // visit (no seed in the URL) rolls a new one — different deals every entry.
-  const seed = sort === 'random' ? Math.floor(toNum(one(sp.seed)) ?? Math.random() * 2 ** 31) : undefined;
+  const seed = sort === 'random' ? Math.floor(toNum(one(sp.seed)) ?? randomSeed()) : undefined;
 
   const filters: DealFilters = {
     country,

@@ -3,6 +3,7 @@ import { Link } from '@/i18n/routing';
 import { DealGrid } from '@/components/deals/DealGrid';
 import { queryDeals } from '@/lib/db/deals.repo';
 import { countryInfo } from '@/lib/geo/countries';
+import { randomInt } from '@/lib/utils/rng';
 import type { CountryCode, NormalizedDeal } from '@/lib/providers/types';
 
 const HERO_COUNT = 12;
@@ -18,7 +19,7 @@ const HERO_POOL = 500;
 function shuffle<T>(items: T[]): T[] {
   const arr = [...items];
   for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
+    const j = randomInt(i + 1);
     [arr[i], arr[j]] = [arr[j], arr[i]];
   }
   return arr;

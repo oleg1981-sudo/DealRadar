@@ -10,6 +10,7 @@ import { supabase, supabaseConfigured } from './supabase';
 import { fetchDealsAcrossProviders } from '../providers/registry';
 import { queryTokens } from '../utils/search-tokens';
 import { slugify } from '../utils/slug';
+import { randomSeed } from '../utils/rng';
 import type { CategorySlug, CountryCode, DealQuery, NormalizedDeal } from '../providers/types';
 
 const TABLE = 'deals';
@@ -190,7 +191,7 @@ async function runQuery(filters: DealFilters, withTotal: boolean): Promise<Paged
   return { deals: (data ?? []).map(fromRow), total };
 }
 
-const newSeed = () => Math.floor(Math.random() * 2 ** 31);
+const newSeed = () => randomSeed();
 
 /** Deterministic PRNG (mulberry32) — same seed, same shuffle, every request. */
 function mulberry32(seed: number): () => number {
