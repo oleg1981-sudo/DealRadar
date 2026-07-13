@@ -2,8 +2,9 @@ import { cookies } from 'next/headers';
 import { notFound } from 'next/navigation';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { DealGrid } from '@/components/deals/DealGrid';
+import { FilterPanel } from '@/components/search/FilterPanel';
 import { Pagination } from '@/components/search/Pagination';
-import { queryDealsPaged, type DealFilters } from '@/lib/db/deals.repo';
+import { queryDealsPaged, distinctBrands, type DealFilters } from '@/lib/db/deals.repo';
 import { randomSeed } from '@/lib/utils/rng';
 import { parseLocationCookie, LOCATION_COOKIE } from '@/lib/geo/resolve';
 import { DEFAULT_COUNTRY } from '@/lib/geo/countries';
@@ -57,7 +58,10 @@ export default async function CategoryPage({
     offset: (requestedPage - 1) * PAGE_SIZE,
   };
 
-  const { deals, total } = await queryDealsPaged(filters);
+  const [{ deals, total }, brands] = await Promise.all([
+    queryDealsPaged(filters),
+    distinctBrands(country, category),
+  ]);
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const page = Math.min(requestedPage, totalPages); // repo clamps the data the same way
@@ -71,7 +75,8 @@ export default async function CategoryPage({
   if (seed !== undefined) linkParams.seed = String(seed); // keep this shuffle across pages
 
   return (
-    <div>
+    <div className="grid gap-8 lg:grid-cols-[240px_1fr]">
+      <FilterPanel brands={brands} category={category} />
       <section aria-live="polite">
         <h1 className="mb-6 text-xl font-semibold tracking-tight">
           {t(category)}

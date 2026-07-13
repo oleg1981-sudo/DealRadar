@@ -52,7 +52,6 @@ export default async function DealDetailPage({ params }: Props) {
   const deal = await getDeal(params.slug);
   if (!deal) notFound();
   const t = await getTranslations('deal');
-  const tCat = await getTranslations('categories');
 
   const affiliateUrl = decorateAffiliateUrl(deal.shopUrl, deal.source, deal.country, deal.category, deal.productId);
   // Recorded daily prices widen the window: low = recorded minimum, so the
@@ -102,47 +101,18 @@ export default async function DealDetailPage({ params }: Props) {
     timeZone: 'Europe/Berlin', hour: '2-digit', minute: '2-digit',
   });
 
-  // Breadcrumb trail: Home › category › product. The category link doubles as
-  // the visible answer to "which category is this deal in".
-  const categoryLabel = tCat(deal.category);
-  const breadcrumbJsonLd = {
-    '@context': 'https://schema.org/',
-    '@type': 'BreadcrumbList',
-    itemListElement: [
-      { '@type': 'ListItem', position: 1, name: t('breadcrumbHome'), item: `${BASE_URL}/${params.locale}` },
-      { '@type': 'ListItem', position: 2, name: categoryLabel, item: `${BASE_URL}/${params.locale}/category/${deal.category}` },
-      { '@type': 'ListItem', position: 3, name: deal.productName, item: dealUrl },
-    ],
-  };
-
   // Escape `<` so a feed value containing `</script>` (productName/shopName come
   // from third-party affiliate feeds) can't break out of the JSON-LD block — XSS.
   const jsonLdHtml = JSON.stringify(jsonLd).replace(/</g, '\\u003c');
-  const breadcrumbJsonLdHtml = JSON.stringify(breadcrumbJsonLd).replace(/</g, '\\u003c');
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdHtml }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: breadcrumbJsonLdHtml }} />
-      <nav aria-label="Breadcrumb" className="mb-4 text-sm text-zinc-500">
-        <ol className="flex flex-wrap items-center gap-1.5">
-          <li>
-            <Link href={`/${params.locale}`} className="hover:underline">
-              {t('breadcrumbHome')}
-            </Link>
-          </li>
-          <li aria-hidden>›</li>
-          <li>
-            <Link href={`/${params.locale}/category/${deal.category}`} className="hover:underline">
-              {categoryLabel}
-            </Link>
-          </li>
-          <li aria-hidden>›</li>
-          <li aria-current="page" className="max-w-[18rem] truncate text-zinc-700">
-            {deal.productName}
-          </li>
-        </ol>
-      </nav>
+      <div className="mb-4">
+        <Link href={`/${params.locale}`} className="text-sm text-zinc-500 hover:underline">
+          &larr; {t('backToDeals')}
+        </Link>
+      </div>
 
       <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
         <div className="relative aspect-square w-full overflow-hidden rounded-xl bg-white p-6 shadow-sm">
