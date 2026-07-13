@@ -7,6 +7,7 @@ import { getDealBySlug } from '@/lib/db/deals.repo';
 import { formatPrice, formatDiscount } from '@/lib/utils/format';
 import { decorateAffiliateUrl } from '@/lib/utils/affiliate';
 import { priceWindow } from '@/lib/utils/price-history';
+import { queryPriceHistory } from '@/lib/db/price-history.repo';
 import { PriceAlertButton } from '@/components/deals/PriceAlertButton';
 import { PriceHeatBar } from '@/components/deals/PriceHeatBar';
 import { SponsoredBadge } from '@/components/deals/SponsoredBadge';
@@ -53,7 +54,11 @@ export default async function DealDetailPage({ params }: Props) {
   const t = await getTranslations('deal');
 
   const affiliateUrl = decorateAffiliateUrl(deal.shopUrl, deal.source, deal.country, deal.category, deal.productId);
-  const pw = priceWindow(deal);
+  // Recorded daily prices widen the window: low = recorded minimum, so the
+  // today-dot sits at its true position instead of pinned at the green end.
+  // Best-effort — on any DB error the graph keeps its honest two-point fallback.
+  const history = await queryPriceHistory(deal.productId).catch(() => []);
+  const pw = priceWindow(deal, history.map((p) => p.salePrice));
   const dealUrl = `${BASE_URL}/${params.locale}/deal/${params.slug}`;
 
   // [FR-GEO-1 / P-3] Product + single Offer + itemCondition — built per-item from

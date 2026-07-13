@@ -23,12 +23,16 @@ const round2 = (n: number) => Math.round(n * 100) / 100;
 /**
  * @param history recorded daily sale prices, oldest → newest (may be empty).
  * The window spans everything we know: recorded lows may sit BELOW today's
- * price, so "low" is no longer always the current price.
+ * price, so "low" is no longer always the current price. Besides the passed-in
+ * series, `deal.historicalLowPrice` (maintained on the row by the
+ * update_historical_lows_batch RPC from the same recorded data) counts too —
+ * it's what lets deal CARDS show the true low without a per-card history query.
  */
 export function priceWindow(deal: NormalizedDeal, history: number[] = []): PriceWindow {
   const current = round2(deal.salePrice);
+  const recordedLow = deal.historicalLowPrice != null && deal.historicalLowPrice > 0 ? [deal.historicalLowPrice] : [];
   const high = round2(Math.max(deal.originalPrice, current, ...history));
-  const low = round2(Math.min(current, ...history));
+  const low = round2(Math.min(current, ...recordedLow, ...history));
   const span = high - low;
   const position = span > 0 ? Math.min(1, Math.max(0, (current - low) / span)) : 0;
   return { low, high, current, position };
