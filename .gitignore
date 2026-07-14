@@ -4,3 +4,6 @@ node_modules
 .env.local
 *.tsbuildinfo
 .DS_Store
+
+# Browser-automation session artifacts (Playwright MCP)
+.playwright-mcp/
