@@ -1,4 +1,9 @@
-# DealRadar — PDP Content-Parity Remediation Plan (draft, Pass 1)
+# DealRadar — PDP Content-Parity Remediation Plan
+
+> **Execution status (2026-07-14, branch `worktree-fable-pdp-content-parity`):**
+> **DONE** — P0-1, P0-2, P0-3 (commit `7866e46`), P1-1..P1-4 + ⚖A capture (commits `693a85c`, `659de16`), ⚖B ingest-side mapping (identifier columns map automatically once the feed URL ships them).
+> **VERIFIED** — 76/76 vitest, tsc clean, prod build clean; rich + plain PDP variants rendered locally and screenshotted (`pdp-new-rich.jpeg`, `pdp-new-plain.jpeg`).
+> **PENDING** — multi-agent adversarial review re-run (first run lost to the session limit; inline self-review done), `pnpm db:migrate` against prod at merge (adds `deals.description_html`; verifier degrades gracefully until then), ⚖B dashboard action (regenerate `AWIN_FEED_URL` with ean/mpn/model/short-description columns), ⚖C reviews = SKIP (recommended).
 
 Derived from `findings.md` in this folder. Effort: **S** ≤30 min · **M** ≤2 h · **L** > half-day.
 **Approval gate:** nothing here is executed yet. Items marked ⚖ depend on a product decision (bottom).
