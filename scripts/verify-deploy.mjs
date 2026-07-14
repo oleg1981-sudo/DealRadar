@@ -95,13 +95,15 @@ if (sampleDealPath) {
   check('deal PDP 200', r.status === 200, `${sampleDealPath} status=${r.status}`);
   const canon = r.body.match(/<link[^>]+rel="canonical"[^>]+href="([^"]+)"/)?.[1];
   check('PDP canonical → dealradar.me', !!canon && canon.startsWith(`${BASE}/`), canon || 'no canonical');
-  const ld = r.body.match(/<script type="application\/ld\+json"[^>]*>(.*?)<\/script>/s)?.[1];
-  let parsed = null;
-  try { parsed = ld ? JSON.parse(ld) : null; } catch { /* stays null */ }
-  check('PDP JSON-LD present + parseable', !!parsed, parsed ? `@type=${parsed['@type']}` : (ld ? 'unparseable' : 'absent'));
-  check('PDP JSON-LD is single Offer (not AggregateOffer)', parsed?.offers?.['@type'] === 'Offer', parsed?.offers?.['@type'] || '?');
-  // The escape fix: a raw </script> must never appear inside the ld+json block.
-  const noBreakout = !!ld && !/<\/script/i.test(ld);
+  // A page can carry several ld+json nodes (Organization from the layout,
+  // Product + BreadcrumbList from the PDP) — find the Product node.
+  const ldBlocks = [...r.body.matchAll(/<script type="application\/ld\+json"[^>]*>(.*?)<\/script>/gs)].map((m) => m[1]);
+  const parsedBlocks = ldBlocks.map((b) => { try { return JSON.parse(b); } catch { return null; } });
+  const product = parsedBlocks.find((p) => p?.['@type'] === 'Product');
+  check('PDP JSON-LD parseable + has Product node', !!product, `types=${parsedBlocks.map((p) => p?.['@type'] || 'unparseable').join(',')}`);
+  check('PDP Product offer is single Offer (not AggregateOffer)', product?.offers?.['@type'] === 'Offer', product?.offers?.['@type'] || '?');
+  // The escape fix: a raw </script> must never appear inside any ld+json block.
+  const noBreakout = ldBlocks.length > 0 && ldBlocks.every((b) => !/<\/script/i.test(b));
   check('PDP JSON-LD has no raw </script> breakout', noBreakout, noBreakout ? 'escaped' : 'raw </script> present');
 } else {
   check('deal PDP reachable (needs a sitemap deal URL)', false, 'no sample deal slug from sitemap');
