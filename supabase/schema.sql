@@ -293,5 +293,34 @@ $$;
 -- select cron.schedule('purge-stale-alerts', '0 5 * * *',
 --   $$select public.purge_stale_price_alerts(365, 30)$$);
 
+-- ── Affiliate programme state machine (AWIN advertiser discovery) ───────────
+-- Written daily by .github/workflows/awin-programmes-sync.yml via
+-- scripts/awin-programmes-sync.cjs: mirrors every AWIN programme across all
+-- relationship states, scores not-joined programmes against the deterministic
+-- join policy, and records relationship transitions (the "events" that drive
+-- the join-queue digest). The JOIN itself is human (no publisher API for it).
+create table if not exists public.affiliate_programmes (
+  programme_id             integer primary key,
+  network                  text not null default 'awin',
+  name                     text not null,
+  description              text,
+  display_url              text,
+  logo_url                 text,
+  country_code             text,
+  currency_code            text,
+  relationship             text not null,   -- joined | pending | suspended | rejected | notjoined
+  policy_score             integer not null default 0,
+  policy_verdict           text not null default 'skip',  -- apply | consider | skip
+  first_seen               timestamptz not null default now(),
+  last_seen                timestamptz not null default now(),
+  relationship_changed_at  timestamptz,
+  raw                      jsonb
+);
+create index if not exists affiliate_programmes_relationship_idx
+  on public.affiliate_programmes (relationship);
+create index if not exists affiliate_programmes_verdict_idx
+  on public.affiliate_programmes (policy_verdict, policy_score desc);
+alter table public.affiliate_programmes enable row level security;
+
 select 1;
 

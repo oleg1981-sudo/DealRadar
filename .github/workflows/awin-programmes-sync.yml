@@ -1,0 +1,52 @@
+# AWIN programme discovery + join-queue state machine (Tier 1 autonomy).
+#
+# Daily: mirrors every AWIN programme relationship into affiliate_programmes,
+# detects transitions (invitation appeared, application approved/rejected),
+# scores not-joined programmes against the deterministic join policy, and
+# opens a GitHub issue digest when anything is actionable. The JOIN click
+# itself stays human — AWIN's Publisher API is read-only for relationships.
+#
+# Required repository secrets:
+#   AWIN_API_TOKEN             Publisher API token (ui.awin.com → API Credentials)
+#   SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
+name: AWIN programmes sync
+
+on:
+  schedule:
+    - cron: '30 4 * * *' # daily 04:30 UTC — after the 03:00 ingest window
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run (no DB writes, no digest)'
+        type: boolean
+        default: false
+
+concurrency:
+  group: awin-programmes-sync
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  issues: write # the join-queue digest
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Sync programmes + emit join-queue digest
+        env:
+          AWIN_API_TOKEN: ${{ secrets.AWIN_API_TOKEN }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
+            node scripts/awin-programmes-sync.cjs --dry-run
+          else
+            node scripts/awin-programmes-sync.cjs
+          fi
