@@ -15,6 +15,8 @@ import { productGallery } from '@/lib/utils/product-details';
 import { Badge } from '@/components/ui/badge';
 import { routing } from '@/i18n/routing';
 import { siteUrl } from '@/lib/utils/site-url';
+import { gaItem, gaItemAttr } from '@/lib/analytics/items';
+import { TrackViewItem } from '@/components/analytics/TrackView';
 import { matchSubCategory } from '@/lib/categories';
 import { categoryTerm } from '@/lib/categories-i18n';
 
@@ -141,6 +143,7 @@ export default async function DealDetailPage({ params }: Props) {
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8">
+      <TrackViewItem item={gaItem(deal)} currency={deal.currency} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdHtml }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: breadcrumbJsonLdHtml }} />
       <nav aria-label="Breadcrumb" className="mb-4 text-sm text-zinc-500">
@@ -222,8 +225,10 @@ export default async function DealDetailPage({ params }: Props) {
               href={affiliateUrl}
               target="_blank"
               rel="noopener noreferrer nofollow sponsored"
-              data-clarity-event="cta_go_to_deal"
-              data-clarity-source="pdp"
+              data-analytics-event="cta_go_to_deal"
+              data-analytics-source="pdp"
+              data-analytics-list="pdp"
+              data-analytics-item={gaItemAttr(deal)}
               className="flex h-12 w-full items-center justify-center rounded-lg bg-accent font-semibold text-white transition hover:opacity-90"
             >
               {t('goToShop', { shop: deal.shopName })}

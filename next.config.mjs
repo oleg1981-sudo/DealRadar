@@ -9,10 +9,10 @@ const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
 // `frame-ancestors 'none'` gives clickjacking protection with zero breakage.
 const CSP = [
   "default-src 'self'",
-  // *.clarity.ms: Microsoft Clarity analytics (consent-gated at runtime);
-  // covers www (tag) + scripts (loader chain). Uploads/beacons ride the
-  // existing connect-src https: / img-src https:.
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.clarity.ms",
+  // *.clarity.ms: Microsoft Clarity (consent-gated); *.googletagmanager.com:
+  // GA4 gtag.js (consent-gated, Consent Mode v2). Analytics uploads/beacons
+  // ride the existing connect-src https: / img-src https:.
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.clarity.ms https://*.googletagmanager.com",
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' https: data:",
   "font-src 'self' data:",

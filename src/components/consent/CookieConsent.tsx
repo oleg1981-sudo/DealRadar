@@ -32,7 +32,7 @@ export function CookieConsentProvider() {
           // the category is toggled off (its third-party cookies live on
           // *.clarity.ms and expire server-side).
           autoClear: {
-            cookies: [{ name: /^_clck/ }, { name: /^_clsk/ }],
+            cookies: [{ name: /^_clck/ }, { name: /^_clsk/ }, { name: /^_ga/ }],
             reloadPage: false,
           },
         },

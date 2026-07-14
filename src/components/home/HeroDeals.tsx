@@ -64,7 +64,7 @@ export async function HeroDeals({ country, city }: { country: CountryCode; city:
       </div>
       {deals.length > 0 ? (
         <>
-          <DealGrid deals={deals} />
+          <DealGrid deals={deals} listName="home_hero" />
           {/* The hero is a curated random sample — this is the bridge to the
               full, paginated, filterable catalogue (search with no query). */}
           <div className="mt-8 text-center">

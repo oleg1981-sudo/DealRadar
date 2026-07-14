@@ -12,7 +12,7 @@ import { HomeOnly } from '@/components/home/HomeOnly';
 import { Footer } from '@/components/layout/Footer';
 import { LocationProvider } from '@/components/layout/LocationContext';
 import { CookieConsentProvider } from '@/components/consent/CookieConsent';
-import { ClarityAnalytics } from '@/components/analytics/ClarityAnalytics';
+import { Analytics } from '@/components/analytics/Analytics';
 import { GeoConsentPrompt } from '@/components/gdpr/GeoConsentPrompt';
 import { parseLocationCookie, LOCATION_COOKIE } from '@/lib/geo/resolve';
 import { initProviders } from '@/lib/providers/registry';
@@ -87,7 +87,7 @@ export default async function LocaleLayout({
             <Footer />
             <GeoConsentPrompt />
             <CookieConsentProvider />
-            <ClarityAnalytics />
+            <Analytics />
           </LocationProvider>
         </NextIntlClientProvider>
       </body>

@@ -13,13 +13,14 @@ import { formatPrice, formatDiscount } from '@/lib/utils/format';
 import { priceWindow } from '@/lib/utils/price-history';
 import { decorateAffiliateUrl } from '@/lib/utils/affiliate';
 import { displayShopName } from '@/lib/utils/shop';
+import { gaItemAttr } from '@/lib/analytics/items';
 import { slugify } from '@/lib/utils/slug';
 import type { NormalizedDeal } from '@/lib/providers/types';
 
 /**
  * One deal. Clicking the image or title navigates to the SSR deal page; action buttons act directly.
  */
-export function DealCard({ deal, priority = false }: { deal: NormalizedDeal; priority?: boolean }) {
+export function DealCard({ deal, priority = false, listName }: { deal: NormalizedDeal; priority?: boolean; listName?: string }) {
   const t = useTranslations('deal');
   const locale = useLocale();
   const href = decorateAffiliateUrl(deal.shopUrl, deal.source, deal.country, deal.category, deal.productId);
@@ -90,8 +91,10 @@ export function DealCard({ deal, priority = false }: { deal: NormalizedDeal; pri
           href={href}
           target="_blank"
           rel="noopener nofollow sponsored"
-          data-clarity-event="cta_go_to_deal"
-          data-clarity-source="card"
+          data-analytics-event="cta_go_to_deal"
+          data-analytics-source="card"
+          data-analytics-list={listName}
+          data-analytics-item={gaItemAttr(deal)}
           className="mt-1 inline-flex h-9 items-center justify-center gap-1.5 rounded-lg bg-accent text-sm font-medium text-white transition-colors hover:bg-accent-hover"
         >
           {t.rich('goToDeal', {

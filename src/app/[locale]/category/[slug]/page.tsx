@@ -83,7 +83,7 @@ export default async function CategoryPage({
           <span className="ml-2 text-sm font-normal text-zinc-400">({total})</span>
         </h1>
         {deals.length > 0 ? (
-          <DealGrid deals={deals} />
+          <DealGrid deals={deals} listName={`category_${category}`} />
         ) : (
           <p className="rounded-lg border border-dashed border-zinc-200 p-10 text-center text-zinc-500">
             {tSearch('noResults')}

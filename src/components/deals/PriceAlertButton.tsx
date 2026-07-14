@@ -9,6 +9,7 @@ import { useId, useState, type FormEvent } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { BellRing, Check, Loader2 } from 'lucide-react';
 import { clarityEvent } from '@/lib/analytics/clarity';
+import { gaEvent } from '@/lib/analytics/gtag';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -48,7 +49,9 @@ export function PriceAlertButton({
       });
       if (!res.ok) throw new Error('request failed');
       setStatus('success');
-      clarityEvent('price_alert_subscribe'); // KPI: alert funnel completion
+      // KPI: alert funnel completion — value = the price being watched.
+      clarityEvent('price_alert_subscribe');
+      gaEvent('price_alert_subscribe', { item_id: productId, value: price, currency });
     } catch {
       setError(t('errorGeneric'));
       setStatus('error');
@@ -70,7 +73,9 @@ export function PriceAlertButton({
         type="button"
         onClick={() => {
           setOpen(true);
-          clarityEvent('price_alert_open'); // KPI: alert funnel entry
+          // KPI: alert funnel entry
+          clarityEvent('price_alert_open');
+          gaEvent('price_alert_open', { item_id: productId });
         }}
         className="mt-2 inline-flex h-8 w-full items-center justify-center gap-1.5 rounded-lg border border-accent/40 text-xs font-medium text-accent transition-colors hover:border-accent hover:bg-accent-soft"
       >

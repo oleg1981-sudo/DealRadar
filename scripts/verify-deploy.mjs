@@ -116,9 +116,12 @@ if (sampleDealPath) {
   check('/en 200', r.status === 200, `status=${r.status}`);
   check('CSP present w/ frame-ancestors none', /frame-ancestors 'none'/.test(h('content-security-policy')), h('content-security-policy').slice(0, 60) || 'absent');
   check('CSP allows Clarity analytics tag', h('content-security-policy').includes('clarity.ms'), 'clarity.ms not in script-src');
-  // Consent-gated Clarity never appears in initial HTML; the server-rendered
+  check('CSP allows GA4 gtag.js', h('content-security-policy').includes('googletagmanager.com'), 'googletagmanager.com not in script-src');
+  // Consent-gated analytics never appear in initial HTML; the server-rendered
   // CTA instrumentation is the shipped-analytics proxy.
-  check('CTA instrumentation present (data-clarity-event)', r.body.includes('data-clarity-event="cta_go_to_deal"'), 'no instrumented CTA in homepage HTML');
+  check('CTA instrumentation present (data-analytics-event)', r.body.includes('data-analytics-event="cta_go_to_deal"'), 'no instrumented CTA in homepage HTML');
+  check('no analytics tag pre-consent (clarity)', !r.body.includes('clarity.ms/tag'), 'clarity tag in initial HTML');
+  check('no analytics tag pre-consent (gtag)', !r.body.includes('googletagmanager.com/gtag'), 'gtag in initial HTML');
   check('favicon link in page head', /<link[^>]+rel="icon"/.test(r.body), 'no <link rel="icon">');
   check('og:image meta present', /property="og:image"/.test(r.body), 'no og:image');
   check('Organization JSON-LD (brand entity) present', r.body.includes('"@type":"Organization"'), 'no Organization node');
