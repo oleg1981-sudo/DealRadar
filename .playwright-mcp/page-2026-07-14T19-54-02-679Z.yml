@@ -1,0 +1,124 @@
+- generic [active] [ref=e1]:
+  - banner [ref=e2]:
+    - generic [ref=e3]:
+      - link "DealRadar — home" [ref=e4] [cursor=pointer]:
+        - /url: /en
+        - generic [ref=e12]: DealRadar
+      - combobox "Search products, brands…" [ref=e17]
+      - generic [ref=e18]:
+        - button "DE" [ref=e20] [cursor=pointer]
+        - generic [ref=e28]:
+          - generic [ref=e32]: Language
+          - combobox "Language" [ref=e33] [cursor=pointer]:
+            - option "English" [selected]
+            - option "Deutsch"
+            - option "Français"
+            - option "Español"
+            - option "Italiano"
+            - option "Polski"
+            - option "Nederlands"
+            - option "Português"
+            - option "Svenska"
+            - option "Română"
+            - option "Dansk"
+            - option "Suomi"
+            - option "Norsk"
+  - main [ref=e34]:
+    - generic [ref=e36]:
+      - generic [ref=e37]:
+        - button "Electronics" [ref=e38] [cursor=pointer]
+        - button "Fashion" [ref=e43] [cursor=pointer]
+        - button "Home & Garden" [ref=e47] [cursor=pointer]
+        - button "Sports" [ref=e52] [cursor=pointer]
+        - button "Beauty" [ref=e59] [cursor=pointer]
+        - button "Food & Grocery" [ref=e63] [cursor=pointer]
+        - button "Toys" [ref=e71] [cursor=pointer]
+        - button "Automotive" [ref=e76] [cursor=pointer]
+        - button "Books" [ref=e82] [cursor=pointer]
+        - button "Travel" [ref=e86] [cursor=pointer]
+      - button "Scroll categories right" [ref=e90] [cursor=pointer]
+    - generic [ref=e93]:
+      - navigation "Breadcrumb" [ref=e94]:
+        - list [ref=e95]:
+          - listitem [ref=e96]:
+            - link "Home" [ref=e97] [cursor=pointer]:
+              - /url: /en
+          - listitem [ref=e98]: ›
+          - listitem [ref=e99]:
+            - link "Electronics" [ref=e100] [cursor=pointer]:
+              - /url: /en/category/electronics
+      - generic [ref=e101]:
+        - generic [ref=e102]:
+          - generic [ref=e103]:
+            - img "LG 4K OLED TV 55\"" [ref=e104]
+            - generic [ref=e105]: "-69%"
+          - generic [ref=e106]:
+            - button "LG 4K OLED TV 55\" 1" [ref=e107] [cursor=pointer]
+            - button "LG 4K OLED TV 55\" 2" [ref=e108] [cursor=pointer]
+            - button "LG 4K OLED TV 55\" 3" [ref=e109] [cursor=pointer]
+        - generic [ref=e110]:
+          - generic [ref=e111]:
+            - generic [ref=e112]: Saturn
+            - heading "LG 4K OLED TV 55\"" [level=1] [ref=e113]
+            - generic [ref=e114]:
+              - generic [ref=e115]: €70.61
+              - generic [ref=e116]: €227.54
+            - paragraph [ref=e118]: Verified at 09:54 PM CET.
+            - generic [ref=e120]:
+              - generic [ref=e121]:
+                - paragraph [ref=e122]: Price history
+                - paragraph [ref=e123]: Today €70.61
+              - generic [ref=e124]:
+                - generic [ref=e125]:
+                  - generic [ref=e126]: €227.54
+                  - generic [ref=e127]: €70.61
+                - 'img "Price history: €70.61 – €227.54. Today: €70.61." [ref=e128]':
+                  - 'generic "Today: €70.61" [ref=e132]'
+          - generic [ref=e133]:
+            - generic "We may earn a commission on purchases via this link, at no extra cost to you." [ref=e135]: Affiliate link
+            - link "Go to Saturn" [ref=e136] [cursor=pointer]:
+              - /url: https://example-shop.invalid/electronics/0?clickref=dealradar_DE_electronics_6177696e3a44452d656c656374726f6e6963732d30
+            - button "Receive best price alert" [ref=e137] [cursor=pointer]
+      - generic [ref=e143]:
+        - heading "Product details" [level=2] [ref=e144]
+        - generic [ref=e146]:
+          - heading "Why the 4K OLED TV 55\" stands out" [level=2] [ref=e147]
+          - paragraph [ref=e148]:
+            - text: The
+            - strong [ref=e149]: LG 4K OLED TV 55"
+            - text: combines everyday practicality with standout build quality. This is deterministic placeholder copy exercising the sanitized rich-description path.
+          - list [ref=e150]:
+            - listitem [ref=e151]: Premium materials and finish
+            - listitem [ref=e152]: Ships in recyclable packaging
+            - listitem [ref=e153]: Two-year manufacturer warranty
+          - img "4K OLED TV 55" [ref=e154]
+          - heading "Technical details" [level=3] [ref=e155]
+          - table [ref=e156]:
+            - rowgroup [ref=e157]:
+              - row [ref=e158]:
+                - cell "Line" [ref=e159]
+                - cell "Signature" [ref=e160]
+              - row [ref=e161]:
+                - cell "Warranty" [ref=e162]
+                - cell "24 months" [ref=e163]
+      - generic [ref=e164]:
+        - heading "Product information" [level=2] [ref=e165]
+        - generic [ref=e166]:
+          - term [ref=e167]: Brand
+          - definition [ref=e168]: LG
+          - term [ref=e169]: Model
+          - definition [ref=e170]: LG-ELE100
+          - term [ref=e171]: EAN
+          - definition [ref=e172]: "4131017327774"
+  - contentinfo [ref=e173]:
+    - generic [ref=e175]:
+      - paragraph [ref=e176]: © 2026 DealRadar · DealRadar may earn a commission when you buy through links on this site — at no extra cost to you.
+      - generic [ref=e177]:
+        - link "Imprint" [ref=e178] [cursor=pointer]:
+          - /url: /en/imprint
+        - link "Privacy Policy" [ref=e179] [cursor=pointer]:
+          - /url: /en/privacy
+        - link "Terms of Service" [ref=e180] [cursor=pointer]:
+          - /url: /en/terms
+        - button "Cookie settings" [ref=e181] [cursor=pointer]
+  - alert [ref=e182]

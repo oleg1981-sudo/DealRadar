@@ -89,7 +89,7 @@ export default async function DealDetailPage({ params }: Props) {
     description: deal.description || `${deal.productName} — ${deal.shopName}`,
     ...(deal.brand ? { brand: { '@type': 'Brand', name: deal.brand } } : {}),
     ...(deal.eanCode ? { gtin: deal.eanCode } : {}),
-    ...(deal.mpn ? { mpn: deal.mpn } : {}),
+    ...(deal.mpn || deal.modelNumber ? { mpn: deal.mpn || deal.modelNumber } : {}),
     offers: {
       '@type': 'Offer',
       price: deal.salePrice.toFixed(2),
@@ -251,15 +251,9 @@ export default async function DealDetailPage({ params }: Props) {
       </div>
 
       {/* Product details: merchant-captured HTML (sanitized in DealDescription)
-          with the plain feed description as fallback. */}
-      {(deal.descriptionHtml || deal.description) && (
-        <section className="mt-10 border-t border-zinc-100 pt-8">
-          <h2 className="mb-4 text-lg font-semibold text-zinc-900">{t('details')}</h2>
-          <div className="max-w-3xl">
-            <DealDescription html={deal.descriptionHtml} text={deal.description} />
-          </div>
-        </section>
-      )}
+          with the plain feed description as fallback. The component owns the
+          section — it renders nothing when neither source yields content. */}
+      <DealDescription html={deal.descriptionHtml} text={deal.description} title={t('details')} />
 
       {/* Real identifiers only — no fabricated spec rows (FR-PDP-6). */}
       {(deal.brand || deal.modelNumber || deal.mpn || deal.eanCode) && (

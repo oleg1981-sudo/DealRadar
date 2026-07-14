@@ -96,6 +96,24 @@ function seeded(seed: string): () => number {
   };
 }
 
+/** Mirrors the shape scripts/verify-awin.cjs captures from merchant pages, so
+ *  dev renders the full rich-description PDP path without Supabase/env. */
+function mockDescriptionHtml(name: string, brand: string, img: string): string {
+  return (
+    `<h2>Why the ${name} stands out</h2>` +
+    `<p>The <strong>${brand} ${name}</strong> combines everyday practicality with standout build quality. ` +
+    'This is deterministic placeholder copy exercising the sanitized rich-description path.</p>' +
+    '<ul><li>Premium materials and finish</li><li>Ships in recyclable packaging</li><li>Two-year manufacturer warranty</li></ul>' +
+    `<img src="${img}" alt="${name}">` +
+    '<h3>Technical details</h3>' +
+    '<table><tbody><tr><td>Line</td><td>Signature</td></tr><tr><td>Warranty</td><td>24 months</td></tr></tbody></table>'
+  );
+}
+
+const MOCK_DESCRIPTION_TEXT =
+  'Solid everyday performer with the essentials done right.\n\n' +
+  'This is deterministic placeholder copy exercising the plain-description path: two real paragraphs, rendered as paragraphs.';
+
 export function generateMockDeals(providerId: string, query: DealQuery): NormalizedDeal[] {
   const categories = query.category ? [query.category] : [...CATEGORY_SLUGS];
   const shops = SHOPS[query.country] ?? SHOPS.default;
@@ -110,6 +128,10 @@ export function generateMockDeals(providerId: string, query: DealQuery): Normali
       const original = Math.round((spec.base[0] + rnd() * (spec.base[1] - spec.base[0])) * 100) / 100;
       const discount = 0.15 + rnd() * 0.55; // 15–70 %
       const sale = Math.round(original * (1 - discount) * 100) / 100;
+      const imageUrl = mockImage(`${providerId}-${category}-${i}`, category);
+      // Rotate content richness so every PDP path stays exercised in dev:
+      // i%3==0 rich merchant HTML, i%3==1 plain description only, i%3==2 bare.
+      const richness = i % 3;
       out.push({
         productId: `${providerId}:${query.country}-${category}-${i}`,
         productName: `${brand} ${name}`,
@@ -122,7 +144,20 @@ export function generateMockDeals(providerId: string, query: DealQuery): Normali
         currency,
         category,
         brand,
-        imageUrl: mockImage(`${providerId}-${category}-${i}`, category),
+        imageUrl,
+        gallery: richness === 2 ? null : [
+          imageUrl,
+          mockImage(`${providerId}-${category}-${i}-alt1`, category),
+          mockImage(`${providerId}-${category}-${i}-alt2`, category),
+        ],
+        description: richness === 2 ? null : MOCK_DESCRIPTION_TEXT,
+        descriptionHtml: richness === 0
+          ? mockDescriptionHtml(name, brand, mockImage(`${providerId}-${category}-${i}-feature`, category))
+          : null,
+        // Unique per (provider, country, category, i) — the registry dedupes
+        // BY EAN, so a repeated mock EAN silently collapses unrelated deals.
+        eanCode: richness === 0 ? `4${String(Math.floor(rnd() * 1e12)).padStart(12, '0')}` : null,
+        modelNumber: richness === 0 ? `${brand.slice(0, 2).toUpperCase()}-${category.slice(0, 3).toUpperCase()}${100 + i}` : null,
         country: query.country,
         city: null,
         isSponsored: true,

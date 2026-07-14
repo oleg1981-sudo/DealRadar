@@ -81,7 +81,7 @@ function shape() {
     'tx_constraints', (select array_agg(conname order by conname) from pg_constraint where conrelid='public.transactions'::regclass and conname in ('transactions_product_id_fkey','transactions_commission_chk','transactions_status_chk')),
     'rls', (select bool_and(relrowsecurity) from pg_class where relnamespace='public'::regnamespace and relname in ('deals','price_alerts','price_history','transactions'))
   )`));
-  const needCols = ['slug','ean_code','upc_code','mpn','model_number','historical_low_price','merchant_id','affiliate_subid','gallery','description','merchant_url','hidden','homepage_hidden'];
+  const needCols = ['slug','ean_code','upc_code','mpn','model_number','historical_low_price','merchant_id','affiliate_subid','gallery','description','description_html','merchant_url','hidden','homepage_hidden'];
   check('deals has all contract columns', needCols.every((c) => j.deals_cols.includes(c)),
     needCols.filter((c) => !j.deals_cols.includes(c)).join(',') || 'all present');
   check('deals.slug is NOT NULL', j.slug_not_null === true);
