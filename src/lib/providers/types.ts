@@ -39,6 +39,12 @@ export interface NormalizedDeal {
   gallery?: string[] | null;
   /** Real product description for the detail modal (provider feed). Optional. */
   description?: string | null;
+  /**
+   * Merchant-page description HTML, captured by the daily live-shop verifier
+   * (reduced at write time, sanitized again at render). READ-ONLY for
+   * providers/app writers — only scripts/verify-awin.cjs populates it.
+   */
+  descriptionHtml?: string | null;
   /** Direct merchant product URL (not the affiliate link) — for live price/stock verification. */
   merchantUrl?: string | null;
   country: CountryCode;
