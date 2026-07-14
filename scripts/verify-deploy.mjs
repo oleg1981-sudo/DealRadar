@@ -41,6 +41,21 @@ const get = async (path) => {
   check('IndexNow key file served', r.status === 200 && r.body.trim() === KEY, `status=${r.status}`);
 }
 
+// 1c. Favicon + brand assets — must resolve on the site root so every route's
+// auto-generated <link rel="icon"> works, and the OG/JSON-LD logo never 404s.
+{
+  for (const [path, label] of [
+    ['/favicon.ico', 'favicon.ico'],
+    ['/icon.png', 'icon.png'],
+    ['/apple-icon.png', 'apple-touch icon'],
+    ['/manifest.webmanifest', 'web manifest'],
+    ['/dealradar-logo.png', 'brand logo (OG/JSON-LD)'],
+  ]) {
+    const r = await get(path);
+    check(`${label} served`, r.status === 200, `${path} status=${r.status}`);
+  }
+}
+
 // 2. sitemap INDEX + children: XML contract, prod-host deal URLs, zero .eu,
 // every child under the 2 MB page-load budget, honest lastmod.
 let sampleDealPath = null;
@@ -98,6 +113,13 @@ if (sampleDealPath) {
   const h = (k) => r.headers.get(k) || '';
   check('/en 200', r.status === 200, `status=${r.status}`);
   check('CSP present w/ frame-ancestors none', /frame-ancestors 'none'/.test(h('content-security-policy')), h('content-security-policy').slice(0, 60) || 'absent');
+  check('CSP allows Clarity analytics tag', h('content-security-policy').includes('clarity.ms'), 'clarity.ms not in script-src');
+  // Consent-gated Clarity never appears in initial HTML; the server-rendered
+  // CTA instrumentation is the shipped-analytics proxy.
+  check('CTA instrumentation present (data-clarity-event)', r.body.includes('data-clarity-event="cta_go_to_deal"'), 'no instrumented CTA in homepage HTML');
+  check('favicon link in page head', /<link[^>]+rel="icon"/.test(r.body), 'no <link rel="icon">');
+  check('og:image meta present', /property="og:image"/.test(r.body), 'no og:image');
+  check('Organization JSON-LD (brand entity) present', r.body.includes('"@type":"Organization"'), 'no Organization node');
   check('X-Frame-Options DENY', h('x-frame-options').toUpperCase() === 'DENY', h('x-frame-options') || 'absent');
   check('X-Content-Type-Options nosniff', h('x-content-type-options') === 'nosniff', h('x-content-type-options') || 'absent');
   check('HSTS max-age=63072000 (this build)', h('strict-transport-security').includes('63072000'), h('strict-transport-security') || 'absent');

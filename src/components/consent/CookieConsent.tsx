@@ -25,7 +25,17 @@ export function CookieConsentProvider() {
       },
       categories: {
         necessary: { enabled: true, readOnly: true },
-        analytics: { enabled: false },
+        analytics: {
+          enabled: false,
+          // GDPR Art. 7(3): withdrawing consent must also remove identifiers
+          // set under it. Clarity's first-party cookies are erased the moment
+          // the category is toggled off (its third-party cookies live on
+          // *.clarity.ms and expire server-side).
+          autoClear: {
+            cookies: [{ name: /^_clck/ }, { name: /^_clsk/ }],
+            reloadPage: false,
+          },
+        },
       },
       language: {
         default: locale,

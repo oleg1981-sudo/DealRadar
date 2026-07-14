@@ -222,6 +222,8 @@ export default async function DealDetailPage({ params }: Props) {
               href={affiliateUrl}
               target="_blank"
               rel="noopener noreferrer nofollow sponsored"
+              data-clarity-event="cta_go_to_deal"
+              data-clarity-source="pdp"
               className="flex h-12 w-full items-center justify-center rounded-lg bg-accent font-semibold text-white transition hover:opacity-90"
             >
               {t('goToShop', { shop: deal.shopName })}

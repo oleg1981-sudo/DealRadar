@@ -12,17 +12,41 @@ import { HomeOnly } from '@/components/home/HomeOnly';
 import { Footer } from '@/components/layout/Footer';
 import { LocationProvider } from '@/components/layout/LocationContext';
 import { CookieConsentProvider } from '@/components/consent/CookieConsent';
+import { ClarityAnalytics } from '@/components/analytics/ClarityAnalytics';
 import { GeoConsentPrompt } from '@/components/gdpr/GeoConsentPrompt';
 import { parseLocationCookie, LOCATION_COOKIE } from '@/lib/geo/resolve';
 import { initProviders } from '@/lib/providers/registry';
+import { siteUrl } from '@/lib/utils/site-url';
 import '../globals.css';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter', display: 'swap' });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl()),
   title: { default: 'DealRadar — best local deals across Europe', template: '%s · DealRadar' },
   description: 'Geo-located European price comparison: the biggest discounts from local shops, by category.',
+  openGraph: {
+    siteName: 'DealRadar',
+    type: 'website',
+    // Square brand mark (828×828) — accepted by OG consumers and AI answer
+    // engines; PDPs override with product imagery where available.
+    images: [{ url: '/dealradar-logo.png', width: 828, height: 828, alt: 'DealRadar — European deal radar logo' }],
+  },
+  twitter: {
+    card: 'summary',
+    images: ['/dealradar-logo.png'],
+  },
 };
+
+// Brand-entity signal for search/answer engines (GEO/AEO): one Organization
+// node, logo + canonical URL, rendered on every page.
+const ORG_JSONLD = JSON.stringify({
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  name: 'DealRadar',
+  url: siteUrl(),
+  logo: `${siteUrl()}/dealradar-logo.png`,
+}).replace(/</g, '\\u003c');
 
 export function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }));
@@ -49,6 +73,7 @@ export default async function LocaleLayout({
   return (
     <html lang={locale} className={inter.variable}>
       <body className="font-sans">
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: ORG_JSONLD }} />
         <NextIntlClientProvider messages={messages}>
           <LocationProvider initial={initialLocation}>
             <Header />
@@ -62,6 +87,7 @@ export default async function LocaleLayout({
             <Footer />
             <GeoConsentPrompt />
             <CookieConsentProvider />
+            <ClarityAnalytics />
           </LocationProvider>
         </NextIntlClientProvider>
       </body>

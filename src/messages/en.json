@@ -111,7 +111,7 @@
     "necessaryTitle": "Strictly necessary cookies",
     "necessaryDescription": "Required for core functionality such as language and location. Always on.",
     "analyticsTitle": "Analytics cookies",
-    "analyticsDescription": "Help us measure usage anonymously so we can improve the site. Off until you allow them.",
+    "analyticsDescription": "Microsoft Clarity helps us measure usage (heatmaps, session replays with typed text masked) so we can improve the site. Sets the _clck and _clsk cookies. Off until you allow them; withdrawing deletes the cookies. Details in our Privacy Policy.",
     "closeLabel": "Close"
   },
   "nav": {
@@ -145,13 +145,15 @@
     "s2Title": "2. Data we process",
     "s2Body": "Price-alert subscriptions: your email address and the target product, used solely to send price-drop notifications. Approximate location: your country is estimated from network headers (and, only with your consent, your browser location) to show local deals; precise coordinates are processed transiently and never stored. Cookie preferences: your consent choice is stored to honour it on future visits.",
     "s3Title": "3. Third-party processors",
-    "s3Body": "We use the following processors under data-processing agreements: Supabase (database hosting), Upstash (Redis caching and rate limiting), Resend (transactional email), and our affiliate networks (Awin, Kelkoo, Tradedoubler, Strackr) which receive an anonymised tracking identifier when you click an outbound deal link. Our edge host processes server log data (including IP) to operate the service securely (Art. 6(1)(f) GDPR).",
+    "s3Body": "We use the following processors under data-processing agreements: Supabase (database hosting), Upstash (Redis caching and rate limiting), Resend (transactional email), Microsoft Ireland Operations Ltd. (Microsoft Clarity — usage analytics, see section 7), and our affiliate networks (Awin, Kelkoo, Tradedoubler, Strackr) which receive an anonymised tracking identifier when you click an outbound deal link. Our edge host processes server log data (including IP) to operate the service securely (Art. 6(1)(f) GDPR).",
     "s4Title": "4. Cookies",
-    "s4Body": "We set strictly necessary cookies for language and location, which require no consent. Analytics cookies are optional and set only after you opt in via the cookie banner. You can withdraw consent at any time through “Cookie settings” in the footer.",
+    "s4Body": "We set strictly necessary cookies for language and location, which require no consent. Analytics cookies are optional and set only after you opt in via the cookie banner: Microsoft Clarity sets _clck (recognises your browser across visits, expires after about one year) and _clsk (groups the pages of a single visit). You can withdraw consent at any time through “Cookie settings” in the footer — withdrawal stops the analytics immediately and deletes these cookies from your browser. Microsoft may additionally set cookies on its own domains (e.g. MUID) that we cannot delete from this site; withdrawing consent signals Microsoft to stop using them for this website.",
     "s5Title": "5. Your rights under the GDPR",
     "s5Body": "You have the right to access, rectify, erase (Art. 17), restrict and port your personal data, and to object to or withdraw consent at any time without affecting prior lawful processing. To exercise these rights, contact the address in our Imprint. You may also lodge a complaint with a supervisory authority.",
     "s6Title": "6. Automated unsubscribe and erasure",
-    "s6Body": "Every price-alert email contains a one-click unsubscribe link secured by an HMAC token. Following it deletes your subscription immediately and without further verification, satisfying the right to withdraw consent and to erasure. Subscriptions are also deleted automatically after a defined retention period."
+    "s6Body": "Every price-alert email contains a one-click unsubscribe link secured by an HMAC token. Following it deletes your subscription immediately and without further verification, satisfying the right to withdraw consent and to erasure. Subscriptions are also deleted automatically after a defined retention period.",
+    "s7Title": "7. Usage analytics (Microsoft Clarity)",
+    "s7Body": "With your consent (Art. 6(1)(a) GDPR), we use Microsoft Clarity to understand how visitors use DealRadar through heatmaps, session replays and aggregated interaction metrics (for example clicks on “Go to deal” buttons and price-alert sign-ups). Clarity masks text you type by default — form input such as email addresses is masked in the browser and never reaches Microsoft's servers. Data is processed by Microsoft Ireland Operations Ltd. and may be transferred to Microsoft Corporation in the United States under the EU–U.S. Data Privacy Framework and EU Standard Contractual Clauses; Microsoft retains Clarity session data for up to 30 days (aggregated statistics up to 13 months). You can withdraw consent at any time via “Cookie settings” in the footer. Google Search Console and Bing Webmaster Tools, which we use to monitor how search engines index this site, receive no personal data from the website and set no cookies on it."
   },
   "terms": {
     "title": "Terms of Service",

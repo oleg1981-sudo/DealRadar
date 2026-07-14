@@ -8,6 +8,7 @@
 import { useId, useState, type FormEvent } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { BellRing, Check, Loader2 } from 'lucide-react';
+import { clarityEvent } from '@/lib/analytics/clarity';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -47,6 +48,7 @@ export function PriceAlertButton({
       });
       if (!res.ok) throw new Error('request failed');
       setStatus('success');
+      clarityEvent('price_alert_subscribe'); // KPI: alert funnel completion
     } catch {
       setError(t('errorGeneric'));
       setStatus('error');
@@ -66,7 +68,10 @@ export function PriceAlertButton({
     return (
       <button
         type="button"
-        onClick={() => setOpen(true)}
+        onClick={() => {
+          setOpen(true);
+          clarityEvent('price_alert_open'); // KPI: alert funnel entry
+        }}
         className="mt-2 inline-flex h-8 w-full items-center justify-center gap-1.5 rounded-lg border border-accent/40 text-xs font-medium text-accent transition-colors hover:border-accent hover:bg-accent-soft"
       >
         <BellRing className="h-3.5 w-3.5 origin-top group-hover:animate-bell-alert" aria-hidden />

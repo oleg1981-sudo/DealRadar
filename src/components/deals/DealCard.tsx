@@ -90,6 +90,8 @@ export function DealCard({ deal, priority = false }: { deal: NormalizedDeal; pri
           href={href}
           target="_blank"
           rel="noopener nofollow sponsored"
+          data-clarity-event="cta_go_to_deal"
+          data-clarity-source="card"
           className="mt-1 inline-flex h-9 items-center justify-center gap-1.5 rounded-lg bg-accent text-sm font-medium text-white transition-colors hover:bg-accent-hover"
         >
           {t.rich('goToDeal', {
