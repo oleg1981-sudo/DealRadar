@@ -31,6 +31,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { reduceMerchantHtml } = require('./lib/description.cjs');
 
 const args = process.argv.slice(2);
 const has = (f) => args.includes(f);
@@ -96,6 +97,12 @@ const toState = (obj, v, hasStock) => ({
   available: hasStock ? (v.available ?? obj.available ?? true) : null,
   price: (v.price ?? 0) / 100,
   compareAt: v.compare_at_price ? v.compare_at_price / 100 : null,
+  // The merchant's full rendered product description — the same rich HTML the
+  // merchant PDP shows (`description` on the .js payload, `body_html` on .json).
+  // Fetched here anyway for the price check; capturing it costs nothing extra.
+  descriptionHtml:
+    (typeof obj.description === 'string' && obj.description.trim() && obj.description) ||
+    (typeof obj.body_html === 'string' && obj.body_html.trim() && obj.body_html) || null,
 });
 
 /**
@@ -179,12 +186,26 @@ function decide(deal, live) {
 }
 
 // ── Supabase reads/writes ──────────────────────────────────────────────────────
+/** Whether the deals table has the description_html column (added 2026-07).
+ *  Detected at read time so a deploy that outruns the migration degrades to
+ *  price-only verification instead of failing the whole run. */
+let captureHtml = true;
+
 async function fetchDeals() {
   const out = [];
-  const cols = 'product_id,merchant_url,sale_price,original_price,discount_percent,currency,hidden';
+  const baseCols = 'product_id,merchant_url,sale_price,original_price,discount_percent,currency,hidden';
+  let cols = `${baseCols},description_html`;
   for (let from = 0; ; from += 1000) {
-    const r = await fetch(`${BASE}/rest/v1/deals?source=eq.awin&merchant_url=not.is.null&select=${cols}`,
+    let r = await fetch(`${BASE}/rest/v1/deals?source=eq.awin&merchant_url=not.is.null&select=${cols}`,
       { headers: { ...SUPA, Range: `${from}-${from + 999}` } });
+    if (!r.ok && captureHtml && from === 0) {
+      // Column not migrated yet (PostgREST 400s on unknown select columns).
+      captureHtml = false;
+      cols = baseCols;
+      console.error('[verify] description_html column missing — content capture disabled this run (run pnpm db:migrate)');
+      r = await fetch(`${BASE}/rest/v1/deals?source=eq.awin&merchant_url=not.is.null&select=${cols}`,
+        { headers: { ...SUPA, Range: `${from}-${from + 999}` } });
+    }
     if (!r.ok) throw new Error(`read deals failed: HTTP ${r.status} ${await r.text()}`);
     const batch = await r.json();
     out.push(...batch);
@@ -231,7 +252,7 @@ function groupByHost(items) {
   console.log(`[verify] checking ${deals.length} deals across ${byHost.size} shops (apply=${APPLY}, ${DELAY_MS}ms/host)…`);
 
   const patches = []; const okTouch = []; const reasons = {}, errKinds = {};
-  let ok = 0, errors = 0, done = 0, hidden = 0, unhidden = 0, priceUpdated = 0;
+  let ok = 0, errors = 0, done = 0, hidden = 0, unhidden = 0, priceUpdated = 0, htmlCaptured = 0;
   const samples = [];
 
   await Promise.all([...byHost.entries()].map(async ([host, list]) => {
@@ -261,6 +282,13 @@ function groupByHost(items) {
           const priceChanged = want.sale !== deal.sale_price || want.orig !== deal.original_price || want.disc !== deal.discount_percent;
           if (priceChanged) { fields.sale_price = want.sale; fields.original_price = want.orig; fields.discount_percent = want.disc; priceUpdated++; if (samples.length < 8) samples.push(`${deal.product_id}: ${deal.sale_price} -> ${want.sale} (-${want.disc}%)`); }
           if (isHidden) { fields.hidden = false; unhidden++; } // a sold-out deal is back in stock
+          // Content capture: store the merchant's reduced description HTML when
+          // it changed. The reducer strips executable content and bounds size;
+          // the app sanitizes AGAIN at render (that's the security boundary).
+          if (captureHtml && live.descriptionHtml) {
+            const reduced = reduceMerchantHtml(live.descriptionHtml);
+            if (reduced && reduced !== (deal.description_html || null)) { fields.description_html = reduced; htmlCaptured++; }
+          }
           if (Object.keys(fields).length) patches.push({ id: deal.product_id, fields });
           else { ok++; okTouch.push(deal.product_id); }
         }
@@ -281,6 +309,7 @@ function groupByHost(items) {
   console.log(`  price updates: ${priceUpdated}`);
   console.log(`  hidden (sold-out / no discount): ${hidden} ${JSON.stringify(reasons)}`);
   console.log(`  un-hidden (back in stock): ${unhidden}`);
+  console.log(`  merchant descriptions captured/updated: ${htmlCaptured}${captureHtml ? '' : ' (capture disabled — column missing)'}`);
   console.log(`  errors/skipped: ${errors} ${JSON.stringify(errKinds)}`);
   if (samples.length) { console.log('  sample price updates:'); samples.forEach((s) => console.log(`    ${s}`)); }
 

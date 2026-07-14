@@ -109,6 +109,15 @@ alter table public.deals
   add column if not exists merchant_id text,
   add column if not exists affiliate_subid text;
 
+-- Merchant-page description capture (2026-07-14): the daily live-shop verifier
+-- (scripts/verify-awin.cjs) stores the merchant's reduced product-description
+-- HTML here — the rich content the plain feed `description` flattens. Owned by
+-- the verifier ONLY: the feed ingest never writes this column (its upsert
+-- payload omits the key, so merge-duplicates leaves it untouched), and the app
+-- sanitizes it again at render time before it reaches the DOM.
+alter table public.deals
+  add column if not exists description_html text;
+
 create unique index if not exists deals_slug_idx on public.deals (slug) where slug is not null;
 create index if not exists deals_ean_idx on public.deals (ean_code) where ean_code is not null;
 

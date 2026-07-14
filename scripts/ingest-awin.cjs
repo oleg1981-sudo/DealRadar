@@ -25,6 +25,7 @@ const fs = require('fs');
 const path = require('path');
 const https = require('https');
 const zlib = require('zlib');
+const { feedDescription } = require('./lib/description.cjs');
 
 // ── args & env ───────────────────────────────────────────────────────────────
 const args = process.argv.slice(2);
@@ -141,7 +142,10 @@ function normalizeRow(g) {
     g('aw_image_url'), g('large_image'), g('alternate_image'),
     g('alternate_image_two'), g('alternate_image_three'), g('alternate_image_four'),
   ].map((u) => (u || '').trim()).filter((u) => /^https?:\/\//.test(u)))];
-  const description = g('description').trim().replace(/\s+/g, ' ').slice(0, 1500) || null;
+  // Paragraph-preserving, word-boundary-capped (the old `\s+→' '` + slice(0,1500)
+  // flattened every paragraph and cut 423/836 catalog descriptions mid-word).
+  // product_short_description is the fallback when the feed's main column is empty.
+  const description = feedDescription(g('description')) ?? feedDescription(g('product_short_description'));
 
   return {
     product_id: `awin:${awId}`,
@@ -159,6 +163,12 @@ function normalizeRow(g) {
     gallery: gallery.length ? gallery : null,
     description,
     merchant_url: g('merchant_deep_link').trim() || null, // direct shop URL for the live verifier
+    // Identifier columns — populated only when the Create-a-Feed URL requests
+    // these columns (g() returns '' for absent ones). They feed the PDP spec
+    // block and Product JSON-LD gtin/mpn.
+    ean_code: g('ean').trim() || g('product_GTIN').trim() || null,
+    mpn: g('mpn').trim() || null,
+    model_number: g('model_number').trim() || g('product_model').trim() || null,
     country: COUNTRY,
     city: null,
     is_sponsored: true,
@@ -239,18 +249,24 @@ async function upsertBatch(rows) {
 }
 
 /**
- * Existing AWIN deals' prices, keyed by product_id. The live-shop verifier owns
- * prices, so re-ingesting the (lagging) feed must NOT clobber verified
- * corrections — we preserve the stored price for any product we've seen before.
+ * Existing AWIN deals' verifier/enrichment-owned fields, keyed by product_id.
+ * The live-shop verifier owns prices and the gallery enricher tops up sparse
+ * galleries, so re-ingesting the (lagging) feed must NOT clobber either — we
+ * preserve the stored price for any product we've seen before, and the stored
+ * gallery whenever it is RICHER than what the feed ships (the enricher adds
+ * merchant images the feed lacks; without this the nightly upsert reverted
+ * them until the next ~05:00 enrich pass). description_html needs no
+ * preservation: it is never a key in the upsert payload, and PostgREST
+ * merge-duplicates only touches payload columns.
  */
 async function fetchExistingPrices() {
   const out = new Map();
   for (let from = 0; ; from += 1000) {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/deals?source=eq.awin&select=product_id,sale_price,original_price,discount_percent`,
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/deals?source=eq.awin&select=product_id,sale_price,original_price,discount_percent,gallery`,
       { headers: supaHeaders({ Range: `${from}-${from + 999}` }) });
     if (!res.ok) throw new Error(`read existing failed: HTTP ${res.status} ${await res.text()}`);
     const rows = await res.json();
-    for (const r of rows) out.set(r.product_id, { sale_price: Number(r.sale_price), original_price: Number(r.original_price), discount_percent: Number(r.discount_percent) });
+    for (const r of rows) out.set(r.product_id, { sale_price: Number(r.sale_price), original_price: Number(r.original_price), discount_percent: Number(r.discount_percent), gallery: Array.isArray(r.gallery) ? r.gallery : null });
     if (rows.length < 1000) break;
   }
   return out;
@@ -303,12 +319,18 @@ async function fetchExistingPrices() {
     // Preserve verified prices for products we already have; the feed price is
     // only used for brand-new products (until the verifier first checks them).
     const existing = await fetchExistingPrices();
-    let preserved = 0;
+    let preserved = 0, galleriesKept = 0;
     for (const d of all) {
       const e = existing.get(d.product_id);
-      if (e && Number.isFinite(e.sale_price)) {
+      if (!e) continue;
+      if (Number.isFinite(e.sale_price)) {
         d.sale_price = e.sale_price; d.original_price = e.original_price; d.discount_percent = e.discount_percent;
         preserved++;
+      }
+      // Keep the enriched gallery when it holds MORE images than the feed's.
+      if (e.gallery && e.gallery.length > (d.gallery?.length ?? 0)) {
+        d.gallery = e.gallery;
+        galleriesKept++;
       }
     }
     for (let i = 0; i < all.length; i += BATCH) {
@@ -318,6 +340,7 @@ async function fetchExistingPrices() {
     }
     process.stdout.write('\n');
     console.log(`[awin] preserved verified prices for ${preserved} existing deals; feed price used for ${all.length - preserved} new ones`);
+    console.log(`[awin] kept ${galleriesKept} enriched galleries (richer than the feed's)`);
 
     // Stale-hide: this upsert refreshed last_updated for every deal still in the
     // feed, and the daily verifier touches every deal it can confirm live. So a

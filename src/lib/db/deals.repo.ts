@@ -19,7 +19,10 @@ const TABLE = 'deals';
  *  any unbounded scan must page explicitly or it silently truncates past 1000. */
 const REST_PAGE = 1000;
 
-/** Camel ⇄ snake mapping for the deals table. */
+/** Camel ⇄ snake mapping for the deals table.
+ *  description_html is deliberately ABSENT: it is owned by the live-shop
+ *  verifier (scripts/verify-awin.cjs); a provider upsert including the key
+ *  would clobber captured merchant content with null. */
 function toRow(d: NormalizedDeal) {
   const generatedSlug = d.slug || `${slugify(d.productName)}-${d.productId.replace(/[^a-z0-9]/gi, '-')}`;
   return {
@@ -50,6 +53,7 @@ function fromRow(r: Record<string, unknown>): NormalizedDeal {
     category: r.category as CategorySlug, brand: (r.brand as string) ?? null,
     imageUrl: (r.image_url as string) ?? null,
     gallery: (r.gallery as string[]) ?? null, description: (r.description as string) ?? null,
+    descriptionHtml: (r.description_html as string) ?? null,
     merchantUrl: (r.merchant_url as string) ?? null,
     country: r.country as CountryCode,
     city: (r.city as string) ?? null, isSponsored: Boolean(r.is_sponsored),
