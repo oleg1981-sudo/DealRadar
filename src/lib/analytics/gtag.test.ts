@@ -41,6 +41,36 @@ describe('gtag wrappers', () => {
     expect(spy).toHaveBeenCalledWith('event', 'affiliate_click', { merchant: 'TestShop', price: 9.99 });
   });
 
+  it('honors STORED consent via cc_cookie during the init race (impressions must not drop)', () => {
+    // Consent lib not initialized yet (returns false), but the visitor's
+    // stored cookie says analytics granted — the E2E-found drop scenario.
+    consent.granted = false;
+    // @ts-expect-error minimal document stub
+    globalThis.document = { cookie: `cc_cookie=${encodeURIComponent(JSON.stringify({ categories: ['necessary', 'analytics'] }))}` };
+    // @ts-expect-error minimal window stub (tag not loaded yet)
+    globalThis.window = {};
+    gaEvent('view_item', { value: 1 });
+    const spy = vi.fn();
+    (globalThis.window as unknown as { gtag: unknown }).gtag = spy;
+    gaFlushPending();
+    expect(spy).toHaveBeenCalledWith('event', 'view_item', { value: 1 });
+    // @ts-expect-error cleanup
+    delete globalThis.document;
+  });
+
+  it('still DROPS when the stored cookie says analytics rejected', () => {
+    consent.granted = false;
+    // @ts-expect-error minimal document stub
+    globalThis.document = { cookie: `cc_cookie=${encodeURIComponent(JSON.stringify({ categories: ['necessary'] }))}` };
+    const spy = vi.fn();
+    // @ts-expect-error minimal window stub
+    globalThis.window = { gtag: spy };
+    gaEvent('view_item', { value: 1 });
+    expect(spy).not.toHaveBeenCalled();
+    // @ts-expect-error cleanup
+    delete globalThis.document;
+  });
+
   it('buffers consented events fired before the tag loads, flushes after', () => {
     // @ts-expect-error minimal window stub (no gtag yet — the landing-page race)
     globalThis.window = {};

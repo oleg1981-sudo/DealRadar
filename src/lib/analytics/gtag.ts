@@ -31,11 +31,28 @@ declare global {
 const pending: { name: string; params: GaParams }[] = [];
 const PENDING_MAX = 30;
 
-function consentGranted(): boolean {
+/** Stored consent read straight from the cc_cookie — the fallback for the
+ *  init race: impression effects (TrackView) run BEFORE CookieConsent.run()
+ *  on a fresh page load, where acceptedCategory() still returns false even
+ *  for a visitor whose stored consent says granted. Without this, every
+ *  full-page-load impression from consented visitors is silently dropped
+ *  (the CTR denominator starves — found by live E2E, 2026-07-14). */
+function cookieSaysGranted(): boolean {
   try {
-    return CookieConsent.acceptedCategory('analytics');
+    const m = document.cookie.match(/(?:^|;\s*)cc_cookie=([^;]+)/);
+    if (!m) return false;
+    const parsed = JSON.parse(decodeURIComponent(m[1]));
+    return Array.isArray(parsed.categories) && parsed.categories.includes('analytics');
   } catch {
     return false;
+  }
+}
+
+function consentGranted(): boolean {
+  try {
+    return CookieConsent.acceptedCategory('analytics') || cookieSaysGranted();
+  } catch {
+    return cookieSaysGranted();
   }
 }
 

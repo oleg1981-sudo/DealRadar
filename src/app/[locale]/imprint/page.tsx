@@ -15,7 +15,7 @@ const ODR_URL = 'https://ec.europa.eu/consumers/odr';
 
 export async function generateMetadata({ params: { locale } }: { params: { locale: string } }) {
   const t = await getTranslations({ locale, namespace: 'imprint' });
-  return { title: `${t('title')} · DealRadar` };
+  return { title: t('title') };
 }
 
 export default async function ImprintPage({ params: { locale } }: Readonly<{ params: { locale: string } }>) {

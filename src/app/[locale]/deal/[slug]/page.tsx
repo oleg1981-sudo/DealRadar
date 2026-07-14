@@ -50,7 +50,7 @@ export async function generateMetadata({ params }: Props) {
     routing.locales.map((l) => [l, `${BASE_URL}/${l}/deal/${params.slug}`]),
   );
   return {
-    title: `${deal.productName} · ${formatDiscount(deal.discountPercent)} · DealRadar`,
+    title: `${deal.productName} · ${formatDiscount(deal.discountPercent)}`,
     description: `${deal.productName} — ${sale} (${was}) · ${deal.shopName}`,
     alternates: {
       canonical: `${BASE_URL}/${params.locale}/deal/${params.slug}`,

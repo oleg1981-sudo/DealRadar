@@ -2,7 +2,7 @@ import { getTranslations, setRequestLocale } from 'next-intl/server';
 
 export async function generateMetadata({ params: { locale } }: { params: { locale: string } }) {
   const t = await getTranslations({ locale, namespace: 'terms' });
-  return { title: `${t('title')} · DealRadar` };
+  return { title: t('title') };
 }
 
 export default async function TermsPage({ params: { locale } }: Readonly<{ params: { locale: string } }>) {
