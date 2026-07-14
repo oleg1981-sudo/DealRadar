@@ -7,9 +7,11 @@ import { formatPrice, formatDiscount } from '@/lib/utils/format';
 import { decorateAffiliateUrl } from '@/lib/utils/affiliate';
 import { priceWindow } from '@/lib/utils/price-history';
 import { queryPriceHistory } from '@/lib/db/price-history.repo';
+import Image from 'next/image';
 import { PriceAlertButton } from '@/components/deals/PriceAlertButton';
 import { PriceHeatBar } from '@/components/deals/PriceHeatBar';
 import { DealGallery } from '@/components/deals/DealGallery';
+import { DealDescription } from '@/components/deals/DealDescription';
 import { SponsoredBadge } from '@/components/deals/SponsoredBadge';
 import { productGallery } from '@/lib/utils/product-details';
 import { Badge } from '@/components/ui/badge';
@@ -75,14 +77,19 @@ export default async function DealDetailPage({ params }: Props) {
   // [FR-GEO-1 / P-3] Product + single Offer + itemCondition — built per-item from
   // the deal record. A single-seller deal is a plain Offer, not an AggregateOffer
   // (which models multiple sellers and triggers Search Console warnings at offerCount:1).
+  const gallery = productGallery(deal);
   const jsonLd = {
     '@context': 'https://schema.org/',
     '@type': 'Product',
     name: deal.productName,
-    image: deal.imageUrl ? [deal.imageUrl] : [],
-    description: `${deal.productName} — ${deal.shopName}`,
+    // Full-res gallery (un-proxied), not the 200×200 productserve thumbnail.
+    image: gallery,
+    // [FR-SEO-2 / FR-PDP-7] The real feed description when present — the
+    // synthetic name+shop string is only the empty-description fallback.
+    description: deal.description || `${deal.productName} — ${deal.shopName}`,
     ...(deal.brand ? { brand: { '@type': 'Brand', name: deal.brand } } : {}),
     ...(deal.eanCode ? { gtin: deal.eanCode } : {}),
+    ...(deal.mpn ? { mpn: deal.mpn } : {}),
     offers: {
       '@type': 'Offer',
       price: deal.salePrice.toFixed(2),
@@ -175,7 +182,7 @@ export default async function DealDetailPage({ params }: Props) {
       <div className="grid grid-cols-1 gap-8 md:grid-cols-2">
         {/* Real multi-image gallery (full-res merchant photos), as the retired modal had. */}
         <DealGallery
-          images={productGallery(deal)}
+          images={gallery}
           alt={deal.productName}
           badge={
             <Badge variant="deal" className="absolute left-4 top-4 text-lg">
@@ -243,12 +250,64 @@ export default async function DealDetailPage({ params }: Props) {
         </div>
       </div>
 
-      {/* Real product description from the feed, as the retired modal showed. */}
-      {deal.description && (
-        <div className="mt-8 border-t border-zinc-100 pt-6">
-          <h2 className="mb-2 text-sm font-semibold text-zinc-900">{t('details')}</h2>
-          <p className="whitespace-pre-line text-sm leading-relaxed text-zinc-600">{deal.description}</p>
-        </div>
+      {/* Product details: merchant-captured HTML (sanitized in DealDescription)
+          with the plain feed description as fallback. */}
+      {(deal.descriptionHtml || deal.description) && (
+        <section className="mt-10 border-t border-zinc-100 pt-8">
+          <h2 className="mb-4 text-lg font-semibold text-zinc-900">{t('details')}</h2>
+          <div className="max-w-3xl">
+            <DealDescription html={deal.descriptionHtml} text={deal.description} />
+          </div>
+        </section>
+      )}
+
+      {/* Real identifiers only — no fabricated spec rows (FR-PDP-6). */}
+      {(deal.brand || deal.modelNumber || deal.mpn || deal.eanCode) && (
+        <section className="mt-10 border-t border-zinc-100 pt-8">
+          <h2 className="mb-4 text-lg font-semibold text-zinc-900">{t('specsTitle')}</h2>
+          <dl className="grid max-w-md grid-cols-[auto,1fr] gap-x-8 gap-y-2 text-sm">
+            {deal.brand && (
+              <>
+                <dt className="text-zinc-500">{t('specBrand')}</dt>
+                <dd className="text-zinc-900">{deal.brand}</dd>
+              </>
+            )}
+            {(deal.modelNumber || deal.mpn) && (
+              <>
+                <dt className="text-zinc-500">{t('specModel')}</dt>
+                <dd className="text-zinc-900">{deal.modelNumber || deal.mpn}</dd>
+              </>
+            )}
+            {deal.eanCode && (
+              <>
+                <dt className="text-zinc-500">{t('specEan')}</dt>
+                <dd className="text-zinc-900">{deal.eanCode}</dd>
+              </>
+            )}
+          </dl>
+        </section>
+      )}
+
+      {/* The gallery's non-hero images at real size — the merchant feature
+          graphics stored in `gallery` are unreadable as 64px thumbnails.
+          Skipped when the captured description already embeds images. */}
+      {!deal.descriptionHtml?.includes('<img') && gallery.length > 1 && (
+        <section className="mt-10 border-t border-zinc-100 pt-8">
+          <h2 className="mb-4 text-lg font-semibold text-zinc-900">{t('moreImages')}</h2>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            {gallery.slice(1, 7).map((src) => (
+              <Image
+                key={src}
+                src={src}
+                alt={deal.productName}
+                width={800}
+                height={800}
+                sizes="(max-width: 640px) 90vw, 448px"
+                className="h-auto w-full rounded-xl border border-zinc-100 bg-white object-contain"
+              />
+            ))}
+          </div>
+        </section>
       )}
     </div>
   );
