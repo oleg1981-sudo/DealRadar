@@ -125,6 +125,7 @@ function step(n, title) {
 (async () => {
   // Real, already-tested machinery — not reimplemented (T-MON-4 brief).
   const { buildSubId, decodeSubId, decorateAffiliateUrl } = await import('../src/lib/utils/affiliate.ts');
+  const { signPostbackBody } = await import('../src/lib/utils/crypto.ts');
   const { NextRequest } = await import('next/server');
   const { POST: postbackPOST } = await import('../src/app/api/postbacks/route.ts');
 
@@ -185,16 +186,27 @@ function step(n, title) {
 
     // ── 4. POSTBACK ──────────────────────────────────────────────────────
     step(4, 'POSTBACK — invoke the REAL POST handler from api/postbacks/route.ts');
-    const req = new NextRequest(`https://dealradar.me/api/postbacks?secret=${encodeURIComponent(WEBHOOK_SECRET)}`, {
+    // POST requires HMAC signing unconditionally (no query-secret fallback —
+    // see src/app/api/postbacks/route.ts#checkAuthPost). Sign the exact raw
+    // body bytes with the same scheme the route verifies:
+    // HMAC-SHA256(WEBHOOK_SECRET, `${timestampSeconds}.${rawBody}`).
+    const rawBody = JSON.stringify({
+      transaction_id: transactionId,
+      network: source,
+      commission_earned: commissionEarned,
+      status,
+      clickref: subid,
+    });
+    const timestampSeconds = Math.floor(Date.now() / 1000);
+    const signature = signPostbackBody(WEBHOOK_SECRET, timestampSeconds, rawBody);
+    const req = new NextRequest('https://dealradar.me/api/postbacks', {
       method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({
-        transaction_id: transactionId,
-        network: source,
-        commission_earned: commissionEarned,
-        status,
-        clickref: subid,
-      }),
+      headers: {
+        'content-type': 'application/json',
+        'x-timestamp': String(timestampSeconds),
+        'x-signature': signature,
+      },
+      body: rawBody,
     });
     const res = await postbackPOST(req);
     const body = await res.json();
