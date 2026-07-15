@@ -44,7 +44,8 @@
     "ninetyDayLow": "Niedrigster Preis seit 90 Tagen auf DealRadar.",
     "notLowestNote": "90-Tage-Tief: {price}.",
     "verifiedAt": "Geprüft um {time} MEZ.",
-    "priceNote": "Preis und Verfügbarkeit können sich ändern — beim Shop prüfen."
+    "priceNote": "Preis und Verfügbarkeit können sich ändern — beim Shop prüfen.",
+    "dealUnavailable": "Dieses Angebot ist nicht mehr verfügbar."
   },
   "alert": {
     "button": "Preisalarm erhalten",

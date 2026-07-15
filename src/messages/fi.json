@@ -44,7 +44,8 @@
     "ninetyDayLow": "Alin hinta 90 päivään DealRadarissa.",
     "notLowestNote": "90 päivän alin: {price}.",
     "verifiedAt": "Tarkistettu klo {time} CET.",
-    "priceNote": "Price and availability may change — confirm at the store."
+    "priceNote": "Price and availability may change — confirm at the store.",
+    "dealUnavailable": "Tämä tarjous ei ole enää saatavilla."
   },
   "alert": {
     "button": "Saa ilmoitus parhaasta hinnasta",

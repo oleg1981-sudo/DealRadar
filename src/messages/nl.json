@@ -44,7 +44,8 @@
     "ninetyDayLow": "Laagste prijs in 90 dagen op DealRadar.",
     "notLowestNote": "Laagste prijs in 90 dagen: {price}.",
     "verifiedAt": "Geverifieerd om {time} CET.",
-    "priceNote": "Price and availability may change — confirm at the store."
+    "priceNote": "Price and availability may change — confirm at the store.",
+    "dealUnavailable": "Deze deal is niet meer beschikbaar."
   },
   "alert": {
     "button": "Ontvang beste-prijsmelding",
