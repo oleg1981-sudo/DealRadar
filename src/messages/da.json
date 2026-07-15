@@ -44,7 +44,8 @@
     "ninetyDayLow": "Laveste pris i 90 dage på DealRadar.",
     "notLowestNote": "Laveste pris i 90 dage: {price}.",
     "verifiedAt": "Verificeret kl. {time} CET.",
-    "priceNote": "Price and availability may change — confirm at the store."
+    "priceNote": "Price and availability may change — confirm at the store.",
+    "dealUnavailable": "Dette tilbud er ikke længere tilgængeligt."
   },
   "alert": {
     "button": "Få besked om bedste pris",

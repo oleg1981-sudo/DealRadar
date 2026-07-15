@@ -200,6 +200,15 @@ export default async function DealDetailPage({ params }: Props) {
             <div className="mb-2 text-sm font-semibold uppercase tracking-wider text-accent">{deal.shopName}</div>
             <h1 className="mb-4 text-2xl font-bold text-zinc-900 md:text-3xl">{deal.productName}</h1>
 
+            {/* [FR-SEO-1/FR-ING-13] hidden (sold-out/gone per the verifier) still
+                renders 200 with the last-known price, but flagged clearly instead
+                of the false live-InStock impression a silent render would give. */}
+            {deal.hidden && (
+              <Badge variant="sponsored" className="mb-4">
+                {t('dealUnavailable')}
+              </Badge>
+            )}
+
             <div className="mb-4 flex items-baseline gap-3">
               <span className="text-3xl font-extrabold text-zinc-900">
                 {formatPrice(deal.salePrice, deal.currency, params.locale)}
@@ -229,27 +238,43 @@ export default async function DealDetailPage({ params }: Props) {
           </div>
 
           <div className="flex flex-col gap-3 pt-4">
-            <div className="flex items-center gap-2">
-              <SponsoredBadge />
-            </div>
-            <a
-              href={affiliateUrl}
-              target="_blank"
-              rel="noopener noreferrer nofollow sponsored"
-              data-analytics-event="cta_go_to_deal"
-              data-analytics-source="pdp"
-              data-analytics-list="pdp"
-              data-analytics-item={gaItemAttr(deal)}
-              className="flex h-12 w-full items-center justify-center rounded-lg bg-accent font-semibold text-white transition hover:opacity-90"
-            >
-              {t('goToShop', { shop: deal.shopName })}
-            </a>
-            <PriceAlertButton
-              productId={deal.productId}
-              productName={deal.productName}
-              price={deal.salePrice}
-              currency={deal.currency}
-            />
+            {deal.hidden ? (
+              // [FR-SEO-1/FR-ING-13] hidden = gone/sold-out/undiscounted per the
+              // daily live-shop verifier: honest 200 state, no outbound affiliate
+              // CTA and no new price-alert signups for an offer that no longer
+              // exists. The JSON-LD `availability` field is intentionally left
+              // untouched here (tracked separately) — this only gates the visible CTA.
+              <p
+                role="status"
+                className="flex h-12 w-full items-center justify-center rounded-lg bg-zinc-100 px-4 text-center text-sm font-medium text-zinc-600"
+              >
+                {t('dealUnavailable')}
+              </p>
+            ) : (
+              <>
+                <div className="flex items-center gap-2">
+                  <SponsoredBadge />
+                </div>
+                <a
+                  href={affiliateUrl}
+                  target="_blank"
+                  rel="noopener noreferrer nofollow sponsored"
+                  data-analytics-event="cta_go_to_deal"
+                  data-analytics-source="pdp"
+                  data-analytics-list="pdp"
+                  data-analytics-item={gaItemAttr(deal)}
+                  className="flex h-12 w-full items-center justify-center rounded-lg bg-accent font-semibold text-white transition hover:opacity-90"
+                >
+                  {t('goToShop', { shop: deal.shopName })}
+                </a>
+                <PriceAlertButton
+                  productId={deal.productId}
+                  productName={deal.productName}
+                  price={deal.salePrice}
+                  currency={deal.currency}
+                />
+              </>
+            )}
           </div>
         </div>
       </div>

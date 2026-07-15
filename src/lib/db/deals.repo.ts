@@ -64,6 +64,7 @@ function fromRow(r: Record<string, unknown>): NormalizedDeal {
     merchantSku: (r.merchant_sku as string) ?? null,
     historicalLowPrice: r.historical_low_price == null ? null : Number(r.historical_low_price),
     merchantId: (r.merchant_id as string) ?? null, affiliateSubid: (r.affiliate_subid as string) ?? null,
+    hidden: Boolean(r.hidden),
   };
 }
 
@@ -291,9 +292,12 @@ export async function getDealBySlug(slug: string, country?: CountryCode): Promis
     const deals = await fetchDealsAcrossProviders({ country: country || 'DE', limit: 500 });
     return deals.find((d) => d.slug === slug || slugify(d.productName) === slug) || null;
   }
-  // Exclude hidden (sold-out/delisted) deals: a hidden slug must 404, not render
-  // publicly with a hardcoded InStock badge or seed the sitemap.
-  let q = supabase().from(TABLE).select('*').eq('slug', slug).eq('hidden', false);
+  // Deliberately do NOT filter `hidden` here (FR-SEO-1/FR-ING-13): a hidden
+  // (sold-out/gone) deal's PDP must still resolve — the page renders an honest
+  // OutOfStock state with a disabled CTA instead of a 404. Only a truly unknown
+  // slug should fall through to notFound(). Other read paths (sitemap, list/
+  // search, alert reconciliation) still exclude hidden=true at the query level.
+  let q = supabase().from(TABLE).select('*').eq('slug', slug);
   if (country) q = q.eq('country', country);
   const { data, error } = await q.maybeSingle();
   if (error) {
