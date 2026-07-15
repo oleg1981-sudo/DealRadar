@@ -169,6 +169,7 @@ function normalizeRow(g) {
     ean_code: g('ean').trim() || g('product_GTIN').trim() || null,
     mpn: g('mpn').trim() || null,
     model_number: g('model_number').trim() || g('product_model').trim() || null,
+    merchant_sku: g('merchant_product_id').trim() || null,
     country: COUNTRY,
     city: null,
     is_sponsored: true,

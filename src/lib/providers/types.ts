@@ -61,6 +61,8 @@ export interface NormalizedDeal {
   upcCode?: string | null;
   mpn?: string | null;
   modelNumber?: string | null;
+  /** Merchant's own product ID (AWIN merchant_product_id) → JSON-LD Product.sku. */
+  merchantSku?: string | null;
   historicalLowPrice?: number | null;
   merchantId?: string | null;
   affiliateSubid?: string | null;

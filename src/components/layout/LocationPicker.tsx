@@ -36,6 +36,11 @@ export function LocationPicker() {
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
         aria-haspopup="dialog"
+        // The visible text span is display:none below sm — without a label the
+        // button has NO accessible name on mobile (Lighthouse a11y + agentic
+        // failure, audit/2026-07-15). Keep the label on all viewports so the
+        // announced name stays stable across breakpoints.
+        aria-label={t('changeLocation')}
         className="flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm text-zinc-700 hover:bg-zinc-100"
       >
         <MapPin className="h-4 w-4 text-accent" aria-hidden />

@@ -118,6 +118,13 @@ alter table public.deals
 alter table public.deals
   add column if not exists description_html text;
 
+-- Merchant's own product identifier (AWIN `merchant_product_id`, 2026-07-15):
+-- surfaces as Product.sku in the PDP JSON-LD (Google: merchant-specific ID,
+-- no whitespace). Populated only once the Create-a-Feed URL includes the
+-- column — additive and inert until then.
+alter table public.deals
+  add column if not exists merchant_sku text;
+
 create unique index if not exists deals_slug_idx on public.deals (slug) where slug is not null;
 create index if not exists deals_ean_idx on public.deals (ean_code) where ean_code is not null;
 

@@ -35,6 +35,7 @@ function toRow(d: NormalizedDeal) {
     city: d.city, is_sponsored: d.isSponsored, source: d.source, last_updated: d.lastUpdated,
     slug: generatedSlug, ean_code: d.eanCode ?? null, upc_code: d.upcCode ?? null,
     mpn: d.mpn ?? null, model_number: d.modelNumber ?? null,
+    merchant_sku: d.merchantSku ?? null,
     historical_low_price: d.historicalLowPrice ?? null,
     merchant_id: d.merchantId ?? null, affiliate_subid: d.affiliateSubid ?? null,
   };
@@ -60,6 +61,7 @@ function fromRow(r: Record<string, unknown>): NormalizedDeal {
     source: r.source as string, lastUpdated: r.last_updated as string,
     slug, eanCode: (r.ean_code as string) ?? null, upcCode: (r.upc_code as string) ?? null,
     mpn: (r.mpn as string) ?? null, modelNumber: (r.model_number as string) ?? null,
+    merchantSku: (r.merchant_sku as string) ?? null,
     historicalLowPrice: r.historical_low_price == null ? null : Number(r.historical_low_price),
     merchantId: (r.merchant_id as string) ?? null, affiliateSubid: (r.affiliate_subid as string) ?? null,
   };

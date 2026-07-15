@@ -32,10 +32,10 @@ Order is dependency order. Nothing below is implemented yet. ⚠ = requires expl
 ## Phase 2 — P1
 
 - [ ] **T4: LocationPicker accessible name (a11y + agentic)**
-  - Acceptance: header button exposes a localized accessible name on all viewports (`aria-label` from new `geo.pickerLabel` key, present in all 13 locale files)
-  - Verify: `node scripts/check-i18n.mjs` green; `pnpm test/build`; verify-deploy gains an assertion that the button has an accessible name
-  - Files: `src/components/layout/LocationPicker.tsx`, `src/messages/*.json` (13), `scripts/verify-deploy.mjs`
-  - Scope: S (mechanically wide, logically one change) · Dependencies: none
+  - Acceptance: header button exposes a localized accessible name on all viewports (reuses existing `geo.changeLocation` key — already translated in all 13 locales; no message-file changes needed)
+  - Verify: `pnpm test/build`; verify-deploy gains an assertion that the button has an accessible name
+  - Files: `src/components/layout/LocationPicker.tsx`, `scripts/verify-deploy.mjs`
+  - Scope: XS (shrunk from S — existing key reused) · Dependencies: none
 
 - [ ] **T5: sku plumbing (inert until feed regen)** ⚠ prod DB migration
   - Acceptance: `merchant_sku` nullable column (additive, RLS untouched); ingest maps `merchant_product_id`; repo maps row→`NormalizedDeal.merchantSku`; PDP emits `sku` (whitespace-stripped) only when present

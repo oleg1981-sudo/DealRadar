@@ -121,6 +121,12 @@ if (sampleDealPath) {
   const r = await get('/en');
   const h = (k) => r.headers.get(k) || '';
   check('/en 200', r.status === 200, `status=${r.status}`);
+  // A11y/agentic: the location-picker button's visible text is hidden on
+  // mobile — the aria-label is its only accessible name there. Assert on the
+  // server-rendered attribute pair (aria-haspopup="dialog" is unique to it).
+  const pickerNamed = /<button[^>]*aria-haspopup="dialog"[^>]*aria-label="[^"]+"/.test(r.body) ||
+    /<button[^>]*aria-label="[^"]+"[^>]*aria-haspopup="dialog"/.test(r.body);
+  check('location-picker button has accessible name', pickerNamed, 'aria-label missing on aria-haspopup="dialog" button');
   check('CSP present w/ frame-ancestors none', /frame-ancestors 'none'/.test(h('content-security-policy')), h('content-security-policy').slice(0, 60) || 'absent');
   check('CSP allows Clarity analytics tag', h('content-security-policy').includes('clarity.ms'), 'clarity.ms not in script-src');
   check('CSP allows GA4 gtag.js', h('content-security-policy').includes('googletagmanager.com'), 'googletagmanager.com not in script-src');

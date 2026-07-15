@@ -92,6 +92,8 @@ export default async function DealDetailPage({ params }: Props) {
     ...(deal.brand ? { brand: { '@type': 'Brand', name: deal.brand } } : {}),
     ...(deal.eanCode ? { gtin: deal.eanCode } : {}),
     ...(deal.mpn || deal.modelNumber ? { mpn: deal.mpn || deal.modelNumber } : {}),
+    // Google: sku is the merchant-specific ID and must not contain whitespace.
+    ...(deal.merchantSku ? { sku: deal.merchantSku.replace(/\s+/g, '') } : {}),
     offers: {
       '@type': 'Offer',
       price: deal.salePrice.toFixed(2),
