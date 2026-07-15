@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { getDealBySlug } from '@/lib/db/deals.repo';
+import type { NormalizedDeal } from '@/lib/providers/types';
 import { formatPrice, formatDiscount } from '@/lib/utils/format';
 import { decorateAffiliateUrl } from '@/lib/utils/affiliate';
 import { priceWindow } from '@/lib/utils/price-history';
@@ -36,6 +37,17 @@ const BASE_URL = siteUrl();
 
 // Deduplicate the lookup across generateMetadata + the page render (one request).
 const getDeal = cache((slug: string) => getDealBySlug(slug));
+
+/** [FR-SEO-2] JSON-LD `availability` must derive from deal state, never a
+ *  constant: hidden (gone/sold-out per the daily live-shop verifier) reports
+ *  OutOfStock so search engines don't index a live-InStock impression for an
+ *  offer that no longer exists. A future `expired` state (url-slug rework,
+ *  not yet landed) slots in here alongside `hidden` without touching the
+ *  JSON-LD construction below. */
+function offerAvailability(deal: NormalizedDeal): string {
+  if (deal.hidden) return 'https://schema.org/OutOfStock';
+  return 'https://schema.org/InStock';
+}
 
 export async function generateMetadata({ params }: Props) {
   const deal = await getDeal(params.slug);
@@ -103,7 +115,7 @@ export default async function DealDetailPage({ params }: Props) {
       '@type': 'Offer',
       price: deal.salePrice.toFixed(2),
       priceCurrency: deal.currency,
-      availability: 'https://schema.org/InStock',
+      availability: offerAvailability(deal),
       itemCondition: 'https://schema.org/NewCondition',
       url: dealUrl,
       seller: { '@type': 'Organization', name: deal.shopName },
@@ -201,6 +213,15 @@ export default async function DealDetailPage({ params }: Props) {
             <div className="mb-2 text-sm font-semibold uppercase tracking-wider text-accent-hover">{deal.shopName}</div>
             <h1 className="mb-4 text-2xl font-bold text-zinc-900 md:text-3xl">{deal.productName}</h1>
 
+            {/* [FR-SEO-1/FR-ING-13] hidden (sold-out/gone per the verifier) still
+                renders 200 with the last-known price, but flagged clearly instead
+                of the false live-InStock impression a silent render would give. */}
+            {deal.hidden && (
+              <Badge variant="sponsored" className="mb-4">
+                {t('dealUnavailable')}
+              </Badge>
+            )}
+
             <div className="mb-4 flex items-baseline gap-3">
               <span className="text-3xl font-extrabold text-zinc-900">
                 {formatPrice(deal.salePrice, deal.currency, params.locale)}
@@ -230,27 +251,44 @@ export default async function DealDetailPage({ params }: Props) {
           </div>
 
           <div className="flex flex-col gap-3 pt-4">
-            <div className="flex items-center gap-2">
-              <SponsoredBadge />
-            </div>
-            <a
-              href={affiliateUrl}
-              target="_blank"
-              rel="noopener noreferrer nofollow sponsored"
-              data-analytics-event="cta_go_to_deal"
-              data-analytics-source="pdp"
-              data-analytics-list="pdp"
-              data-analytics-item={gaItemAttr(deal)}
-              className="flex h-12 w-full items-center justify-center rounded-lg bg-accent-hover font-semibold text-white transition hover:bg-accent-deep"
-            >
-              {t('goToShop', { shop: deal.shopName })}
-            </a>
-            <PriceAlertButton
-              productId={deal.productId}
-              productName={deal.productName}
-              price={deal.salePrice}
-              currency={deal.currency}
-            />
+            {deal.hidden ? (
+              // [FR-SEO-1/FR-ING-13] hidden = gone/sold-out/undiscounted per the
+              // daily live-shop verifier: honest 200 state, no outbound affiliate
+              // CTA and no new price-alert signups for an offer that no longer
+              // exists. JSON-LD `availability` is derived from the same flag via
+              // offerAvailability() above [FR-SEO-2] — this block only gates the
+              // visible CTA.
+              <p
+                role="status"
+                className="flex h-12 w-full items-center justify-center rounded-lg bg-zinc-100 px-4 text-center text-sm font-medium text-zinc-600"
+              >
+                {t('dealUnavailable')}
+              </p>
+            ) : (
+              <>
+                <div className="flex items-center gap-2">
+                  <SponsoredBadge />
+                </div>
+                <a
+                  href={affiliateUrl}
+                  target="_blank"
+                  rel="noopener noreferrer nofollow sponsored"
+                  data-analytics-event="cta_go_to_deal"
+                  data-analytics-source="pdp"
+                  data-analytics-list="pdp"
+                  data-analytics-item={gaItemAttr(deal)}
+                  className="flex h-12 w-full items-center justify-center rounded-lg bg-accent-hover font-semibold text-white transition hover:bg-accent-deep"
+                >
+                  {t('goToShop', { shop: deal.shopName })}
+                </a>
+                <PriceAlertButton
+                  productId={deal.productId}
+                  productName={deal.productName}
+                  price={deal.salePrice}
+                  currency={deal.currency}
+                />
+              </>
+            )}
           </div>
         </div>
       </div>

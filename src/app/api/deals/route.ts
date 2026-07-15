@@ -5,13 +5,19 @@
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { queryDeals, type DealFilters } from '@/lib/db/deals.repo';
-import { cacheGet, cacheKey, cacheSet } from '@/lib/cache/redis';
+import { cacheGet, cacheKey, cacheSet, rateLimitDeals } from '@/lib/cache/redis';
 import { isSupportedCountry } from '@/lib/geo/countries';
 import { CATEGORY_SLUGS, type CategorySlug } from '@/lib/providers/types';
+import { clientIp } from '@/lib/utils/request-ip';
 
 export const runtime = 'nodejs';
 
 export async function GET(req: NextRequest) {
+  const { success } = await rateLimitDeals(clientIp(req));
+  if (!success) {
+    return NextResponse.json({ error: 'rate_limited', message: 'Too many requests. Please slow down.' }, { status: 429 });
+  }
+
   const p = req.nextUrl.searchParams;
   const country = p.get('country') ?? '';
   if (!isSupportedCountry(country)) {

@@ -10,7 +10,9 @@
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "db:migrate": "node scripts/apply-schema.mjs"
+    "db:migrate": "node scripts/apply-schema.mjs",
+    "drill:thin-loop": "node scripts/thin-loop-drill.mjs",
+    "check:budgets": "node scripts/check-budgets.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.49.0",
@@ -38,6 +40,7 @@
     "eslint-config-next": "^14.2.25",
     "postcss": "^8.4.49",
     "tailwindcss": "^3.4.17",
+    "tsx": "^4.23.1",
     "typescript": "^5.7.0",
     "vitest": "^4.1.9"
   }

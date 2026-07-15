@@ -1,0 +1,188 @@
+#!/usr/bin/env node
+/**
+ * Cost guardrail — flags budget breaches across the four v3.1 cost dimensions
+ * (NFR-COST-1/2/3, task T-INF-9):
+ *
+ *   1. DB row count        > 5,000,000 rows/table (provisional default, A-09)  MEASURABLE
+ *   2. AWIN feed egress    > 350 MB / run                                     MEASURABLE
+ *   3. GH Actions minutes  > 2,000 / mo                                       STUB — unmeasured
+ *   4. Vertex/LLM tokens   > 20,000,000 / mo                                  STUB — unmeasured
+ *
+ * Honesty over false reassurance: a stubbed check is reported as UNMEASURED
+ * and never silently counted as a pass. Only a MEASURABLE breach makes this
+ * script exit non-zero — an unmeasured check never fails (and never
+ * "passes") the run, so this can run unattended without crying wolf or
+ * quietly lying about coverage it doesn't have.
+ *
+ * Measurable checks:
+ *   - DB row count reads Postgres directly (same psql-based connection
+ *     pattern as scripts/db-verify.mjs / scripts/apply-schema.mjs).
+ *   - AWIN egress reads the `awin_feed_bytes` metric that
+ *     scripts/ingest-awin.cjs persists to the `ops_metrics` table after every
+ *     real (non-dry-run) ingest. If that table/row doesn't exist yet, or the
+ *     metric is older than AWIN_METRIC_MAX_AGE_HOURS (no recent ingest ran),
+ *     this reports UNMEASURED rather than comparing a stale/missing number.
+ *
+ * Unmeasurable checks (see the stub functions below for exactly what's
+ * missing):
+ *   - GitHub Actions minutes needs the GitHub billing API
+ *     (GET /repos/{owner}/{repo}/actions/billing or the org-level
+ *     equivalent) with a token that has billing:read scope. No such token
+ *     exists in this repo's secrets, and no in-repo mechanism tracks minutes
+ *     consumed.
+ *   - Vertex/LLM token spend needs either a Cloud Billing export/API
+ *     integration or an in-app usage-logging ledger. Neither exists in this
+ *     repo. Fabricating a number here would be worse than reporting nothing.
+ *
+ * Usage:
+ *   SUPABASE_DB_URL="postgresql://...:5432/postgres" node scripts/check-budgets.mjs
+ *
+ * Dependency-free: shells out to psql, like db-verify.mjs / apply-schema.mjs.
+ */
+import { spawnSync } from 'node:child_process';
+import { existsSync } from 'node:fs';
+
+const PSQL_CANDIDATES = [
+  '/usr/bin/psql',
+  '/usr/local/bin/psql',
+  '/opt/homebrew/bin/psql',
+  '/Library/PostgreSQL/16/bin/psql',
+  '/Applications/Postgres.app/Contents/Versions/latest/bin/psql',
+];
+
+// ── budget thresholds ────────────────────────────────────────────────────────
+const DB_ROW_LIMIT = 5_000_000; // A-09 provisional default
+const AWIN_EGRESS_LIMIT_BYTES = 350 * 1024 * 1024; // 350 MB/run
+const AWIN_METRIC_MAX_AGE_HOURS = 48; // ingest runs daily; beyond this, treat as "no recent data"
+const GH_ACTIONS_MINUTES_LIMIT = 2000; // per month
+const VERTEX_TOKEN_LIMIT = 20_000_000; // per month
+
+const dbUrl = process.env.SUPABASE_DB_URL || process.env.DATABASE_URL;
+const psqlBin = PSQL_CANDIDATES.find((p) => existsSync(p));
+
+let breaches = 0;
+let unmeasured = 0;
+
+function pass(name, detail = '') {
+  console.log(`[budgets] PASS        ${name}${detail ? ` — ${detail}` : ''}`);
+}
+function breach(name, detail = '') {
+  breaches++;
+  console.error(`[budgets] BREACH      ${name}${detail ? ` — ${detail}` : ''}`);
+}
+function stub(name, reason) {
+  unmeasured++;
+  console.warn(`[budgets] UNMEASURED  ${name} — ${reason}`);
+}
+
+/** Run a SQL script via psql; return trimmed stdout. Throws on non-zero exit. */
+function sql(script) {
+  const res = spawnSync(psqlBin, [dbUrl, '-v', 'ON_ERROR_STOP=1', '-tA', '-c', script], {
+    encoding: 'utf8',
+    shell: false,
+  });
+  if (res.status !== 0) throw new Error(res.stderr || `psql exited ${res.status}`);
+  return res.stdout.trim();
+}
+
+// ── 1. DB row count (MEASURABLE) ────────────────────────────────────────────
+function checkDbRowCount() {
+  const NAME = 'DB row count';
+  if (!dbUrl) return stub(NAME, 'SUPABASE_DB_URL (or DATABASE_URL) is not set');
+  if (!psqlBin) return stub(NAME, 'psql not found on this machine/runner');
+
+  let j;
+  try {
+    j = JSON.parse(
+      sql(`select json_build_object(
+        'deals', (select count(*) from public.deals),
+        'price_history', (select count(*) from public.price_history),
+        'transactions', (select count(*) from public.transactions),
+        'price_alerts', (select count(*) from public.price_alerts)
+      )`),
+    );
+  } catch (e) {
+    return stub(NAME, `query failed: ${e.message}`);
+  }
+
+  for (const [table, countStr] of Object.entries(j)) {
+    const n = Number(countStr);
+    if (!Number.isFinite(n)) {
+      stub(`${NAME}: ${table}`, `non-numeric count returned (${countStr})`);
+      continue;
+    }
+    if (n > DB_ROW_LIMIT) {
+      breach(`${NAME}: ${table}`, `${n.toLocaleString()} rows > ${DB_ROW_LIMIT.toLocaleString()} threshold`);
+    } else {
+      pass(`${NAME}: ${table}`, `${n.toLocaleString()} rows`);
+    }
+  }
+}
+
+// ── 2. AWIN feed egress (MEASURABLE, via ops_metrics) ───────────────────────
+function checkAwinEgress() {
+  const NAME = 'AWIN feed egress';
+  if (!dbUrl) return stub(NAME, 'SUPABASE_DB_URL (or DATABASE_URL) is not set (needed to read ops_metrics)');
+  if (!psqlBin) return stub(NAME, 'psql not found on this machine/runner');
+
+  let j;
+  try {
+    j = JSON.parse(
+      sql(`select json_build_object(
+        'table_exists', (select to_regclass('public.ops_metrics') is not null),
+        'value', (select value from public.ops_metrics where key = 'awin_feed_bytes'),
+        'age_hours', (select round(extract(epoch from (now() - recorded_at)) / 3600, 1) from public.ops_metrics where key = 'awin_feed_bytes')
+      )`),
+    );
+  } catch (e) {
+    return stub(NAME, `query failed: ${e.message}`);
+  }
+
+  if (!j.table_exists) {
+    return stub(NAME, 'ops_metrics table does not exist yet — run `pnpm db:migrate` (supabase/schema.sql)');
+  }
+  if (j.value === null || j.value === undefined) {
+    return stub(NAME, 'no awin_feed_bytes metric recorded yet — scripts/ingest-awin.cjs has not completed a real (--upsert) run with SUPABASE_URL/KEY set');
+  }
+  const ageHours = Number(j.age_hours);
+  if (Number.isFinite(ageHours) && ageHours > AWIN_METRIC_MAX_AGE_HOURS) {
+    return stub(NAME, `latest metric is ${ageHours}h old (> ${AWIN_METRIC_MAX_AGE_HOURS}h) — no recent ingest run to compare against`);
+  }
+
+  const bytes = Number(j.value);
+  const mb = (bytes / (1024 * 1024)).toFixed(1);
+  const limitMb = (AWIN_EGRESS_LIMIT_BYTES / (1024 * 1024)).toFixed(0);
+  if (bytes > AWIN_EGRESS_LIMIT_BYTES) {
+    breach(NAME, `${mb} MB > ${limitMb} MB threshold (last run, ${ageHours}h ago)`);
+  } else {
+    pass(NAME, `${mb} MB (last run, ${ageHours}h ago)`);
+  }
+}
+
+// ── 3. GH Actions minutes/mo (STUB — not measurable from this repo) ────────
+function checkGhActionsMinutes() {
+  stub(
+    `GitHub Actions minutes/mo (> ${GH_ACTIONS_MINUTES_LIMIT.toLocaleString()} threshold)`,
+    'requires the GitHub billing API (GET /repos/{owner}/{repo}/actions/billing or the org-level equivalent) ' +
+      'with a token scoped for billing reads — no such token exists in this repo\'s secrets, and no workflow ' +
+      'tracks cumulative minutes anywhere in-repo. Not implemented rather than fabricated.',
+  );
+}
+
+// ── 4. Vertex/LLM token spend/mo (STUB — not measurable from this repo) ────
+function checkVertexTokenSpend() {
+  stub(
+    `Vertex/LLM token spend/mo (> ${VERTEX_TOKEN_LIMIT.toLocaleString()} tokens threshold)`,
+    'no token-spend ledger exists anywhere in this repo — would require either a Cloud Billing export/API ' +
+      'integration or an in-app usage-logging table, neither of which is built. Not implemented rather than fabricated.',
+  );
+}
+
+console.log('[budgets] cost guardrail — v3.1 NFR-COST-1/2/3');
+checkDbRowCount();
+checkAwinEgress();
+checkGhActionsMinutes();
+checkVertexTokenSpend();
+
+console.log(`[budgets] ${breaches} breach(es), ${unmeasured} unmeasured check(s).`);
+process.exit(breaches > 0 ? 1 : 0);

@@ -1,0 +1,50 @@
+# Pull-request / main-branch gate: type-check, build, and test on every change.
+#
+# The build step deliberately runs with NO Supabase/AWIN/Upstash/etc. secrets
+# set, to continuously prove the "graceful degradation" contract (FR-INF-10 /
+# NFR-REL-3): `pnpm build` must exit 0 with an empty environment, with every
+# provider falling back to mock data instead of crashing. Do not add secrets
+# to this job — that would silently stop covering the contract.
+#
+# No required repository secrets.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Type-check
+        run: pnpm typecheck
+
+      - name: Build (no secrets set — proves graceful-degradation contract)
+        run: pnpm build
+
+      - name: Test
+        run: pnpm test

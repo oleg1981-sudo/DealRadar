@@ -6,13 +6,19 @@
  */
 import { NextRequest, NextResponse } from 'next/server';
 import { queryDeals, distinctBrands } from '@/lib/db/deals.repo';
-import { cacheGet, cacheKey, cacheSet } from '@/lib/cache/redis';
+import { cacheGet, cacheKey, cacheSet, rateLimitSearch } from '@/lib/cache/redis';
 import { isSupportedCountry } from '@/lib/geo/countries';
 import { CATEGORIES } from '@/lib/categories';
+import { clientIp } from '@/lib/utils/request-ip';
 
 export const runtime = 'nodejs';
 
 export async function GET(req: NextRequest) {
+  const { success } = await rateLimitSearch(clientIp(req));
+  if (!success) {
+    return NextResponse.json({ error: 'rate_limited', message: 'Too many search requests. Please slow down.' }, { status: 429 });
+  }
+
   const p = req.nextUrl.searchParams;
   const q = (p.get('q') ?? '').trim();
   const country = p.get('country') ?? '';

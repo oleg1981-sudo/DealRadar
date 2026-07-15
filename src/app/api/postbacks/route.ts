@@ -1,9 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase, supabaseConfigured } from '@/lib/db/supabase';
-import { timingSafeEqualStr } from '@/lib/utils/crypto';
+import { timingSafeEqualStr, verifyPostbackSignature } from '@/lib/utils/crypto';
 import { decodeSubId } from '@/lib/utils/affiliate';
+import { rateLimitPostbacks, claimPostbackSignature } from '@/lib/cache/redis';
+import { clientIp } from '@/lib/utils/request-ip';
+import { canonicalizePostbackQuery } from './canonicalize';
 
 export const runtime = 'nodejs';
+
+// Reject a signed postback whose X-Timestamp is further than this from "now"
+// (either direction — covers both a stale replay and clock-skew nonsense).
+// Also doubles as the TTL for the signature-replay claim below, so a given
+// signature can only ever be accepted once across its entire valid lifetime.
+const POSTBACK_REPLAY_WINDOW_SECONDS = 5 * 60;
 
 /** Network status vocabularies → the DB enum (pending|approved|declined|paid). */
 const STATUS_MAP: Record<string, 'pending' | 'approved' | 'declined' | 'paid'> = {
@@ -23,16 +32,110 @@ const TERTIARY_SUBID_FIELD: Record<string, string> = {
 
 const str = (v: unknown): string => (typeof v === 'string' ? v : '');
 
-/** Shared secret check — the secret always travels in the query string, never
- *  the body, so it never lands in `raw_payload`. Returns an error response, or
- *  null when authorized. */
-function checkAuth(req: NextRequest): NextResponse | null {
-  // Dedicated webhook secret — no CRON_SECRET fallback (postbacks ≠ cron auth).
+/**
+ * Auth for a postback request. POST and GET now have DIFFERENT minimum
+ * bars, because their real-world sending capabilities differ:
+ *
+ * POST — HMAC signature is REQUIRED, no fallback. A request body means the
+ *   sender is already capable of building a JSON payload, so it must also
+ *   sign it: `X-Signature: HMAC-SHA256(WEBHOOK_SECRET,
+ *   ${X-Timestamp}.${rawBody})`, with `X-Timestamp` a unix-seconds value
+ *   inside a ±5-minute window, and the signature usable exactly once (a
+ *   Redis-backed one-time claim — see claimPostbackSignature). The old
+ *   `?secret=` query-string fallback has been REMOVED for POST: a leaked
+ *   secret alone can no longer authenticate an arbitrary POST postback (any
+ *   transaction_id/commission/status). No live affiliate integration depends
+ *   on the old fallback — T-ING-2 real-credential onboarding is still open —
+ *   so nothing real breaks by requiring signing from here on.
+ *
+ * GET — HMAC is RECOMMENDED but cannot be made mandatory: GET postbacks are
+ *   redirect-triggered tracking pixels, and many real affiliate networks
+ *   structurally cannot attach anything beyond query parameters to a pixel
+ *   URL (no custom headers, no body to sign). So GET supports the SAME
+ *   signature + replay-guard machinery as POST, carried over query params
+ *   instead of headers (`&ts=<unix>&sig=<hmac>`), and uses it automatically
+ *   whenever a request carries `sig`. When `sig` is absent, GET falls back
+ *   to the bare `?secret=` check — this is a DELIBERATELY ACCEPTED residual
+ *   gap, narrowed specifically to networks that cannot add one query
+ *   parameter to a pixel URL (a much smaller set than "any network at all").
+ *   G1 provider onboarding should prefer/require the signed variant whenever
+ *   the network it's integrating supports it.
+ *
+ * `sig` for GET = HMAC-SHA256(WEBHOOK_SECRET, `${ts}.${canonical}`), where
+ * `canonical` is every query param EXCEPT `secret` and `sig` themselves,
+ * sorted by (decoded) key ascending, each key/value pair re-encoded via
+ * encodeURIComponent and joined as `k=v&k=v` — see canonicalizePostbackQuery.
+ * Re-encoding (rather than joining the raw decoded values) closes a
+ * signature-forging ambiguity: without it, two different param sets could
+ * canonicalize to the identical string if a value itself contained a
+ * literal `&` or `=`.
+ *
+ * The secret always travels in the query string, never the body, so it
+ * never lands in `raw_payload`.
+ */
+
+/**
+ * Shared signature verification: timestamp freshness → HMAC validity →
+ * one-time-use claim. `message` is whatever was actually signed (POST: the
+ * raw request body bytes; GET: canonicalizePostbackQuery's output). Returns
+ * an error response, or null when the signature checks out.
+ */
+async function verifySignedRequest(
+  secret: string,
+  timestampParam: string | null,
+  message: string,
+  signature: string,
+): Promise<NextResponse | null> {
+  const timestamp = timestampParam ? Number(timestampParam) : NaN;
+  if (!timestampParam || !Number.isFinite(timestamp)) {
+    return NextResponse.json({ error: 'missing_timestamp' }, { status: 401 });
+  }
+  const ageSeconds = Math.abs(Date.now() / 1000 - timestamp);
+  if (ageSeconds > POSTBACK_REPLAY_WINDOW_SECONDS) {
+    return NextResponse.json({ error: 'stale_timestamp' }, { status: 401 });
+  }
+  if (!verifyPostbackSignature(secret, timestamp, message, signature)) {
+    return NextResponse.json({ error: 'invalid_signature' }, { status: 401 });
+  }
+  // Signature is cryptographically valid and fresh — now make sure it hasn't
+  // been used before (replay of a captured-but-still-valid request).
+  const claimed = await claimPostbackSignature(signature, POSTBACK_REPLAY_WINDOW_SECONDS);
+  if (!claimed) {
+    return NextResponse.json({ error: 'replayed_signature' }, { status: 401 });
+  }
+  return null;
+}
+
+/** POST auth: HMAC signature required, no query-secret fallback (see comment above). */
+async function checkAuthPost(req: NextRequest, rawBody: string): Promise<NextResponse | null> {
   const expected = process.env.WEBHOOK_SECRET;
   if (!expected) {
     console.error('[postback] WEBHOOK_SECRET not configured — rejecting');
     return NextResponse.json({ error: 'not_configured' }, { status: 503 });
   }
+  const signature = req.headers.get('x-signature');
+  if (!signature) {
+    return NextResponse.json({ error: 'missing_signature' }, { status: 401 });
+  }
+  return verifySignedRequest(expected, req.headers.get('x-timestamp'), rawBody, signature);
+}
+
+/** GET auth: `ts`+`sig` query params when present, else the bare `?secret=` fallback. */
+async function checkAuthGet(req: NextRequest): Promise<NextResponse | null> {
+  const expected = process.env.WEBHOOK_SECRET;
+  if (!expected) {
+    console.error('[postback] WEBHOOK_SECRET not configured — rejecting');
+    return NextResponse.json({ error: 'not_configured' }, { status: 503 });
+  }
+
+  const signature = req.nextUrl.searchParams.get('sig');
+  if (signature) {
+    const message = canonicalizePostbackQuery(req.nextUrl.searchParams);
+    return verifySignedRequest(expected, req.nextUrl.searchParams.get('ts'), message, signature);
+  }
+
+  // Documented residual fallback (GET only): bare shared secret, for
+  // networks that cannot attach `ts`/`sig` params to a tracking pixel.
   const provided = req.nextUrl.searchParams.get('secret') || '';
   if (!timingSafeEqualStr(provided, expected)) {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
@@ -41,27 +144,44 @@ function checkAuth(req: NextRequest): NextResponse | null {
 }
 
 /**
- * GET /api/postbacks?secret=…&transaction_id=…&… — query-string postbacks.
- * Some networks (Strackr) default to GET pixels rather than POST/JSON. Fields
- * arrive as query params; `secret` is stripped so it never enters raw_payload.
+ * GET /api/postbacks?secret=…&transaction_id=…&… (or …&ts=…&sig=… for the
+ * signed variant) — query-string postbacks. Some networks (Strackr) default
+ * to GET pixels rather than POST/JSON. Fields arrive as query params;
+ * `secret` and `sig`/`ts` are stripped so neither lands in raw_payload.
  */
 export async function GET(req: NextRequest) {
-  const unauthorized = checkAuth(req);
+  const { success } = await rateLimitPostbacks(clientIp(req));
+  if (!success) {
+    return NextResponse.json({ error: 'rate_limited' }, { status: 429 });
+  }
+
+  const unauthorized = await checkAuthGet(req);
   if (unauthorized) return unauthorized;
   const body: Record<string, unknown> = {};
   for (const [k, v] of req.nextUrl.searchParams) {
-    if (k !== 'secret') body[k] = v;
+    if (k !== 'secret' && k !== 'sig' && k !== 'ts') body[k] = v;
   }
   return processPostback(body);
 }
 
 export async function POST(req: NextRequest) {
-  const unauthorized = checkAuth(req);
+  const { success } = await rateLimitPostbacks(clientIp(req));
+  if (!success) {
+    return NextResponse.json({ error: 'rate_limited' }, { status: 429 });
+  }
+
+  // Read the RAW body text (not req.json()) so a signature can be verified
+  // against the exact bytes the sender signed — re-serializing via
+  // JSON.stringify could reorder keys / change whitespace and break a
+  // legitimate signature.
+  const rawBody = await req.text();
+
+  const unauthorized = await checkAuthPost(req, rawBody);
   if (unauthorized) return unauthorized;
 
   let body: Record<string, unknown>;
   try {
-    body = await req.json();
+    body = JSON.parse(rawBody);
   } catch {
     return NextResponse.json({ error: 'bad_request' }, { status: 400 });
   }

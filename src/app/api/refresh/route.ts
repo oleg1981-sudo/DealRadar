@@ -15,11 +15,20 @@ import { upsertDeals, updateHistoricalLows } from '@/lib/db/deals.repo';
 import { notifyPriceDrops, notifyPendingAlerts } from '@/lib/db/alerts.repo';
 import { SUPPORTED_COUNTRIES, CATEGORY_SLUGS, type CategorySlug, type CountryCode } from '@/lib/providers/types';
 import { timingSafeEqualStr } from '@/lib/utils/crypto';
+import { rateLimitRefresh } from '@/lib/cache/redis';
+import { clientIp } from '@/lib/utils/request-ip';
 
 export const runtime = 'nodejs';
 export const maxDuration = 300;
 
 export async function POST(req: NextRequest) {
+  // Defense-in-depth beyond the CRON_SECRET check below: a leaked/brute-forced
+  // secret still can't hammer this expensive full-provider-fan-out endpoint.
+  const { success } = await rateLimitRefresh(clientIp(req));
+  if (!success) {
+    return NextResponse.json({ error: 'rate_limited', message: 'Too many refresh requests. Try again later.' }, { status: 429 });
+  }
+
   const secret = process.env.CRON_SECRET;
   const auth = req.headers.get('authorization');
   if (!secret || !auth || !timingSafeEqualStr(auth, `Bearer ${secret}`)) {

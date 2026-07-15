@@ -338,5 +338,19 @@ create index if not exists affiliate_programmes_verdict_idx
   on public.affiliate_programmes (policy_verdict, policy_score desc);
 alter table public.affiliate_programmes enable row level security;
 
+-- ── Ops metrics (lightweight KV time series for cost-guardrail checks) ──────
+-- Minimal, single-purpose store — currently just one metric: the AWIN feed's
+-- per-run compressed (on-the-wire) byte size, written by
+-- scripts/ingest-awin.cjs and read by scripts/check-budgets.mjs (NFR-COST-2,
+-- T-INF-9). Upsert-by-key: each run overwrites its metric's row rather than
+-- appending, so this stays O(number of distinct metrics), not O(runs).
+create table if not exists public.ops_metrics (
+  key           text primary key,     -- e.g. 'awin_feed_bytes'
+  value         numeric not null,
+  recorded_at   timestamptz not null default now(),
+  meta          jsonb
+);
+alter table public.ops_metrics enable row level security;
+
 select 1;
 

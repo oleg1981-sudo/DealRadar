@@ -210,7 +210,13 @@ function makeCsvParser(onHeader, onRow) {
 }
 
 // ── download (follows 30x redirects) → gunzip → parser ─────────────────────────
-function ingest(url, onHeader, onRow, redirects = 0) {
+// `stats.bytes` accumulates the COMPRESSED bytes actually received over the
+// wire (before gunzip) — that IS the network egress the cost guardrail cares
+// about (NFR-COST-2), distinct from the larger decompressed CSV the parser
+// sees. It threads through redirect recursion so a 30x hop's (tiny) body
+// doesn't get double-counted against the real payload. Resolves with the
+// final byte count so the caller can persist it for scripts/check-budgets.mjs.
+function ingest(url, onHeader, onRow, redirects = 0, stats = { bytes: 0 }) {
   return new Promise((resolve, reject) => {
     if (redirects > 5) return reject(new Error('too many redirects'));
     https.get(url, (res) => {
@@ -218,20 +224,51 @@ function ingest(url, onHeader, onRow, redirects = 0) {
       if (code >= 300 && code < 400 && res.headers.location) {
         res.resume(); // drain
         const next = new URL(res.headers.location, url).toString();
-        return resolve(ingest(next, onHeader, onRow, redirects + 1));
+        return resolve(ingest(next, onHeader, onRow, redirects + 1, stats));
       }
       if (code !== 200) { res.resume(); return reject(new Error(`HTTP ${code} downloading feed`)); }
+
+      res.on('data', (chunk) => { stats.bytes += chunk.length; });
 
       const parser = makeCsvParser(onHeader, onRow);
       const gunzip = zlib.createGunzip();
       gunzip.setEncoding('utf8');
       gunzip.on('data', (chunk) => parser.push(chunk));
-      gunzip.on('end', () => { parser.end(); resolve(); });
+      gunzip.on('end', () => { parser.end(); resolve(stats.bytes); });
       gunzip.on('error', reject);
       res.on('error', reject);
       res.pipe(gunzip);
     }).on('error', reject);
   });
+}
+
+/**
+ * Persist the feed's compressed byte size to a tiny ops_metrics KV table so
+ * scripts/check-budgets.mjs can compare it against the 350MB/run AWIN-egress
+ * budget (NFR-COST-2) without this script and that one needing to share any
+ * other state. Best-effort: a failure here must never fail the ingest run —
+ * it only means one cost-guardrail check reports "unmeasured" on its next
+ * pass instead of a fresh number.
+ */
+async function recordFeedBytes(bytes, meta) {
+  if (!SUPABASE_URL || !KEY) {
+    console.log('[awin] SUPABASE_URL/KEY not set — skipping feed-size metric write (cost-guardrail egress check will see no data)');
+    return;
+  }
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/ops_metrics?on_conflict=key`, {
+      method: 'POST',
+      headers: supaHeaders({ 'Content-Type': 'application/json', Prefer: 'resolution=merge-duplicates,return=minimal' }),
+      body: JSON.stringify([{ key: 'awin_feed_bytes', value: bytes, recorded_at: new Date().toISOString(), meta }]),
+    });
+    if (!res.ok) {
+      console.warn(`[awin] failed to record feed-size metric: HTTP ${res.status} ${await res.text()}`);
+      return;
+    }
+    console.log(`[awin] recorded feed-size metric: ${(bytes / (1024 * 1024)).toFixed(1)} MB compressed`);
+  } catch (e) {
+    console.warn('[awin] failed to record feed-size metric:', e.message);
+  }
 }
 
 // ── Supabase REST (no @supabase/supabase-js needed) ────────────────────────────
@@ -292,7 +329,7 @@ async function fetchExistingPrices() {
   console.log(`[awin] downloading feed → filtering (country=${COUNTRY}, currency=${[...ALLOWED_CURRENCIES].join(',')}, upsert=${DO_UPSERT}${LIMIT ? `, limit=${LIMIT}` : ''})…`);
 
   let capped = false;
-  await ingest(FEED_URL,
+  const feedBytes = await ingest(FEED_URL,
     (header) => { idx = Object.fromEntries(header.map((name, i) => [name, i])); },
     (cols) => {
       if (capped) return;
@@ -364,12 +401,19 @@ async function fetchExistingPrices() {
 
   const secs = ((Date.now() - t0) / 1000).toFixed(1);
   console.log(`\n[awin] done in ${secs}s — scanned ${scanned}, kept ${kept}${DO_UPSERT ? `, upserted ${upserted}` : ' (dry-run, no writes)'}`);
+  console.log(`[awin] feed size: ${(feedBytes / (1024 * 1024)).toFixed(1)} MB compressed (network egress)`);
   console.log('\nby category:');
   [...byCategory.entries()].sort((a, b) => b[1] - a[1]).forEach(([k, v]) => console.log(`  ${String(v).padStart(5)}  ${k}`));
   console.log('\nby merchant:');
   [...byMerchant.entries()].sort((a, b) => b[1] - a[1]).forEach(([k, v]) => console.log(`  ${String(v).padStart(5)}  ${k}`));
   console.log('\nsamples:');
   samples.forEach((s) => console.log(`  -${s.pct}%  ${s.price} ${s.cur} (was ${s.was})  [${s.cat}]  ${s.shop} — ${s.name}`));
+
+  // Only record the metric on a real (non-dry-run) pass — dry-run's whole
+  // point is "preview without writing", and this is a write (to ops_metrics).
+  if (DO_UPSERT) {
+    await recordFeedBytes(feedBytes, { scanned, kept, upserted });
+  }
 })().catch((e) => { console.error('\n[awin] FAILED:', e.message); process.exit(1); });
 
 // ── tiny .env.local loader (no dependency) ─────────────────────────────────────

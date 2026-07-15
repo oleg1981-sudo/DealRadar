@@ -1,0 +1,61 @@
+# Thin-loop drill (T-MON-4) — manual, on-demand proof that the revenue loop's
+# PLUMBING works: render -> click -> postback -> ledger, end to end.
+#
+# Runs scripts/thin-loop-drill.mjs, which seeds one synthetic `drill:test-*`
+# deal (hidden from the live site the whole time), decorates it with the real
+# affiliate URL logic, round-trips the sub-id the way a real click does,
+# fires a signed postback through the REAL src/app/api/postbacks/route.ts
+# handler, asserts the resulting `transactions` ledger row, and deletes every
+# row it created — even if an assertion fails (try/finally in the script).
+# Safe to run against production for that reason.
+#
+# This is independent of T-ING-2 (real AWIN/Kelkoo affiliate credentials,
+# still pending contractual approval) — it never touches a real affiliate
+# network. It only needs infrastructure secrets the app already has.
+#
+# Deliberately workflow_dispatch ONLY — no `push`, no `schedule`. This is a
+# manual verification tool a human reaches for on demand, not a monitoring
+# job; it must never fire automatically.
+#
+# Required repository secrets (same names already used by
+# ingest-awin.yml / verify-awin.yml / awin-programmes-sync.yml):
+#   SUPABASE_URL               Supabase project URL
+#   SUPABASE_SERVICE_ROLE_KEY  service-role key (server-only, bypasses RLS)
+#   WEBHOOK_SECRET              shared secret guarding POST /api/postbacks
+name: Thin-loop drill (T-MON-4)
+
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: thin-loop-drill
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  drill:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run thin-loop drill
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          WEBHOOK_SECRET: ${{ secrets.WEBHOOK_SECRET }}
+        run: pnpm drill:thin-loop

@@ -66,6 +66,14 @@ export interface NormalizedDeal {
   historicalLowPrice?: number | null;
   merchantId?: string | null;
   affiliateSubid?: string | null;
+  /**
+   * True when the daily live-shop verifier marked this deal gone/sold-out/
+   * undiscounted (`scripts/verify-awin.cjs`). Undefined/false for deals from
+   * providers that don't track this (mock/dev fallback) — treat as visible.
+   * Only `getDealBySlug` surfaces hidden rows; other read paths still filter
+   * them out at the query level (sitemap, list/search, alert reconciliation).
+   */
+  hidden?: boolean;
 }
 
 export interface DealQuery {
