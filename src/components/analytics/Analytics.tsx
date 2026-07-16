@@ -70,10 +70,62 @@ function loadClarity(): void {
   w.clarity('consent');
 }
 
+
+/* ── GA Measurement Protocol: client-side link decoration ─────────────── */
+let cachedClientId: string | null = null;
+let cachedSessionId: string | null = null;
+
+function retrieveGaIds(): void {
+  if (typeof window === 'undefined' || !window.gtag) return;
+  try {
+    window.gtag('get', GA_ID, 'client_id', (id: unknown) => {
+      if (typeof id === 'string') cachedClientId = id;
+    });
+    window.gtag('get', GA_ID, 'session_id', (id: unknown) => {
+      if (typeof id === 'string' || typeof id === 'number') cachedSessionId = String(id);
+    });
+  } catch {
+    // never throw
+  }
+}
+
+/** Maps affiliate network name → the tertiary subid query param that network
+ *  passes through to postbacks. The client_id|session_id pair rides in this
+ *  field so the postback handler can forward conversions to GA4 via the
+ *  Measurement Protocol. */
+const TERTIARY_SUBID_PARAM: Record<string, string> = {
+  awin: 'clickref3',
+  kelkoo: 'custom3',
+  tradedoubler: 'epi3',
+  strackr: 'subid3',
+};
+
+/** Append the GA client+session ID to an outbound affiliate URL's tertiary
+ *  subid parameter. Uses the affiliate_network (NOT the placement/source) to
+ *  pick the correct query parameter name. */
+function decorateUrlWithGaIds(
+  href: string,
+  affiliateNetwork: string,
+  clientId: string,
+  sessionId?: string,
+): string {
+  try {
+    const param = TERTIARY_SUBID_PARAM[affiliateNetwork];
+    if (!param) return href;
+    const url = new URL(href);
+    const val = sessionId ? `${clientId}|${sessionId}` : clientId;
+    url.searchParams.set(param, val);
+    return url.toString();
+  } catch {
+    return href;
+  }
+}
+
 /** Inject gtag.js (idempotent) with the Consent Mode v2 sequence. */
 function loadGa(): void {
   if (window.__gaLoaded) {
     gaConsentUpdate(true); // re-granted after a revoke
+    retrieveGaIds();
     return;
   }
   window.__gaLoaded = true;
@@ -105,6 +157,10 @@ function loadGa(): void {
   // TrackView effects run before this component's effect).
   gaConsentUpdate(true);
   gaFlushPending();
+  // Retrieve GA client/session IDs for Measurement Protocol link decoration.
+  // Retry once after 1s in case the gtag.js library hasn't finished loading.
+  retrieveGaIds();
+  setTimeout(retrieveGaIds, 1000);
   const s = document.createElement('script');
   s.async = true;
   s.src = `https://www.googletagmanager.com/gtag/js?id=${GA_ID}`;
@@ -155,6 +211,18 @@ export function Analytics() {
       if (payload) {
         // currency is event-level in GA4, not an item field — split it out.
         const { currency, ...item } = payload;
+        const network = typeof item.affiliate_network === 'string' ? item.affiliate_network : '';
+
+        // Decorate the outbound link with GA client+session IDs for
+        // server-side Measurement Protocol conversion tracking.
+        if (!cachedClientId) retrieveGaIds();
+        const a = el.closest('a');
+        if (a && a.href && network && cachedClientId) {
+          a.href = decorateUrlWithGaIds(
+            a.href, network, cachedClientId, cachedSessionId || undefined,
+          );
+        }
+
         gaEvent('select_item', {
           // Joins with view_item_list's item_list_name (the CTR denominator):
           // data-analytics-list carries the grid's listName; the PDP sets "pdp".

@@ -176,7 +176,10 @@
     "successTitle": "Avmelding vellykket",
     "successBody": "Du vil ikke lenger motta varsler om prisfall for dette tilbudet.",
     "errorTitle": "Ugyldig eller utløpt avmeldingslenke",
-    "errorBody": "Vi kunne ikke verifisere sikkerhetstokenet. Lenken kan være ufullstendig eller utløpt."
+    "errorBody": "Vi kunne ikke verifisere sikkerhetstokenet. Lenken kan være ufullstendig eller utløpt.",
+    "confirmTitle": "Bekreft avmelding",
+    "confirmBody": "Klikk på knappen nedenfor for å bekrefte at du vil melde deg av prisvarsler for dette tilbudet.",
+    "confirmButton": "Bekreft avmelding"
   },
   "error": {
     "title": "Noe gikk galt",

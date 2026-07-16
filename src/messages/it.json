@@ -176,7 +176,10 @@
     "successTitle": "Disiscrizione effettuata con successo",
     "successBody": "Non riceverai più avvisi di calo di prezzo per questa offerta.",
     "errorTitle": "Link di disiscrizione non valido o scaduto",
-    "errorBody": "Non è stato possibile verificare il token di sicurezza. Il link potrebbe essere incompleto o scaduto."
+    "errorBody": "Non è stato possibile verificare il token di sicurezza. Il link potrebbe essere incompleto o scaduto.",
+    "confirmTitle": "Conferma disiscrizione",
+    "confirmBody": "Clicca sul pulsante qui sotto per confermare che desideri disiscriverti dagli avvisi di calo prezzo per questa offerta.",
+    "confirmButton": "Conferma disiscrizione"
   },
   "error": {
     "title": "Qualcosa è andato storto",

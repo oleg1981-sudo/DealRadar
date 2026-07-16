@@ -36,7 +36,13 @@ describe('sub-id round-trip (lossless)', () => {
 
 describe('decorateAffiliateUrl', () => {
   it('appends the network sub-id param for a known source', () => {
-    const out = decorateAffiliateUrl('https://shop.example/p/1', 'awin', 'DE', 'electronics', 'awin:42');
+    const out = decorateAffiliateUrl({
+      shopUrl: 'https://shop.example/p/1',
+      source: 'awin',
+      country: 'DE',
+      category: 'electronics',
+      productId: 'awin:42',
+    });
     const u = new URL(out);
     expect(u.searchParams.has('clickref')).toBe(true);
     // The decorated sub-id round-trips back to the original productId.
@@ -45,10 +51,16 @@ describe('decorateAffiliateUrl', () => {
 
   it('leaves the URL untouched for an unknown source', () => {
     const url = 'https://shop.example/p/1';
-    expect(decorateAffiliateUrl(url, 'unknown-net', 'DE', 'electronics', 'x:1')).toBe(url);
+    expect(decorateAffiliateUrl({
+      shopUrl: url,
+      source: 'unknown-net',
+      country: 'DE',
+      category: 'electronics',
+      productId: 'x:1',
+    })).toBe(url);
   });
 
   it('returns the input unchanged when the URL is invalid', () => {
-    expect(decorateAffiliateUrl('not a url', 'awin')).toBe('not a url');
+    expect(decorateAffiliateUrl({ shopUrl: 'not a url', source: 'awin' })).toBe('not a url');
   });
 });

@@ -176,7 +176,10 @@
     "successTitle": "Erfolgreich abgemeldet",
     "successBody": "Sie erhalten keine Benachrichtigungen über Preissenkungen für dieses Angebot mehr.",
     "errorTitle": "Ungültiger oder abgelaufener Abmeldelink",
-    "errorBody": "Wir konnten das Sicherheitstoken nicht verifizieren. Der Link ist möglicherweise unvollständig oder abgelaufen."
+    "errorBody": "Wir konnten das Sicherheitstoken nicht verifizieren. Der Link ist möglicherweise unvollständig oder abgelaufen.",
+    "confirmTitle": "Abmeldung bestätigen",
+    "confirmBody": "Klicken Sie auf die Schaltfläche unten, um zu bestätigen, dass Sie sich von den Benachrichtigungen über Preissenkungen für dieses Angebot abmelden möchten.",
+    "confirmButton": "Abmeldung bestätigen"
   },
   "error": {
     "title": "Etwas ist schiefgelaufen",

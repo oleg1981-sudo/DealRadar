@@ -176,7 +176,10 @@
     "successTitle": "Afmelding geslaagd",
     "successBody": "U ontvangt geen meldingen over prijsdalingen meer voor deze deal.",
     "errorTitle": "Ongeldige of verlopen afmeldlink",
-    "errorBody": "Wij konden het beveiligingstoken niet verifiëren. De link is mogelijk onvolledig of verlopen."
+    "errorBody": "Wij konden het beveiligingstoken niet verifiëren. De link is mogelijk onvolledig of verlopen.",
+    "confirmTitle": "Uitschrijven bevestigen",
+    "confirmBody": "Klik op de onderstaande knop om te bevestigen dat u zich wilt uitschrijven voor prijsdaling-waarschuwingen voor deze aanbieding.",
+    "confirmButton": "Uitschrijven bevestigen"
   },
   "error": {
     "title": "Er ging iets mis",

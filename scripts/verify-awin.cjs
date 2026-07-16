@@ -41,6 +41,12 @@ const APPLY = has('--apply');
 const LIMIT = parseInt(opt('--limit', '0'), 10) || 0;
 const DELAY_MS = parseInt(opt('--delay', '1000'), 10) || 1000;  // pacing per host
 const ABANDON_AFTER = 5;                                        // consecutive blocks on a host -> skip the rest
+const DEADLINE = parseInt(opt('--deadline', '0'), 10) || 0;     // Unix epoch timestamp (ms) to stop
+
+// Incremental write queue globals
+let pendingPatches = [];
+let pendingTouches = [];
+let writePromise = Promise.resolve();
 // A real browser UA (not a bot string) — same as a price-checking browser would send.
 const HEADERS = {
   'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36',
@@ -215,6 +221,9 @@ async function fetchDeals() {
 }
 
 async function applyPatch(productId, fields) {
+  if (!/^[\w:.-]+$/.test(productId)) {
+    throw new Error(`Invalid/unsafe product ID for patch: ${productId}`);
+  }
   const r = await fetch(`${BASE}/rest/v1/deals?product_id=eq.${encodeURIComponent(productId)}`, {
     method: 'PATCH',
     headers: { ...SUPA, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
@@ -227,14 +236,61 @@ async function applyPatch(productId, fields) {
  *  "still alive" heartbeat the ingest's stale-hide relies on. */
 async function touchLastUpdated(ids) {
   const now = new Date().toISOString();
-  for (let i = 0; i < ids.length; i += 80) {
-    const chunk = ids.slice(i, i + 80).map((id) => `"${id}"`).join(',');
+  const safeIds = ids.filter(id => /^[\w:.-]+$/.test(id));
+  const rejected = ids.length - safeIds.length;
+  if (rejected > 0) {
+    console.warn(`[verify] touchLastUpdated: rejected ${rejected} unsafe product IDs`);
+  }
+  if (safeIds.length === 0) return;
+
+  for (let i = 0; i < safeIds.length; i += 80) {
+    const chunk = safeIds.slice(i, i + 80).map((id) => `"${id}"`).join(',');
     const r = await fetch(`${BASE}/rest/v1/deals?product_id=in.(${encodeURIComponent(chunk)})`, {
       method: 'PATCH',
       headers: { ...SUPA, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
       body: JSON.stringify({ last_updated: now }),
     });
     if (!r.ok) throw new Error(`touch batch: HTTP ${r.status} ${await r.text()}`);
+  }
+}
+
+async function flushPatches() {
+  const batch = pendingPatches;
+  pendingPatches = [];
+  if (batch.length === 0) return;
+  for (const p of batch) {
+    try {
+      await applyPatch(p.id, p.fields);
+    } catch (e) {
+      console.error(`[verify] Failed to apply patch for ${p.id}:`, e.message);
+    }
+  }
+}
+
+async function flushTouches() {
+  const batch = pendingTouches;
+  pendingTouches = [];
+  if (batch.length === 0) return;
+  try {
+    await touchLastUpdated(batch);
+  } catch (e) {
+    console.error(`[verify] Failed to touch batch of ${batch.length} deals:`, e.message);
+  }
+}
+
+function queuePatch(id, fields) {
+  if (!APPLY) return;
+  pendingPatches.push({ id, fields });
+  if (pendingPatches.length >= 50) {
+    writePromise = writePromise.then(() => flushPatches());
+  }
+}
+
+function queueTouch(id) {
+  if (!APPLY) return;
+  pendingTouches.push(id);
+  if (pendingTouches.length >= 80) {
+    writePromise = writePromise.then(() => flushTouches());
   }
 }
 
@@ -251,13 +307,21 @@ function groupByHost(items) {
   const byHost = groupByHost(deals);
   console.log(`[verify] checking ${deals.length} deals across ${byHost.size} shops (apply=${APPLY}, ${DELAY_MS}ms/host)…`);
 
-  const patches = []; const okTouch = []; const reasons = {}, errKinds = {};
+  const reasons = {}, errKinds = {};
   let ok = 0, errors = 0, done = 0, hidden = 0, unhidden = 0, priceUpdated = 0, htmlCaptured = 0;
   const samples = [];
+  let stopDueToDeadline = false;
 
   await Promise.all([...byHost.entries()].map(async ([host, list]) => {
     let consec = 0, i = 0;
     for (; i < list.length; i++) {
+      if (DEADLINE && Date.now() > DEADLINE) {
+        stopDueToDeadline = true;
+      }
+      if (stopDueToDeadline) {
+        break;
+      }
+
       const deal = list[i];
       const live = await liveState(deal);
       done++;
@@ -266,31 +330,57 @@ function groupByHost(items) {
       if (live.error === 'gone') {
         // Product page removed at the shop (hard 404, not a transient error).
         consec = 0;
-        if (!isHidden) { patches.push({ id: deal.product_id, fields: { hidden: true } }); hidden++; reasons.gone = (reasons.gone || 0) + 1; }
-        else { ok++; okTouch.push(deal.product_id); } // stays hidden; confirm it's been checked
+        if (!isHidden) {
+          queuePatch(deal.product_id, { hidden: true });
+          hidden++;
+          reasons.gone = (reasons.gone || 0) + 1;
+        } else {
+          ok++;
+          queueTouch(deal.product_id);
+        }
       } else if (live.error) {
-        errors++; errKinds[live.error] = (errKinds[live.error] || 0) + 1;
+        errors++;
+        errKinds[live.error] = (errKinds[live.error] || 0) + 1;
         consec = live.blocked ? consec + 1 : 0;
       } else {
         consec = 0;
         const want = decide(deal, live);
         if (want.hide) {
-          if (!isHidden) { patches.push({ id: deal.product_id, fields: { hidden: true } }); hidden++; reasons[want.reason] = (reasons[want.reason] || 0) + 1; }
-          else { ok++; okTouch.push(deal.product_id); } // already hidden
+          if (!isHidden) {
+            queuePatch(deal.product_id, { hidden: true });
+            hidden++;
+            reasons[want.reason] = (reasons[want.reason] || 0) + 1;
+          } else {
+            ok++;
+            queueTouch(deal.product_id);
+          }
         } else {
           const fields = {};
           const priceChanged = want.sale !== deal.sale_price || want.orig !== deal.original_price || want.disc !== deal.discount_percent;
-          if (priceChanged) { fields.sale_price = want.sale; fields.original_price = want.orig; fields.discount_percent = want.disc; priceUpdated++; if (samples.length < 8) samples.push(`${deal.product_id}: ${deal.sale_price} -> ${want.sale} (-${want.disc}%)`); }
-          if (isHidden) { fields.hidden = false; unhidden++; } // a sold-out deal is back in stock
-          // Content capture: store the merchant's reduced description HTML when
-          // it changed. The reducer strips executable content and bounds size;
-          // the app sanitizes AGAIN at render (that's the security boundary).
+          if (priceChanged) {
+            fields.sale_price = want.sale;
+            fields.original_price = want.orig;
+            fields.discount_percent = want.disc;
+            priceUpdated++;
+            if (samples.length < 8) samples.push(`${deal.product_id}: ${deal.sale_price} -> ${want.sale} (-${want.disc}%)`);
+          }
+          if (isHidden) {
+            fields.hidden = false;
+            unhidden++;
+          }
           if (captureHtml && live.descriptionHtml) {
             const reduced = reduceMerchantHtml(live.descriptionHtml);
-            if (reduced && reduced !== (deal.description_html || null)) { fields.description_html = reduced; htmlCaptured++; }
+            if (reduced && reduced !== (deal.description_html || null)) {
+              fields.description_html = reduced;
+              htmlCaptured++;
+            }
           }
-          if (Object.keys(fields).length) patches.push({ id: deal.product_id, fields });
-          else { ok++; okTouch.push(deal.product_id); }
+          if (Object.keys(fields).length) {
+            queuePatch(deal.product_id, fields);
+          } else {
+            ok++;
+            queueTouch(deal.product_id);
+          }
         }
       }
       await sleep(DELAY_MS);
@@ -298,11 +388,16 @@ function groupByHost(items) {
     }
     const skipped = list.length - i;
     if (skipped > 0) {
-      errors += skipped; errKinds['skipped-blocked'] = (errKinds['skipped-blocked'] || 0) + skipped;
+      errors += skipped;
+      errKinds['skipped-blocked'] = (errKinds['skipped-blocked'] || 0) + skipped;
       console.error(`\n[verify] ${host} is blocking automated checks — skipped ${skipped} (covered by feed + freshness note)`);
     }
   }));
   if (process.stdout.isTTY) process.stdout.write('\n');
+
+  if (stopDueToDeadline) {
+    console.warn(`[verify] Deadline reached; aborting checks early`);
+  }
 
   console.log(`\n[verify] checked ${done} in ${((Date.now() - t0) / 1000).toFixed(1)}s`);
   console.log(`  unchanged: ${ok}`);
@@ -313,10 +408,23 @@ function groupByHost(items) {
   console.log(`  errors/skipped: ${errors} ${JSON.stringify(errKinds)}`);
   if (samples.length) { console.log('  sample price updates:'); samples.forEach((s) => console.log(`    ${s}`)); }
 
-  if (!APPLY) { console.log('\n[verify] dry-run — no writes. Re-run with --apply to commit.'); return; }
-  for (const p of patches) await applyPatch(p.id, p.fields);
-  await touchLastUpdated(okTouch);
-  console.log(`\n[verify] applied ${patches.length} changes (${priceUpdated} prices, ${hidden} hidden, ${unhidden} un-hidden); confirmed ${okTouch.length} unchanged.`);
+  if (!APPLY) {
+    console.log('\n[verify] dry-run — no writes. Re-run with --apply to commit.');
+    return;
+  }
+
+  // Flush remaining updates in the queues
+  console.log(`[verify] flushing final patches and touches...`);
+  await writePromise.then(() => Promise.all([flushPatches(), flushTouches()]));
+  console.log(`[verify] applied changes and confirmed unchanged.`);
+
+  // High-error exit threshold check: exit non-zero if errors/done > 80%
+  const totalProcessed = done + errors;
+  const errorRate = totalProcessed > 0 ? (errors / totalProcessed) : 0;
+  if (errorRate > 0.80) {
+    console.error(`\n[verify] FAILED: error rate too high: ${(errorRate * 100).toFixed(1)}%`);
+    process.exit(1);
+  }
 })().catch((e) => { console.error('\n[verify] FAILED:', e.message); process.exit(1); });
 
 // ── tiny .env.local loader ─────────────────────────────────────────────────────

@@ -120,7 +120,13 @@ export async function notifyPriceDrops(deals: NormalizedDeal[]): Promise<number>
     const unsubUrl = `${appUrl}/api/alerts/unsubscribe?email=${encodeURIComponent(recipientEmail)}&productId=${encodeURIComponent(deal.productId)}&token=${token}&locale=${encodeURIComponent(locale)}`;
     // Monetized outbound CTA — the price-drop click is the highest-value click,
     // so it must carry our affiliate sub-id like every other deal link.
-    const ctaUrl = decorateAffiliateUrl(deal.shopUrl, deal.source, deal.country, deal.category, deal.productId);
+    const ctaUrl = decorateAffiliateUrl({
+      shopUrl: deal.shopUrl,
+      source: deal.source,
+      country: deal.country,
+      category: deal.category,
+      productId: deal.productId,
+    });
 
     const ok = await sendEmail({
       to: recipientEmail,

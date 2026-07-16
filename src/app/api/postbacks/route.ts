@@ -5,6 +5,7 @@ import { decodeSubId } from '@/lib/utils/affiliate';
 import { rateLimitPostbacks, claimPostbackSignature } from '@/lib/cache/redis';
 import { clientIp } from '@/lib/utils/request-ip';
 import { canonicalizePostbackQuery } from './canonicalize';
+import { GA_ID } from '@/lib/analytics/gtag';
 
 export const runtime = 'nodejs';
 
@@ -27,7 +28,7 @@ const PRIMARY_SUBID_FIELD: Record<string, string> = {
   awin: 'clickref', kelkoo: 'custom1', tradedoubler: 'epi', strackr: 'subid',
 };
 const TERTIARY_SUBID_FIELD: Record<string, string> = {
-  awin: 'clickref3', kelkoo: 'custom3', tradedoubler: 'epi3',
+  awin: 'clickref3', kelkoo: 'custom3', tradedoubler: 'epi3', strackr: 'subid3',
 };
 
 const str = (v: unknown): string => (typeof v === 'string' ? v : '');
@@ -225,6 +226,9 @@ async function processPostback(body: Record<string, unknown>): Promise<NextRespo
     console.warn('[postback] Supabase unconfigured — logging transaction:', {
       transactionId, network, commission, status,
     });
+    if ((status === 'approved' || status === 'paid') && subid3) {
+      forwardToMeasurementProtocol(subid3, transactionId, commission, network);
+    }
     return NextResponse.json({ ok: true, persisted: false });
   }
 
@@ -253,5 +257,72 @@ async function processPostback(body: Record<string, unknown>): Promise<NextRespo
     return NextResponse.json({ error: 'db_error' }, { status: 500 });
   }
 
+  // ── GA4 Measurement Protocol: forward approved/paid conversions ──────
+  // The client-side Analytics.tsx decorates outbound affiliate links with
+  // the visitor's GA client_id|session_id in the network's tertiary subid
+  // field. When the postback comes back with those IDs, we forward a
+  // `purchase` event server-side, closing the attribution loop for
+  // conversions that happen off-site (on the merchant's domain).
+  if ((status === 'approved' || status === 'paid') && subid3) {
+    forwardToMeasurementProtocol(subid3, transactionId, commission, network);
+  }
+
   return NextResponse.json({ ok: true, persisted: true });
+}
+
+/**
+ * Fire-and-forget: send a `purchase` event to GA4 via the Measurement Protocol.
+ * The subid3 value is expected to be `<client_id>|<session_id>` (decorated by
+ * the client-side Analytics.tsx). If the format doesn't match or the API key
+ * isn't configured, this is a silent no-op — postback handling is never affected.
+ */
+function forwardToMeasurementProtocol(
+  subid3: string,
+  transactionId: string,
+  commission: number,
+  network: string,
+): void {
+  const apiSecret = process.env.GA_MEASUREMENT_PROTOCOL_API_KEY;
+  if (!apiSecret) return;
+
+  const parts = subid3.split('|');
+  const clientId = parts[0];
+  if (!clientId) return;
+  const sessionId = parts[1] || undefined;
+
+  const payload: Record<string, unknown> = {
+    client_id: clientId,
+    events: [
+      {
+        name: 'purchase',
+        params: {
+          transaction_id: transactionId,
+          value: commission,
+          currency: 'EUR',
+          affiliation: network,
+          ...(sessionId ? { session_id: sessionId } : {}),
+        },
+      },
+    ],
+  };
+
+  const debug = process.env.NODE_ENV === 'development' || process.env.GA_MP_DEBUG === 'true';
+  const baseUrl = debug
+    ? 'https://www.google-analytics.com/debug/mp/collect'
+    : 'https://www.google-analytics.com/mp/collect';
+
+  const url = `${baseUrl}?measurement_id=${GA_ID}&api_secret=${apiSecret}`;
+  fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+    .then(async (res) => {
+      const text = await res.text();
+      console.log(`[postback] GA4 MP (${debug ? 'debug' : 'production'}) status: ${res.status}, body: ${text}`);
+    })
+    .catch((err) => {
+      // Log but never throw — postback handling must not be affected.
+      console.warn('[postback] GA4 MP forwarding failed:', err instanceof Error ? err.message : err);
+    });
 }

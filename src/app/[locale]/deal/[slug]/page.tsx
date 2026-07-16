@@ -79,7 +79,13 @@ export default async function DealDetailPage({ params }: Props) {
   const t = await getTranslations('deal');
   const tCat = await getTranslations('categories');
 
-  const affiliateUrl = decorateAffiliateUrl(deal.shopUrl, deal.source, deal.country, deal.category, deal.productId);
+  const affiliateUrl = decorateAffiliateUrl({
+    shopUrl: deal.shopUrl,
+    source: deal.source,
+    country: deal.country,
+    category: deal.category,
+    productId: deal.productId,
+  });
   // Recorded daily prices widen the window: low = recorded minimum, so the
   // today-dot sits at its true position instead of pinned at the green end.
   // Best-effort — on any DB error the graph keeps its honest two-point fallback.

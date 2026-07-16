@@ -176,7 +176,10 @@
     "successTitle": "Pomyślnie wypisano z subskrypcji",
     "successBody": "Nie będziesz już otrzymywać alertów o obniżkach cen dla tej oferty.",
     "errorTitle": "Nieprawidłowy lub wygasły link do wypisania się",
-    "errorBody": "Nie udało nam się zweryfikować tokena zabezpieczającego. Link może być niekompletny lub wygasły."
+    "errorBody": "Nie udało nam się zweryfikować tokena zabezpieczającego. Link może być niekompletny lub wygasły.",
+    "confirmTitle": "Potwierdź rezygnację",
+    "confirmBody": "Kliknij poniższy przycisk, aby potwierdzić chęć rezygnacji z powiadomień o obniżkach cen dla tej oferty.",
+    "confirmButton": "Potwierdź rezygnację"
   },
   "error": {
     "title": "Coś poszło nie tak",
