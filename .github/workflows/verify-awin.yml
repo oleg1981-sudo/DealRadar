@@ -28,7 +28,12 @@ concurrency:
 jobs:
   verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    # Ingest-v2 (2026-07-16) grew the verified set to ~6k rows; the largest
+    # single host (ROCKBROS, ~4.5k pages at 1s pacing) alone needs ~80 min —
+    # both the cron and manual runs were timeout-cancelled at 30. Patches
+    # flush incrementally (every 50), so a timeout only loses the tail of an
+    # unfinished sweep, but the full sweep needs real room.
+    timeout-minutes: 150
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
