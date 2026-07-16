@@ -61,3 +61,8 @@ Goal: every joined advertiser's eligible products flow into the site and its ful
 6. **Watchdog widened**: staleness alerts (ROCKBROS legacy 2 months stale; Renogy-GB 6 weeks) + three-set reconciliation (feed-list actives ≠ nightly-feed merchants ≠ DB).
 7. Variant handling demoted (item_group_id empty in practice); out-of-stock policy added (Hollyland 67% OOS).
 8. Fresh numbers: 13 active advertisers, 8 Google-only, 1,991 invisible products (was 4 / 1,118 on 07-15).
+
+## Close-out (2026-07-16, same day)
+
+Phase A shipped (d7c90aa) + verifier timeout fix (63b77bb). First full sweep results:
+**860 of 5,141 enhanced products promoted to live deals with verifier-proven Shopify compare-at discounts** — ROCKBROS 370 (avg −27%, max −62%), Renogy 249 (−34%/−63%), Welax 113, AOSU 86, Omidi 36, ANTHBOT 6. Every live row has discount > 0 (no fabrication, verified in DB). Visible catalog: 811 → 1,671; sitemap auto-grew to 4 chunks; IndexNow submitted 5,930 URLs; verify-deploy fully green. Remaining plan items: coverage watchdog (P0-5), writer-contract watermark (P0-4), verifier rotation at further scale (P1-8), Netlify ISR (P1-11), EN/NL market decision.
