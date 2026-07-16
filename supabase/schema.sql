@@ -352,5 +352,40 @@ create table if not exists public.ops_metrics (
 );
 alter table public.ops_metrics enable row level security;
 
+-- [R-MAIL-5 / T-CMP-7] Active alerts limit trigger.
+-- Enforces a strict cap of 50 active alerts per email address, eliminating the
+-- check-then-insert race condition in concurrent API requests.
+create or replace function public.check_active_alerts_limit()
+returns trigger language plpgsql
+set search_path = public
+as $$
+declare
+  active_count int;
+begin
+  -- If this is an update or the user is just re-subscribing/updating their existing
+  -- alert for this product, let it pass (upsert logic).
+  if exists (
+    select 1 from public.price_alerts
+    where email = NEW.email and product_id = NEW.product_id
+  ) then
+    return NEW;
+  end if;
+
+  select count(*) into active_count
+  from public.price_alerts
+  where email = NEW.email and notified = false;
+
+  if active_count >= 50 then
+    raise exception 'Limit of 50 active alerts exceeded' using errcode = 'P0001';
+  end if;
+  return NEW;
+end;
+$$;
+
+drop trigger if exists trigger_check_active_alerts_limit on public.price_alerts;
+create trigger trigger_check_active_alerts_limit
+  before insert on public.price_alerts
+  for each row execute function public.check_active_alerts_limit();
+
 select 1;
 

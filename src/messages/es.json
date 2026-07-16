@@ -176,7 +176,10 @@
     "successTitle": "Baja realizada correctamente",
     "successBody": "Ya no recibirá alertas de bajadas de precio para esta oferta.",
     "errorTitle": "Enlace de baja no válido o caducado",
-    "errorBody": "No hemos podido verificar el token de seguridad. Es posible que el enlace esté incompleto o haya caducado."
+    "errorBody": "No hemos podido verificar el token de seguridad. Es posible que el enlace esté incompleto o haya caducado.",
+    "confirmTitle": "Confirmar baja",
+    "confirmBody": "Haga clic en el botón de abajo para confirmar que desea darse de baja de las alertas de bajada de precio para esta oferta.",
+    "confirmButton": "Confirmar baja"
   },
   "error": {
     "title": "Algo salió mal",

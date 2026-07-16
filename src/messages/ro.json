@@ -176,7 +176,10 @@
     "successTitle": "Dezabonare reușită",
     "successBody": "Nu veți mai primi alerte privind scăderile de preț pentru această ofertă.",
     "errorTitle": "Link de dezabonare invalid sau expirat",
-    "errorBody": "Nu am putut verifica tokenul de securitate. Este posibil ca linkul să fie incomplet sau expirat."
+    "errorBody": "Nu am putut verifica tokenul de securitate. Este posibil ca linkul să fie incomplet sau expirat.",
+    "confirmTitle": "Confirmare dezabonare",
+    "confirmBody": "Faceți clic pe butonul de mai jos pentru a confirma că doriți să vă dezabonați de la alertele de scădere a prețurilor pentru această ofertă.",
+    "confirmButton": "Confirmare dezabonare"
   },
   "error": {
     "title": "Ceva nu a mers bine",

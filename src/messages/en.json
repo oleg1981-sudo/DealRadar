@@ -176,7 +176,10 @@
     "successTitle": "Unsubscribed successfully",
     "successBody": "You will no longer receive price-drop alerts for this deal.",
     "errorTitle": "Invalid or expired unsubscribe link",
-    "errorBody": "We could not verify the security token. The link may be incomplete or expired."
+    "errorBody": "We could not verify the security token. The link may be incomplete or expired.",
+    "confirmTitle": "Confirm Unsubscribe",
+    "confirmBody": "Click the button below to confirm that you want to unsubscribe from price-drop alerts for this deal.",
+    "confirmButton": "Confirm Unsubscribe"
   },
   "error": {
     "title": "Something went wrong",

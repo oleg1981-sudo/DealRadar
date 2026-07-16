@@ -176,7 +176,10 @@
     "successTitle": "Désabonnement réussi",
     "successBody": "Vous ne recevrez plus d'alertes de baisse de prix pour cette offre.",
     "errorTitle": "Lien de désabonnement invalide ou expiré",
-    "errorBody": "Nous n'avons pas pu vérifier le jeton de sécurité. Le lien est peut-être incomplet ou expiré."
+    "errorBody": "Nous n'avons pas pu vérifier le jeton de sécurité. Le lien est peut-être incomplet ou expiré.",
+    "confirmTitle": "Confirmer la désinscription",
+    "confirmBody": "Cliquez sur le bouton ci-dessous pour confirmer que vous souhaitez vous désinscrire des alertes de baisse de prix pour cette offre.",
+    "confirmButton": "Confirmer la désinscription"
   },
   "error": {
     "title": "Une erreur s'est produite",

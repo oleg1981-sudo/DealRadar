@@ -171,7 +171,7 @@ function step(n, title) {
 
     // ── 2. RENDER ────────────────────────────────────────────────────────
     step(2, 'RENDER — decorateAffiliateUrl() (same call the PDP makes)');
-    const decoratedUrl = decorateAffiliateUrl(shopUrl, source, country, category, productId);
+    const decoratedUrl = decorateAffiliateUrl({ shopUrl, source, country, category, productId });
     const subid = new URL(decoratedUrl).searchParams.get('clickref');
     console.log(`[drill] decorated URL: ${decoratedUrl}`);
     console.log(`[drill] sub-id (clickref): ${subid}`);

@@ -176,7 +176,10 @@
     "successTitle": "Tilaus peruutettu onnistuneesti",
     "successBody": "Et saa enää hinnanlaskuhälytyksiä tästä tarjouksesta.",
     "errorTitle": "Virheellinen tai vanhentunut peruutuslinkki",
-    "errorBody": "Emme voineet vahvistaa suojaustunnistetta. Linkki saattaa olla puutteellinen tai vanhentunut."
+    "errorBody": "Emme voineet vahvistaa suojaustunnistetta. Linkki saattaa olla puutteellinen tai vanhentunut.",
+    "confirmTitle": "Vahvista peruutus",
+    "confirmBody": "Napsauta alla olevaa painiketta vahvistaaksesi, että haluat peruuttaa tämän tarjouksen hintalaskuvaroitukset.",
+    "confirmButton": "Vahvista peruutus"
   },
   "error": {
     "title": "Jokin meni vikaan",

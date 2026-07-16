@@ -176,7 +176,10 @@
     "successTitle": "Subscrição cancelada com sucesso",
     "successBody": "Deixará de receber alertas de descida de preço para esta oferta.",
     "errorTitle": "Ligação de cancelamento inválida ou expirada",
-    "errorBody": "Não foi possível verificar o token de segurança. A ligação pode estar incompleta ou ter expirado."
+    "errorBody": "Não foi possível verificar o token de segurança. A ligação pode estar incompleta ou ter expirado.",
+    "confirmTitle": "Confirmar cancelamento de inscrição",
+    "confirmBody": "Clique no botão abaixo para confirmar que deseja cancelar a sua inscrição nos alertas de redução de preço para esta oferta.",
+    "confirmButton": "Confirmar cancelamento de inscrição"
   },
   "error": {
     "title": "Algo correu mal",

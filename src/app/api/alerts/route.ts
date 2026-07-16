@@ -53,6 +53,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true });
   } catch (e) {
     console.error('[api/alerts]', e);
+    const msg = e instanceof Error ? e.message : '';
+    if (msg.includes('Limit of 50 active') || msg.includes('too_many_alerts')) {
+      return NextResponse.json({ error: 'too_many_alerts' }, { status: 429 });
+    }
     return NextResponse.json({ error: 'internal' }, { status: 500 });
   }
 }

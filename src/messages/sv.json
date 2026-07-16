@@ -176,7 +176,10 @@
     "successTitle": "Avregistreringen lyckades",
     "successBody": "Du kommer inte längre att få aviseringar om prissänkningar för detta erbjudande.",
     "errorTitle": "Ogiltig eller utgången avregistreringslänk",
-    "errorBody": "Vi kunde inte verifiera säkerhetstoken. Länken kan vara ofullständig eller ha gått ut."
+    "errorBody": "Vi kunde inte verifiera säkerhetstoken. Länken kan vara ofullständig eller ha gått ut.",
+    "confirmTitle": "Bekräfta avregistrering",
+    "confirmBody": "Klicka på knappen nedan för att bekräfta att du vill avregistrera dig från prissänkningsbevakningar för det här erbjudandet.",
+    "confirmButton": "Bekräfta avregistrering"
   },
   "error": {
     "title": "Något gick fel",

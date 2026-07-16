@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { NextRequest } from 'next/server';
 import { buildSubId, decodeSubId } from '@/lib/utils/affiliate';
 import { signPostbackBody } from '@/lib/utils/crypto';
@@ -303,5 +303,84 @@ describe('GET /api/postbacks (query-string postbacks)', () => {
     expect(replay.status).toBe(401);
     expect(await replay.json()).toMatchObject({ error: 'replayed_signature' });
     expect(h.upserts).toHaveLength(1);
+  });
+});
+
+describe('GA4 Measurement Protocol forwarding', () => {
+  let fetchMock: ReturnType<typeof vi.fn>;
+
+  beforeEach(() => {
+    fetchMock = vi.fn().mockResolvedValue(new Response(''));
+    vi.stubGlobal('fetch', fetchMock);
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    delete process.env.GA_MEASUREMENT_PROTOCOL_API_KEY;
+  });
+
+  it('fires a purchase event to GA4 MP for an approved postback with subid3 (clickref3)', async () => {
+    process.env.GA_MEASUREMENT_PROTOCOL_API_KEY = 'test-mp-secret';
+    const pid = 'awin:DE:99999';
+    const clickref = buildSubId('DE', 'electronics', pid);
+    const res = await POST(
+      signedPostReq({
+        transaction_id: 'tx-mp-1',
+        network: 'awin',
+        commission_earned: 3.50,
+        status: 'approved',
+        clickref,
+        clickref3: 'GA1.1.123456789.1720000000|session123',
+      }),
+    );
+    expect(res.status).toBe(200);
+    // Allow the fire-and-forget fetch to be scheduled.
+    await new Promise((r) => setTimeout(r, 10));
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const [url, opts] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toContain('mp/collect');
+    expect(url).toContain('api_secret=test-mp-secret');
+    const body = JSON.parse(opts.body as string);
+    expect(body.client_id).toBe('GA1.1.123456789.1720000000');
+    expect(body.events[0].name).toBe('purchase');
+    expect(body.events[0].params.transaction_id).toBe('tx-mp-1');
+    expect(body.events[0].params.value).toBe(3.50);
+    expect(body.events[0].params.session_id).toBe('session123');
+  });
+
+  it('does NOT fire MP for a pending postback (only approved/paid trigger it)', async () => {
+    process.env.GA_MEASUREMENT_PROTOCOL_API_KEY = 'test-mp-secret';
+    const clickref = buildSubId('DE', 'electronics', 'awin:DE:11111');
+    const res = await POST(
+      signedPostReq({
+        transaction_id: 'tx-mp-2',
+        network: 'awin',
+        commission_earned: 1.00,
+        status: 'pending',
+        clickref,
+        clickref3: 'GA1.1.111.222|sess',
+      }),
+    );
+    expect(res.status).toBe(200);
+    await new Promise((r) => setTimeout(r, 10));
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('skips MP silently when GA_MEASUREMENT_PROTOCOL_API_KEY is not set', async () => {
+    // Deliberately NOT setting process.env.GA_MEASUREMENT_PROTOCOL_API_KEY
+    const clickref = buildSubId('DE', 'electronics', 'awin:DE:22222');
+    const res = await POST(
+      signedPostReq({
+        transaction_id: 'tx-mp-3',
+        network: 'awin',
+        commission_earned: 5.00,
+        status: 'approved',
+        clickref,
+        clickref3: 'GA1.1.333.444|sess',
+      }),
+    );
+    expect(res.status).toBe(200);
+    await new Promise((r) => setTimeout(r, 10));
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 });

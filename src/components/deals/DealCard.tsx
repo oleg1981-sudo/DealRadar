@@ -23,9 +23,15 @@ import type { NormalizedDeal } from '@/lib/providers/types';
 export function DealCard({ deal, priority = false, listName }: { deal: NormalizedDeal; priority?: boolean; listName?: string }) {
   const t = useTranslations('deal');
   const locale = useLocale();
-  const href = decorateAffiliateUrl(deal.shopUrl, deal.source, deal.country, deal.category, deal.productId);
+  const href = decorateAffiliateUrl({
+    shopUrl: deal.shopUrl,
+    source: deal.source,
+    country: deal.country,
+    category: deal.category,
+    productId: deal.productId,
+  });
   const pw = priceWindow(deal);
-  const dealSlug = deal.slug || slugify(deal.productName);
+  const dealSlug = deal.slug || `${slugify(deal.productName)}-${deal.productId.replace(/[^a-z0-9]/gi, '-')}`;
   const dealPageUrl = `/${locale}/deal/${dealSlug}`;
 
   return (

@@ -176,7 +176,10 @@
     "successTitle": "Afmelding gennemført",
     "successBody": "Du modtager ikke længere prisfaldsalarmer for dette tilbud.",
     "errorTitle": "Ugyldigt eller udløbet afmeldingslink",
-    "errorBody": "Vi kunne ikke verificere sikkerhedstokenet. Linket kan være ufuldstændigt eller udløbet."
+    "errorBody": "Vi kunne ikke verificere sikkerhedstokenet. Linket kan være ufuldstændigt eller udløbet.",
+    "confirmTitle": "Bekræft afmeldelse",
+    "confirmBody": "Klik på knappen nedenfor for at bekræfte, at du vil afmelde dig prisaldingsalarmer for dette tilbud.",
+    "confirmButton": "Bekræft afmeldelse"
   },
   "error": {
     "title": "Noget gik galt",

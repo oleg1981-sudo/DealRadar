@@ -70,13 +70,16 @@ export function decodeSubId(
   return { country, category, productId };
 }
 
-export function decorateAffiliateUrl(
-  shopUrl: string,
-  source: string,
-  country?: string,
-  category?: string,
-  productId?: string,
-): string {
+export interface AffiliateDecorationOptions {
+  shopUrl: string;
+  source: string;
+  country?: string;
+  category?: string;
+  productId?: string;
+}
+
+export function decorateAffiliateUrl(options: AffiliateDecorationOptions): string {
+  const { shopUrl, source, country, category, productId } = options;
   const param = SUBID_PARAM[source];
   if (!param || !shopUrl) return shopUrl;
   try {
