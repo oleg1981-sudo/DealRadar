@@ -47,7 +47,14 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          # Node 22, not this repo's usual 20 (see ci.yml/db-migrate.yml): the
+          # real src/lib/db/supabase.ts client this script imports eagerly
+          # initializes @supabase/realtime-js, which needs a native global
+          # WebSocket — present in Node 22 by default, absent in Node 20's
+          # plain CLI runtime (confirmed via a live failed run: "Node.js 20
+          # detected without native WebSocket support"). This only affects
+          # this one-off verification workflow, not the production build.
+          node-version: '22'
           cache: 'pnpm'
 
       - name: Install dependencies
