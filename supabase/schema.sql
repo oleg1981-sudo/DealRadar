@@ -438,3 +438,14 @@ create table if not exists public.fetch_outcomes (
   last_seen   timestamptz not null default now()
 );
 alter table public.fetch_outcomes enable row level security;
+
+-- Read-only acceptance harness [FR-0]: anon SELECT on catalog data the public
+-- site already renders. Write paths remain service-role only.
+drop policy if exists deals_public_read on public.deals;
+create policy deals_public_read on public.deals for select to anon using (true);
+drop policy if exists price_history_public_read on public.price_history;
+create policy price_history_public_read on public.price_history for select to anon using (true);
+drop policy if exists ops_metrics_public_read on public.ops_metrics;
+create policy ops_metrics_public_read on public.ops_metrics for select to anon using (true);
+drop policy if exists fetch_outcomes_public_read on public.fetch_outcomes;
+create policy fetch_outcomes_public_read on public.fetch_outcomes for select to anon using (true);

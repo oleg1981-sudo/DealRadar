@@ -690,6 +690,22 @@ async function fetchExistingPrices() {
     if (!staleRes.ok) throw new Error(`stale-hide failed: HTTP ${staleRes.status} ${await staleRes.text()}`);
     const staleCount = (staleRes.headers.get('content-range') || '').split('/')[1] || '0';
     console.log(`[awin] stale-hide: ${staleCount} deals unseen for 3+ days hidden`);
+
+    // TH-3 enforcement [Q-8, docs/specs/pdp-full-content]: a visible row with
+    // NO description data (feed empty AND nothing captured) is an incomplete
+    // PDP — completeness invariants gate publication. It un-hides the moment
+    // either source supplies a description (feed refresh or verifier capture
+    // promoting it back through the normal paths).
+    const th3Res = await fetch(
+      `${SUPABASE_URL}/rest/v1/deals?hidden=eq.false&description_html=is.null&or=(description.is.null,description.eq.)`,
+      {
+        method: 'PATCH',
+        headers: supaHeaders({ 'Content-Type': 'application/json', Prefer: 'return=minimal,count=exact' }),
+        body: JSON.stringify({ hidden: true }),
+      },
+    );
+    if (!th3Res.ok) console.warn(`[awin] TH-3 enforcement failed: HTTP ${th3Res.status}`);
+    else console.log(`[awin] TH-3 enforcement: ${(th3Res.headers.get('content-range') || '').split('/')[1] || '0'} visible no-description deals hidden`);
   }
 
   const secs = ((Date.now() - t0) / 1000).toFixed(1);

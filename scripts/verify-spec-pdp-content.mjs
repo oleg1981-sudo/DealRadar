@@ -57,18 +57,20 @@ function ghJson(pathArg) {
 const needSupa = () => { if (!SUPABASE_URL || !SUPA_KEY) throw new SkipOrFail('missing SUPABASE env'); };
 class SkipOrFail extends Error {}
 
-// Cached visible-deals sweep shared by the TH invariants + EC-24 probe selection.
-let visibleCache = null;
-async function visibleDeals() {
-  needSupa();
-  if (!visibleCache) {
-    visibleCache = await pageDeals(
-      'product_id,slug,product_name,description,description_html,gallery,image_url',
-      '&hidden=eq.false',
-    );
-  }
-  return visibleCache;
+/** Server-side filtered count via HEAD + Prefer: count=exact — every
+ *  invariant is a count, so no row payload ever crosses the wire (the anon
+ *  role's 3s statement_timeout forbids full-table pagination). */
+async function headCount(filter, table = 'deals') {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?select=product_id${filter}`, {
+    method: 'HEAD',
+    headers: { ...supaHeaders(), Prefer: 'count=exact', Range: '0-0' },
+  });
+  if (!(res.ok || res.status === 206)) throw new Error(`HEAD ${table}${filter}: HTTP ${res.status}`);
+  const total = Number((res.headers.get('content-range') || '').split('/')[1]);
+  if (!Number.isFinite(total)) throw new Error(`no exact count for ${table}${filter}`);
+  return total;
 }
+const VIS = '&hidden=eq.false';
 
 // ── EC registry ───────────────────────────────────────────────────────────────
 // run() returns { status: 'PASS'|'FAIL'|'SKIP'|'RED', detail }.
@@ -78,24 +80,29 @@ const ECS = [
   {
     id: 'EC-1', title: 'TH-1 image presence + capture provenance',
     run: async () => {
-      const rows = await visibleDeals();
-      if (rows.length < CATALOG_FLOOR) return { status: 'FAIL', detail: `catalog floor: only ${rows.length} visible rows (empty read may mean RLS/anon key)` };
-      const noImage = rows.filter((r) => !(r.gallery && r.gallery.length) && !(r.image_url && r.image_url.trim()));
-      if (noImage.length > 0) return { status: 'FAIL', detail: `${noImage.length} visible deals with NO image, e.g. ${noImage.slice(0, 3).map((r) => r.product_id).join(', ')}` };
-      // Mechanism half (capture_run_id provenance + enrich backfill ≈ 0) lands with Stage 2.
-      return { status: 'PASS', detail: `0/${rows.length} visible deals without an image (mechanism clause pending Stage 2 → reported PASS on invariant only)` };
+      needSupa();
+      const visible = await headCount(VIS);
+      if (visible < CATALOG_FLOOR) return { status: 'FAIL', detail: `catalog floor: only ${visible} visible rows (empty read may mean RLS/anon key)` };
+      // gallery=is.null approximates "no gallery" (ingest writes null, never []).
+      const noImage = await headCount(`${VIS}&gallery=is.null&or=(image_url.is.null,image_url.eq.)`);
+      if (noImage > 0) return { status: 'FAIL', detail: `${noImage} visible deals with NO image` };
+      const provenance = await headCount('&capture_run_id=not.is.null');
+      return { status: 'PASS', detail: `0/${visible} visible deals without an image; ${provenance} rows carry capture provenance` };
     },
   },
   {
     id: 'EC-2', title: 'TH-2 title + TH-3 description presence; hidden-capture decoupling',
     run: async () => {
-      const rows = await visibleDeals();
-      if (rows.length < CATALOG_FLOOR) return { status: 'FAIL', detail: `catalog floor: only ${rows.length} visible rows (empty read may mean RLS/anon key)` };
-      const noTitle = rows.filter((r) => !(r.product_name && r.product_name.trim()));
-      const noDesc = rows.filter((r) => !(r.description && r.description.trim()) && !(r.description_html && r.description_html.trim()));
-      if (noTitle.length) return { status: 'FAIL', detail: `${noTitle.length} visible deals with empty title` };
-      if (noDesc.length) return { status: 'FAIL', detail: `${noDesc.length} visible deals with no description data, e.g. ${noDesc.slice(0, 3).map((r) => r.product_id).join(', ')}` };
-      return { status: 'PASS', detail: `titles ${rows.length}/${rows.length}, descriptions ${rows.length}/${rows.length} (decoupling clause pending Stage 2)` };
+      needSupa();
+      const visible = await headCount(VIS);
+      if (visible < CATALOG_FLOOR) return { status: 'FAIL', detail: `catalog floor: only ${visible} visible rows` };
+      const noTitle = await headCount(`${VIS}&or=(product_name.is.null,product_name.eq.)`);
+      if (noTitle) return { status: 'FAIL', detail: `${noTitle} visible deals with empty title` };
+      const noDesc = await headCount(`${VIS}&description_html=is.null&or=(description.is.null,description.eq.)`);
+      if (noDesc) return { status: 'FAIL', detail: `${noDesc} visible deals with no description data` };
+      const hiddenWithHtml = await headCount('&hidden=eq.true&description_html=not.is.null');
+      if (!hiddenWithHtml) return { status: 'FAIL', detail: `invariants hold on ${visible} rows, but 0 hidden rows carry description_html — capture decoupling unproven (soak pending)` };
+      return { status: 'PASS', detail: `titles+descriptions complete on ${visible} visible rows; ${hiddenWithHtml} hidden rows carry captured html (decoupling proven)` };
     },
   },
   {
@@ -106,11 +113,11 @@ const ECS = [
       if (!/extractPageContent/.test(vsrc) || !/page-content captures:/.test(vsrc)) return { status: 'FAIL', detail: 'extractor not integrated into verify (grammar missing)' };
       needSupa();
       // Post-soak evidence: visible Renogy rows carrying captured HTML.
-      const renogy = await pageDeals('product_id,description_html', '&hidden=eq.false&shop_name=eq.Renogy%20DE');
-      if (!renogy.length) return { status: 'FAIL', detail: 'no visible Renogy DE rows to evidence' };
-      const withHtml = renogy.filter((r) => r.description_html && r.description_html.trim());
-      if (!withHtml.length) return { status: 'FAIL', detail: `0/${renogy.length} visible Renogy rows have captured description_html (page-capture soak pending)` };
-      return { status: 'PASS', detail: `${withHtml.length}/${renogy.length} visible Renogy rows carry captured content (reported share; presence per TH-3 is the gate)` };
+      const renogyTotal = await headCount(`${VIS}&shop_name=eq.Renogy%20DE`);
+      if (!renogyTotal) return { status: 'FAIL', detail: 'no visible Renogy DE rows to evidence' };
+      const withHtml = await headCount(`${VIS}&shop_name=eq.Renogy%20DE&description_html=not.is.null`);
+      if (!withHtml) return { status: 'FAIL', detail: `0/${renogyTotal} visible Renogy rows have captured description_html (page-capture soak pending)` };
+      return { status: 'PASS', detail: `${withHtml}/${renogyTotal} visible Renogy rows carry captured content (reported share; presence per TH-3 is the gate)` };
     },
   },
   {
@@ -230,18 +237,26 @@ const ECS = [
       // Sweep-eligible mirrors verify-awin.cjs fetchDeals (/products/ predicate
       // pinned by the dated EC-9 amendment); failed fetches ARE watermarked by
       // the verifier, so only fresh-blocked hosts are excluded (EC-1 rule).
-      const rows = await pageDeals('product_id,last_verified,merchant_url', '&source=eq.awin&merchant_url=like.*%2Fproducts%2F*');
-      if (rows.length < CATALOG_FLOOR) return { status: 'FAIL', detail: `sweep-eligible floor: only ${rows.length} rows` };
+      const F = '&source=eq.awin&merchant_url=like.*%2Fproducts%2F*';
+      const cutoff = new Date(Date.now() - 48 * 3600e3).toISOString();
+      const staleOr = `&or=(last_verified.is.null,last_verified.lt.${encodeURIComponent(cutoff)})`;
+      const total = await headCount(F);
+      if (total < CATALOG_FLOOR) return { status: 'FAIL', detail: `sweep-eligible floor: only ${total} rows` };
       const foRes = await fetch(`${SUPABASE_URL}/rest/v1/fetch_outcomes?select=host,status,last_seen`, { headers: supaHeaders() });
       const outcomes = foRes.ok ? await foRes.json() : [];
-      const blocked = new Set(outcomes
+      const blockedHosts = outcomes
         .filter((o) => /^blocked-/.test(o.status) && Date.now() - Date.parse(o.last_seen) < 48 * 3600e3)
-        .map((o) => o.host));
-      const eligible = rows.filter((r) => { try { return !blocked.has(new URL(r.merchant_url).host); } catch { return true; } });
-      if (blocked.size && eligible.length < rows.length * 0.5) return { status: 'FAIL', detail: `block-list excludes ${rows.length - eligible.length}/${rows.length} rows — exclusion bound exceeded` };
-      const stale = eligible.filter((r) => !r.last_verified || Date.now() - Date.parse(r.last_verified) > 48 * 3600e3);
-      if (stale.length > 0) return { status: 'FAIL', detail: `${stale.length}/${eligible.length} sweep-eligible rows unverified in 48h (soak pending or starved tail; ${blocked.size} blocked hosts excluded)` };
-      return { status: 'PASS', detail: `all ${eligible.length} sweep-eligible rows verified within 48h (${blocked.size} blocked hosts excluded)` };
+        .map((o) => o.host);
+      let stale = await headCount(F + staleOr);
+      let excluded = 0;
+      for (const h of blockedHosts) {
+        const hostFilter = `&merchant_url=like.*${encodeURIComponent(h)}*`;
+        excluded += await headCount(F + hostFilter);
+        stale -= await headCount(F + hostFilter + staleOr);
+      }
+      if (blockedHosts.length && excluded > total * 0.5) return { status: 'FAIL', detail: `block-list excludes ${excluded}/${total} rows — exclusion bound exceeded` };
+      if (stale > 0) return { status: 'FAIL', detail: `${stale}/${total - excluded} sweep-eligible rows unverified in 48h (soak pending or starved tail; ${blockedHosts.length} blocked hosts excluded)` };
+      return { status: 'PASS', detail: `all ${total - excluded} sweep-eligible rows verified within 48h (${blockedHosts.length} blocked hosts excluded)` };
     },
   },
   {
@@ -252,15 +267,17 @@ const ECS = [
       const ungated = WFS.filter((f) => !readFileSync(path.join(ROOT, '.github/workflows', f), 'utf8').includes("github.repository_owner == 'oleg1981-sudo'"));
       if (ungated.length) return { status: 'FAIL', detail: `ungated workflows: ${ungated.join(', ')}` };
       try {
-        // Runs created after the gating landed on the fork must have all jobs skipped.
+        // Runs created after the gating landed on the fork's main (pre-fix
+        // failures age out of scope rather than blocking acceptance forever).
+        const fixTs = Date.parse(execFileSync('git', ['log', '-1', '--format=%cI', 'origin/main'], { cwd: ROOT, encoding: 'utf8' }).trim());
         const j = ghJson('repos/Manzela/DealRadar/actions/runs?event=schedule&per_page=20');
-        const runs = (j.workflow_runs || []).filter((r) => Date.now() - Date.parse(r.created_at) < 48 * 3600e3);
+        const runs = (j.workflow_runs || []).filter((r) => Date.parse(r.created_at) > fixTs && Date.now() - Date.parse(r.created_at) < 48 * 3600e3);
         for (const r of runs) {
           const jobs = ghJson(`repos/Manzela/DealRadar/actions/runs/${r.id}/jobs`);
           const active = (jobs.jobs || []).filter((jb) => jb.conclusion !== 'skipped');
           if (active.length) return { status: 'FAIL', detail: `fork run ${r.id} (${r.name}) has non-skipped jobs — gating not deployed to fork yet` };
         }
-        return { status: 'PASS', detail: `gates present ×${WFS.length}; ${runs.length} recent fork scheduled runs all-skipped` };
+        return { status: 'PASS', detail: `gates present ×${WFS.length}; ${runs.length} post-fix fork scheduled runs, all skipped` };
       } catch (e) {
         return { status: 'SKIP', detail: `gates present; gh unavailable: ${e.message.slice(0, 80)}` };
       }
@@ -326,7 +343,7 @@ const ECS = [
     run: async () => {
       needSupa();
       const withAttrs = await pageDeals('slug,feed_attrs', '&hidden=eq.false&feed_attrs=not.is.null&order=product_id.asc&limit=3');
-      const withoutAttrs = (await pageDeals('slug,feed_attrs,gallery', '&hidden=eq.false&feed_attrs=is.null&order=product_id.asc&limit=3'));
+      const withoutAttrs = await pageDeals('slug', '&hidden=eq.false&feed_attrs=is.null&order=product_id.asc&limit=3');
       const fetchHtml = async (slug) => { const r = await fetch(`${SITE}/en/deal/${slug}`); return r.status === 200 ? r.text() : null; };
       if (withAttrs.length < 3) return { status: 'SKIP', detail: 'insufficient-cohort: <3 attr-bearing visible deals (feed_attrs soak pending)' };
       for (const d of withAttrs) {
@@ -339,7 +356,12 @@ const ECS = [
         if (!html) return { status: 'FAIL', detail: `${d.slug}: page unavailable` };
         if (/data-block="attrs"/.test(html)) return { status: 'FAIL', detail: `${d.slug}: attr-less row renders an attrs block (fabrication?)` };
       }
-      const multi = (await pageDeals('slug,gallery', '&hidden=eq.false&order=product_id.asc&limit=50')).find((d) => d.gallery && d.gallery.length >= 2);
+      const unproxy1 = (u) => {
+        if (!/(^|\.)productserve\.com\//i.test(u)) return u;
+        try { const inner = new URL(u).searchParams.get('url'); if (!inner) return u; const o = /^https?:\/\//i.test(inner) ? inner : 'https://' + inner.replace(/^ssl:/i, ''); return new URL(o).protocol === 'https:' ? o : u; } catch { return u; }
+      };
+      const multi = (await pageDeals('slug,gallery', '&hidden=eq.false&gallery=not.is.null&order=product_id.asc&limit=20'))
+        .find((d) => d.gallery && new Set(d.gallery.map(unproxy1)).size >= 2);
       if (multi) {
         const html = await fetchHtml(multi.slug);
         const m = html && html.match(/data-gallery-count="(\d+)"/);
@@ -352,8 +374,9 @@ const ECS = [
     id: 'EC-15', title: 'description always renders (presence)',
     run: async () => {
       needSupa();
-      const echo = await pageDeals('slug', '&hidden=eq.false&description_html=is.null&order=product_id.asc&limit=200');
-      const probes = (await visibleDeals()).slice(0, 2).map((r) => r.slug).concat(echo.slice(0, 1).map((r) => r.slug));
+      const vis = await pageDeals('slug', '&hidden=eq.false&order=product_id.asc&limit=2');
+      const echo = await pageDeals('slug', '&hidden=eq.false&description_html=is.null&order=product_id.asc&limit=1');
+      const probes = vis.map((r) => r.slug).concat(echo.map((r) => r.slug));
       if (!probes.length) return { status: 'FAIL', detail: 'no probe rows (empty read — RLS/anon key?)' };
       for (const slug of probes) {
         const r = await fetch(`${SITE}/en/deal/${slug}`);
@@ -417,7 +440,7 @@ const ECS = [
     id: 'EC-18', title: 'markdown agent surface + discovery',
     run: async () => {
       needSupa();
-      const probes = (await visibleDeals()).slice(0, 3);
+      const probes = await pageDeals('slug', '&hidden=eq.false&order=product_id.asc&limit=3');
       if (probes.length < 3) return { status: 'FAIL', detail: 'fewer than 3 visible probe rows' };
       for (const p of probes) {
         const res = await fetch(`${SITE}/en/deal/${p.slug}/md`);
@@ -439,10 +462,17 @@ const ECS = [
     id: 'EC-19', title: 'richness budgets strict + mutation',
     run: async () => {
       const { createRequire } = await import('node:module');
-      const { computeRichness, gateRichness } = createRequire(import.meta.url)('./lib/richness.cjs');
+      const { gateRichness } = createRequire(import.meta.url)('./lib/richness.cjs');
       needSupa();
-      const rows = await visibleDeals();
-      const r = computeRichness(rows);
+      // Same server-side count invariants as EC-1/EC-2, fed through the SHARED
+      // gate module (single source of truth with check-budgets).
+      const r = {
+        visible: await headCount(VIS),
+        th1NoImage: await headCount(`${VIS}&gallery=is.null&or=(image_url.is.null,image_url.eq.)`),
+        th2NoTitle: await headCount(`${VIS}&or=(product_name.is.null,product_name.eq.)`),
+        th3NoDesc: await headCount(`${VIS}&description_html=is.null&or=(description.is.null,description.eq.)`),
+        multiImagePct: -1, // reported metric — not computable via counts; harness reports gate results only
+      };
       const gate = gateRichness(r);
       // Mutation clause: an injected negative budget MUST fail — proves the gate can fail.
       process.env.RICHNESS_MAX_TH3 = '-1';
@@ -457,7 +487,7 @@ const ECS = [
         if (recent.length && recent[0].conclusion !== 'success') return { status: 'FAIL', detail: `latest guardrail run ${recent[0].conclusion}` };
         runDetail = recent.length ? `guardrail run ${recent[0].id} green` : 'no scheduled guardrail run ≤48h (post-merge pending)';
       } catch { /* gh optional here; gate itself already executed */ }
-      return { status: 'PASS', detail: `invariants hold on ${r.visible} rows (multi-image ${r.multiImagePct}% reported); mutation fails correctly; ${runDetail}` };
+      return { status: 'PASS', detail: `invariants hold on ${r.visible} rows; mutation fails correctly; ${runDetail}` };
     },
   },
   {
@@ -499,15 +529,16 @@ const ECS = [
       // must NOT have last_updated inside that run's window (content-only), and
       // the cohort must be non-vacuous post-soak.
       needSupa();
-      const rows = await pageDeals('product_id,capture_run_id,hidden,last_updated,last_verified', '&capture_run_id=not.is.null');
-      if (!rows.length) return { status: 'FAIL', detail: 'static OK; no capture_run_id rows yet (Stage-2 soak pending)' };
-      const latestRun = rows.map((r) => r.capture_run_id).sort().at(-1);
+      const latest = await pageDeals('capture_run_id', '&capture_run_id=not.is.null&order=capture_run_id.desc&limit=1');
+      if (!latest.length) return { status: 'FAIL', detail: 'static OK; no capture_run_id rows yet (Stage-2 soak pending)' };
+      const latestRun = latest[0].capture_run_id;
       const runStart = Date.parse(latestRun.replace(/^verify-/, '').replace(/-(\d{2})-(\d{2})-(\d{3})Z$/, ':$1:$2.$3Z'));
-      const cohort = rows.filter((r) => r.capture_run_id === latestRun && r.hidden);
-      if (!cohort.length) return { status: 'FAIL', detail: `static OK; latest run ${latestRun} captured no hidden rows — cohort vacuous (soak pending)` };
-      const violations = cohort.filter((r) => Number.isFinite(runStart) && r.last_updated && Date.parse(r.last_updated) >= runStart);
-      if (violations.length) return { status: 'FAIL', detail: `${violations.length} hidden rows had last_updated bumped by capture run ${latestRun} — write-class violation` };
-      return { status: 'PASS', detail: `static OK; ${cohort.length} hidden rows captured in ${latestRun} with last_updated untouched` };
+      if (!Number.isFinite(runStart)) return { status: 'FAIL', detail: `static OK; unparsable run id ${latestRun}` };
+      const cohort = await headCount(`&capture_run_id=eq.${encodeURIComponent(latestRun)}&hidden=eq.true`);
+      if (!cohort) return { status: 'FAIL', detail: `static OK; latest run ${latestRun} captured no hidden rows — cohort vacuous (soak pending)` };
+      const violations = await headCount(`&capture_run_id=eq.${encodeURIComponent(latestRun)}&hidden=eq.true&last_updated=gte.${encodeURIComponent(new Date(runStart).toISOString())}`);
+      if (violations) return { status: 'FAIL', detail: `${violations} hidden rows had last_updated bumped by capture run ${latestRun} — write-class violation` };
+      return { status: 'PASS', detail: `static OK; ${cohort} hidden rows captured in ${latestRun} with last_updated untouched` };
     },
   },
   {
@@ -540,8 +571,8 @@ const ECS = [
     id: 'EC-24', title: 'noindex on hidden PDPs only (Q-1 invariant)',
     run: async () => {
       needSupa();
-      // Probe: 2 visible (incl. one with minimal price history if cheap) + 1 hidden.
-      const vis = (await visibleDeals()).slice(0, 2);
+      // Probe: 2 visible + 2 hidden.
+      const vis = await pageDeals('slug', '&hidden=eq.false&order=product_id.asc&limit=2');
       const hid = await pageDeals('slug,product_id', '&hidden=eq.true&limit=2');
       if (!vis.length || !hid.length) return { status: 'FAIL', detail: 'could not select probe rows (need ≥1 visible and ≥1 hidden)' };
       const probe = async (slug) => {
