@@ -46,6 +46,8 @@ const nextConfig = {
       { protocol: 'https', hostname: '**.awin1.com' },
       { protocol: 'https', hostname: '**.productserve.com' },  // AWIN feed image CDN (aw_image_url)
       { protocol: 'https', hostname: 'cdn.shopify.com' },      // AWIN merchant gallery images (alternate_image)
+      { protocol: 'https', hostname: 'www.sanicare.de' },      // Aliva/Sanicare merchant images (per-fid feeds, watchdog #17)
+      { protocol: 'https', hostname: 'lyra-pet.de' },          // Lyra Pet merchant images (watchdog #17)
       { protocol: 'https', hostname: '**.tradedoubler.com' },
       { protocol: 'https', hostname: '**.strackr.com' },
     ],
