@@ -29,6 +29,7 @@ concurrency:
 
 jobs:
   ingest:
+    if: github.repository_owner == 'oleg1981-sudo'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -78,13 +79,13 @@ jobs:
             node scripts/snapshot-prices.cjs --apply
           fi
 
-      # Ping IndexNow with every deal this run touched (new deals, price
-      # changes, stale-hides → 404 refresh) so Bing/Yandex/Seznam/Naver
-      # re-crawl within minutes. Non-blocking: an indexing ping must never
-      # fail the ingestion. Google gets freshness via the sitemap's lastmod.
+      # Ping IndexNow with visible deals this run touched (new deals, price
+      # changes) so Bing/Yandex/Seznam/Naver re-crawl within minutes. Hidden
+      # PDPs serve 200+noindex (Q-1) and are excluded by the submit script
+      # (interim FR-3.6). The script retries transient errors; a persistent
+      # failure now fails this step. Google gets freshness via sitemap lastmod.
       - name: Submit changed deals to IndexNow
         if: ${{ github.event.inputs.dry_run != 'true' }}
-        continue-on-error: true
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}

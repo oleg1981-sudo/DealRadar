@@ -21,6 +21,7 @@ concurrency:
 
 jobs:
   purge:
+    if: github.repository_owner == 'oleg1981-sudo'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:

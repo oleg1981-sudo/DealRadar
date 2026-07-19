@@ -13,6 +13,7 @@
 //   node scripts/enrich-galleries.cjs            # dry-run: report what would change
 //   node scripts/enrich-galleries.cjs --apply    # write enriched galleries
 //   node scripts/enrich-galleries.cjs --limit 5  # cap checked deals (smoke test)
+//   node scripts/enrich-galleries.cjs --max-minutes 25  # soft wall-clock budget (stop cleanly)
 //
 // Required env: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY.
 'use strict';
@@ -23,6 +24,20 @@ const path = require('path');
 const args = process.argv.slice(2);
 const APPLY = args.includes('--apply');
 const LIMIT = (() => { const i = args.indexOf('--limit'); return i >= 0 ? parseInt(args[i + 1], 10) || 0 : 0; })();
+// Soft wall-clock budget [FR-3.1], same semantics as verify-awin.cjs: stop
+// starting new fetches once the budget is spent so the workflow's later steps
+// (snapshot, IndexNow) always get their turn instead of a job-timeout kill.
+// Flag present with a missing/invalid/negative value → bounded default (25),
+// never a silently-unbounded run.
+const MAX_MINUTES = (() => {
+  const i = args.indexOf('--max-minutes');
+  if (i < 0) return 0;
+  const n = parseInt(args[i + 1], 10);
+  if (!Number.isFinite(n) || n <= 0) { console.warn('[gallery] invalid --max-minutes value — defaulting to 25'); return 25; }
+  return n;
+})();
+const T_START = Date.now();
+const overBudget = () => MAX_MINUTES && Date.now() - T_START > MAX_MINUTES * 60000;
 const MIN_IMAGES = 2;   // a gallery smaller than this gets topped up
 const MAX_IMAGES = 6;   // matches what the feed ingestion keeps
 const DELAY_MS = 1000;
@@ -96,9 +111,19 @@ async function fetchShopImages(deal) {
   // All visible deals with a live product URL; filter to sparse galleries here.
   const rows = [];
   const cols = 'product_id,shop_name,country,gallery,image_url,merchant_url';
+  let orderClause = '&order=last_verified.asc.nullsfirst,product_id.asc';
   for (let from = 0; ; from += 1000) {
-    const r = await fetch(`${BASE}/rest/v1/deals?hidden=eq.false&merchant_url=not.is.null&select=${cols}`,
+    // Stalest-first: budget-truncated runs rotate coverage instead of
+    // re-trying the same head-of-list rows every day (interim until the
+    // verifier owns gallery capture in Stage 2). Falls back to unordered
+    // (sticky for the whole read) when last_verified isn't migrated yet.
+    let r = await fetch(`${BASE}/rest/v1/deals?hidden=eq.false&merchant_url=not.is.null&select=${cols}${orderClause}`,
       { headers: { ...SUPA, Range: `${from}-${from + 999}` } });
+    if (!r.ok && from === 0 && orderClause) {
+      orderClause = '';
+      r = await fetch(`${BASE}/rest/v1/deals?hidden=eq.false&merchant_url=not.is.null&select=${cols}`,
+        { headers: { ...SUPA, Range: `${from}-${from + 999}` } });
+    }
     if (!r.ok) throw new Error(`read deals failed: HTTP ${r.status} ${await r.text()}`);
     const batch = await r.json();
     rows.push(...batch);
@@ -121,6 +146,11 @@ async function fetchShopImages(deal) {
   await Promise.all([...byHost.entries()].map(async ([host, list]) => {
     let consec = 0;
     for (let i = 0; i < list.length; i++) {
+      if (overBudget()) {
+        errors += list.length - i;
+        console.error(`[gallery] ${host}: --max-minutes budget reached — skipped remaining ${list.length - i} (picked up next run)`);
+        break;
+      }
       const deal = list[i];
       const live = await fetchShopImages(deal);
       if (live.error) {

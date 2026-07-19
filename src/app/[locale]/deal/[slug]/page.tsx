@@ -65,6 +65,11 @@ export async function generateMetadata({ params }: Props) {
   return {
     title: `${deal.productName} · ${formatDiscount(deal.discountPercent)}`,
     description: `${deal.productName} — ${sale} (${was}) · ${deal.shopName}`,
+    // [Q-1/EC-24, docs/specs/pdp-full-content] hidden (unproven/delisted) deals
+    // stay reachable (200, M2 forbids unexpected 404s) but are not indexable.
+    // A proven deal (hidden=false) must never carry noindex — indexability
+    // gates solely on proven-discount status, never on price-history depth.
+    ...(deal.hidden ? { robots: { index: false, follow: true } } : {}),
     alternates: {
       canonical: `${BASE_URL}/${params.locale}/deal/${params.slug}`,
       languages: { ...languages, 'x-default': `${BASE_URL}/${routing.defaultLocale}/deal/${params.slug}` },

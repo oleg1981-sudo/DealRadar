@@ -27,12 +27,15 @@ concurrency:
 
 jobs:
   verify:
+    if: github.repository_owner == 'oleg1981-sudo'
     runs-on: ubuntu-latest
-    # Ingest-v2 (2026-07-16) grew the verified set to ~6k rows; the largest
-    # single host (ROCKBROS, ~4.5k pages at 1s pacing) alone needs ~80 min —
-    # both the cron and manual runs were timeout-cancelled at 30. Patches
-    # flush incrementally (every 50), so a timeout only loses the tail of an
-    # unfinished sweep, but the full sweep needs real room.
+    # Budget arithmetic (2026-07-19, catalog ~33.3k sweep rows): verify
+    # --max-minutes 110 + enrich --max-minutes 25 + snapshot/IndexNow ~5 min
+    # < 150-min job timeout. The sweep can NEVER finish exhaustively in one
+    # run (t23.intelliad.de alone holds ~22.9k redirect rows; ROCKBROS ~4.6k)
+    # — the soft budgets stop each step cleanly so every later step always
+    # runs, and stalest-first ordering (Stage 2) rotates coverage across runs.
+    # Patches flush incrementally (every 50), so a budget stop loses nothing.
     timeout-minutes: 150
     steps:
       - uses: actions/checkout@v4
@@ -45,29 +48,34 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: |
           if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
-            node scripts/verify-awin.cjs
+            node scripts/verify-awin.cjs --max-minutes 110
           else
-            node scripts/verify-awin.cjs --apply
+            node scripts/verify-awin.cjs --apply --max-minutes 110
           fi
 
       # Top up sparse galleries from the live shop (feeds like BlazeVideo ship
       # a single image; the deal page should show the same multi-image gallery
       # for every product). Only touches deals with fewer than 2 real images.
+      # Per-step policy [FR-3.1]: post-verify steps are data-preserving and run
+      # even if an earlier step failed (!cancelled()) — a verify failure must
+      # not starve enrichment, snapshots, or indexing pings.
       - name: Enrich sparse galleries from live shops
+        if: ${{ !cancelled() }}
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: |
           if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
-            node scripts/enrich-galleries.cjs
+            node scripts/enrich-galleries.cjs --max-minutes 25
           else
-            node scripts/enrich-galleries.cjs --apply
+            node scripts/enrich-galleries.cjs --apply --max-minutes 25
           fi
 
       # Re-snapshot today's prices now that they are live-verified — same UTC
       # day as the ingest's snapshot, so this upsert overwrites it and the
       # verified price is what price_history keeps for the day.
       - name: Snapshot prices into price_history
+        if: ${{ !cancelled() }}
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
@@ -78,12 +86,12 @@ jobs:
             node scripts/snapshot-prices.cjs --apply
           fi
 
-      # Ping IndexNow with everything the verifier changed (live price
-      # corrections, sold-out hides → 404 refresh). Non-blocking; the verify
-      # pass takes up to ~30 min, so the window is wider than the ingest's.
+      # Ping IndexNow with visible deals the verifier changed (live price
+      # corrections, promotions). Hidden PDPs serve 200+noindex (Q-1) and are
+      # excluded by the submit script (interim FR-3.6). The script retries
+      # transient errors; a persistent failure now fails this step loudly.
       - name: Submit changed deals to IndexNow
-        if: ${{ github.event.inputs.dry_run != 'true' }}
-        continue-on-error: true
+        if: ${{ !cancelled() && github.event.inputs.dry_run != 'true' }}
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}

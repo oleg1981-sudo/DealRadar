@@ -389,3 +389,51 @@ create trigger trigger_check_active_alerts_limit
 
 select 1;
 
+
+-- ── PDP full-content pipeline (docs/specs/pdp-full-content/2026-07-16_v1) ────
+-- Stage 1 migration (T1.1): additive columns + fetch-outcome persistence.
+-- All nullable/additive — safe to re-run.
+alter table public.deals add column if not exists feed_attrs         jsonb;        -- non-empty extra feed columns (FR-2.1)
+alter table public.deals add column if not exists last_verified      timestamptz;  -- stalest-first sweep watermark (FR-3.2); content-class write per the M2 amendment
+alter table public.deals add column if not exists first_published_at timestamptz;  -- never-published vs delisted discriminator (FR-3.6)
+alter table public.deals add column if not exists rating_value       numeric(3,2) check (rating_value is null or (rating_value >= 0 and rating_value <= 5));
+alter table public.deals add column if not exists rating_count       integer check (rating_count is null or rating_count >= 0);
+alter table public.deals add column if not exists rating_source      text;         -- provenance (Q-5): e.g. 'merchant-jsonld'; markup emitted ONLY when set
+alter table public.deals add column if not exists capture_run_id     text;         -- verify run that last wrote content (EC-1 provenance)
+
+-- Stalest-first ordering support (FR-3.2).
+create index if not exists deals_last_verified_idx
+  on public.deals (last_verified asc nulls first, product_id asc);
+
+-- first_published_at: set once, on the first insert/update that makes the row
+-- visible. Never cleared, never re-set (freeze-after-first-publish).
+create or replace function public.deals_set_first_published()
+returns trigger language plpgsql as $$
+begin
+  if new.hidden = false and new.first_published_at is null then
+    new.first_published_at := now();
+  end if;
+  return new;
+end $$;
+drop trigger if exists trigger_deals_first_published on public.deals;
+create trigger trigger_deals_first_published
+  before insert or update on public.deals
+  for each row execute function public.deals_set_first_published();
+
+-- One-time idempotent backfill: rows visible today were published at some
+-- point — approximate with last_updated. Hidden rows stay NULL (treated as
+-- never-published until their first promotion).
+update public.deals set first_published_at = last_updated
+  where hidden = false and first_published_at is null;
+
+-- Per-host fetch outcomes (FR-1.3/EC-1): the persisted block-list evidence the
+-- harness reads. Written by verify-awin.cjs each sweep; upsert-by-host.
+create table if not exists public.fetch_outcomes (
+  host        text primary key,
+  status      text not null,        -- 'ok' | 'blocked-403' | 'blocked-429' | 'unreachable' | 'gone'
+  http_status integer,
+  ok_count    integer not null default 0,
+  err_count   integer not null default 0,
+  last_seen   timestamptz not null default now()
+);
+alter table public.fetch_outcomes enable row level security;
