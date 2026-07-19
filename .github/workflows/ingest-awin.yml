@@ -23,8 +23,12 @@ on:
         type: boolean
         default: false
 
+# Shared data-plane group [FR-3.4 follow-up]: ingest and verify write the
+# same table — running them concurrently pushed bulk upserts past the
+# statement timeout (run 29687440346). The crons never overlap; this makes
+# manual dispatches queue instead of colliding.
 concurrency:
-  group: ingest-awin
+  group: awin-data-plane
   cancel-in-progress: false
 
 jobs:
