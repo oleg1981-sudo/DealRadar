@@ -9,6 +9,8 @@ export interface DealAttributionRow {
 export interface JoinedProgramme { programme_id: number | string; name: string }
 export interface IngestSummary {
   ranAt?: string;
+  feeds?: { feed: string; advertiser: string; format?: string; scanned: number; kept: number; error?: string }[] | null;
+  /** pre-2026-07-19 key name (Google entries only) — transition fallback */
   enhanced?: { feed: string; advertiser: string; scanned: number; kept: number; error?: string }[] | null;
   legacyScannedById?: Record<string, number>;
 }

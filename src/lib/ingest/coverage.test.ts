@@ -38,7 +38,7 @@ describe('parseAdvertiserId / feedAgeDays', () => {
 });
 
 describe('buildCoverageReport', () => {
-  const SUMMARY = { ranAt: '2026-07-19T03:10:00Z', enhanced: [{ feed: 'F2308', advertiser: 'ROCKBROS', scanned: 5109, kept: 4519 }] };
+  const SUMMARY = { ranAt: '2026-07-19T03:10:00Z', feeds: [{ feed: 'F2308', advertiser: 'ROCKBROS', scanned: 5109, kept: 4519 }] };
 
   it('green: consumable, fresh, populated', () => {
     const r = buildCoverageReport({
@@ -95,7 +95,7 @@ describe('buildCoverageReport', () => {
     const r = buildCoverageReport({
       feedRows: [feed()],
       dealRows: [{ product_id: 'awin:DE:adv122456:1', merchant_id: null, shop_name: 'ROCKBROS', hidden: false }],
-      ingestSummary: { ranAt: 'x', enhanced: [{ feed: 'F2308', advertiser: 'ROCKBROS', scanned: 0, kept: 0, error: 'HTTP 500' }] },
+      ingestSummary: { ranAt: 'x', feeds: [{ feed: 'F2308', advertiser: 'ROCKBROS', scanned: 0, kept: 0, error: 'HTTP 500' }] },
       now: NOW,
     });
     expect(r.advertisers[0].status).toBe('red');
@@ -122,7 +122,10 @@ describe('buildCoverageReport', () => {
         { product_id: 'awin:legacy1', merchant_id: '125816', shop_name: 'Imou DE', hidden: false },
         { product_id: 'awin:DE:adv122456:1', merchant_id: null, shop_name: 'ROCKBROS', hidden: false },
       ],
-      ingestSummary: SUMMARY, now: NOW,
+      ingestSummary: { ranAt: 'x', feeds: [
+        { feed: 'F2308', advertiser: 'ROCKBROS', scanned: 5109, kept: 4519 },
+        { feed: '115907', advertiser: 'Imou DE', scanned: 561, kept: 0 },
+      ] }, now: NOW,
     });
     const imou = r.advertisers.find((a) => a.name === 'Imou DE');
     const rockbros = r.advertisers.find((a) => a.name === 'ROCKBROS');
@@ -133,14 +136,14 @@ describe('buildCoverageReport', () => {
   it('red: dead-but-historically-populated Google feed (missing from last ingest / empty scan / pass failed)', () => {
     const rows = [{ product_id: 'awin:DE:adv122456:1', merchant_id: null, shop_name: 'ROCKBROS', hidden: true }];
     // Feed absent from summary → red even though populated > 0
-    const r1 = buildCoverageReport({ feedRows: [feed()], dealRows: rows, ingestSummary: { ranAt: 'x', enhanced: [] }, now: NOW });
+    const r1 = buildCoverageReport({ feedRows: [feed()], dealRows: rows, ingestSummary: { ranAt: 'x', feeds: [] }, now: NOW });
     expect(r1.advertisers[0].status).toBe('red');
     expect(r1.advertisers[0].detail).toContain('not consumed');
     // Scanned 0 → red
-    const r2 = buildCoverageReport({ feedRows: [feed()], dealRows: rows, ingestSummary: { ranAt: 'x', enhanced: [{ feed: 'F2308', advertiser: 'ROCKBROS', scanned: 0, kept: 0 }] }, now: NOW });
+    const r2 = buildCoverageReport({ feedRows: [feed()], dealRows: rows, ingestSummary: { ranAt: 'x', feeds: [{ feed: 'F2308', advertiser: 'ROCKBROS', scanned: 0, kept: 0 }] }, now: NOW });
     expect(r2.advertisers[0].detail).toContain('EMPTY');
     // Whole enhanced pass failed (enhanced: null) → red, not silence
-    const r3 = buildCoverageReport({ feedRows: [feed()], dealRows: rows, ingestSummary: { ranAt: 'x', enhanced: null }, now: NOW });
+    const r3 = buildCoverageReport({ feedRows: [feed()], dealRows: rows, ingestSummary: { ranAt: 'x', feeds: null }, now: NOW });
     expect(r3.advertisers[0].detail).toContain('pass failed');
   });
 

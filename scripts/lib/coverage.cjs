@@ -98,24 +98,30 @@ function buildCoverageReport({ feedRows, dealRows, joinedProgrammes = [], ingest
   }
 
   // Last-ingest evidence, keyed by Feed ID (stable across advertiser renames).
-  // `enhanced === null` on a summary means the whole Google pass failed/was
-  // skipped — that is a red of its own, NOT "no errors".
-  const enhancedPassFailed = !!ingestSummary && ingestSummary.enhanced === null;
+  // A null feeds array means the whole feed-list pass failed/was skipped —
+  // that is a red of its own, NOT "no errors". (`enhanced` is the pre-07-19
+  // key name, accepted for one transition night.)
+  // NOTE: feeds:null means "pass failed" and must NOT fall through to the
+  // legacy `enhanced` key (?? would) — only an ABSENT feeds key does.
+  const summaryFeeds = ingestSummary
+    ? (ingestSummary.feeds !== undefined ? ingestSummary.feeds : ingestSummary.enhanced)
+    : undefined;
+  const enhancedPassFailed = !!ingestSummary && summaryFeeds === null;
   const summaryByFeedId = new Map();
-  for (const f of (ingestSummary && ingestSummary.enhanced) || []) {
+  for (const f of summaryFeeds || []) {
     summaryByFeedId.set(String(f.feed), f);
   }
 
   const advertisers = [];
   for (const adv of byAdv.values()) {
-    // Consumability mirrors the ingest: Google feeds in the market language
-    // (URL required), legacy feeds only when the advertiser has no active
-    // Google feed. Feed-list Language is a proxy for the legacy path (the
-    // combined cid feed is language-scoped at the URL level).
+    // Consumability mirrors the ingest's feed-list pass: Google feeds in the
+    // market language via their listed URL; legacy feeds per-fid (no URL needed
+    // — the ingest builds its own) unless the advertiser also runs a Google
+    // feed (Google wins for dual-format advertisers).
     const consumed = adv.feeds.filter((f) =>
-      f['URL'] && (f['Datafeed Format'] === 'Google'
-        ? f['Language'] === language
-        : f['Language'] === language && !googleAdvertisers.has(adv.id)));
+      f['Datafeed Format'] === 'Google'
+        ? (f['Language'] === language && f['URL'])
+        : (f['Language'] === language && !googleAdvertisers.has(adv.id)));
     const c = counts.get(adv.id) || { populated: 0, live: 0 };
     const entry = { id: adv.id, name: adv.name, populated: c.populated, live: c.live, feeds: adv.feeds.length };
 
@@ -130,15 +136,18 @@ function buildCoverageReport({ feedRows, dealRows, joinedProgrammes = [], ingest
       }
       continue;
     }
-    const googleConsumed = consumed.filter((f) => f['Datafeed Format'] === 'Google');
-    // Last-ingest evidence per consumed Google feed: an error, a missing entry,
-    // or a zero-row scan is a red TODAY even while old populated rows linger —
-    // "populated" alone must never keep a dead feed green.
+    // Last-ingest evidence per consumed feed (both formats): an error, a
+    // missing entry, or a zero-row scan is a red TODAY even while old
+    // populated rows linger — "populated" alone must never keep a dead feed
+    // green. (Skip missing-entry reds when the summary predates the two-format
+    // pass — `enhanced` fallback carries Google entries only.)
+    const summaryCoversLegacy = !ingestSummary || ingestSummary.feeds !== undefined;
     let evidenceRed = null;
-    for (const f of googleConsumed) {
+    for (const f of consumed) {
+      const isGoogle = f['Datafeed Format'] === 'Google';
       const s = summaryByFeedId.get(String(f['Feed ID']));
-      if (enhancedPassFailed) { evidenceRed = 'enhanced ingest pass failed on the last run'; break; }
-      if (ingestSummary && !s) { evidenceRed = `feed ${f['Feed ID']} not consumed by the last ingest`; break; }
+      if (enhancedPassFailed) { evidenceRed = 'feed-list ingest pass failed on the last run'; break; }
+      if (ingestSummary && !s && (isGoogle || summaryCoversLegacy)) { evidenceRed = `feed ${f['Feed ID']} not consumed by the last ingest`; break; }
       if (s && s.error) { evidenceRed = `last ingest failed for feed ${f['Feed ID']}: ${s.error}`; break; }
       if (s && s.scanned === 0) { evidenceRed = `feed ${f['Feed ID']} was EMPTY at the last ingest`; break; }
     }

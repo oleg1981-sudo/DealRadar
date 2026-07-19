@@ -41,6 +41,13 @@ const APPLY = has('--apply');
 const LIMIT = parseInt(opt('--limit', '0'), 10) || 0;
 const DELAY_MS = parseInt(opt('--delay', '1000'), 10) || 1000;  // pacing per host
 const ABANDON_AFTER = 5;                                        // consecutive blocks on a host -> skip the rest
+// Soft wall-clock budget: mega-hosts (Aliva Apotheke ~23k pages at 1s pacing
+// ≈ 7h serial) can never finish inside the workflow window — stop CLEANLY at
+// the budget instead of getting timeout-cancelled (patches flush incrementally;
+// unvisited tail rows stay feed-priced until their turn on a later run).
+const MAX_MINUTES = parseInt(opt('--max-minutes', '120'), 10) || 0;
+const T_START = Date.now();
+const overBudget = () => MAX_MINUTES && (Date.now() - T_START) > MAX_MINUTES * 60000;
 const DEADLINE = parseInt(opt('--deadline', '0'), 10) || 0;     // Unix epoch timestamp (ms) to stop
 
 // Incremental write queue globals
@@ -385,6 +392,7 @@ function groupByHost(items) {
       }
       await sleep(DELAY_MS);
       if (consec >= ABANDON_AFTER) { i++; break; } // host is blocking — stop hitting it
+      if (overBudget()) { i++; console.log(`[verify] time budget reached — leaving ${host} early`); break; }
     }
     const skipped = list.length - i;
     if (skipped > 0) {

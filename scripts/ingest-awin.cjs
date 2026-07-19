@@ -48,6 +48,11 @@ const PUBLISHER_ID = (process.env.AWIN_PUBLISHER_ID || '2951525').trim();
 // Feed-list Language values are full names; only same-language feeds join the
 // market's catalog (EN/NL feeds are a deliberate non-goal for now).
 const ENHANCED_LANGUAGE = opt('--enhanced-language', 'German');
+// Per-feed cap for LEGACY per-fid rows (top-N by discount). 0 = uncapped —
+// the user's 2026-07-19 call: take everything (Aliva Apotheke alone ships
+// 20k+ genuine UVP discounts). The flag stays as the emergency brake if
+// capacity (Netlify usage, verifier, price_history) bites.
+const LEGACY_FEED_CAP = parseInt(opt('--legacy-cap', '0'), 10) || 0;
 
 loadEnvLocal();
 const FEED_URL = process.env.AWIN_FEED_URL;
@@ -294,29 +299,54 @@ function parseCsvString(text) {
   return rows;
 }
 
+// Canonical column set for per-fid LEGACY downloads. The feed list's example
+// URLs carry arbitrary per-feed column sets, so we build our own fid URL with
+// exactly the columns normalizeRow reads. (Why per-fid at all: feeds without
+// AWIN category mapping — empty category_id, blank Vertical — are structurally
+// invisible to ANY cid-based Create-a-Feed URL; GSMnet's 34,863 products were
+// the proof, audit/2026-07-16 follow-up 2026-07-19.)
+const LEGACY_FID_COLUMNS = [
+  'aw_deep_link', 'product_name', 'aw_product_id', 'merchant_product_id',
+  'merchant_image_url', 'description', 'product_short_description',
+  'merchant_category', 'search_price', 'merchant_name', 'merchant_id',
+  'category_name', 'aw_image_url', 'currency', 'delivery_cost',
+  'merchant_deep_link', 'brand_name', 'rrp_price', 'product_price_old',
+  'delivery_time', 'in_stock', 'large_image', 'alternate_image',
+  'alternate_image_two', 'alternate_image_three', 'alternate_image_four',
+  'ean', 'mpn', 'model_number', 'product_model', 'condition', 'product_GTIN',
+].join(',');
+
 /**
- * Download + normalize every ACTIVE Google-format feed in the market language.
- * Returns null (with a log line) when the feed list is unreachable or the api
- * key can't be derived — the legacy ingest must never fail because of this.
+ * Download + normalize every ACTIVE feed in the market language from the feed
+ * list — Google format via the enhanced normalizer (rows land hidden until a
+ * discount is proven), legacy Awin format via the standard deal gate (these
+ * feeds DO carry discount signal). Returns null (with a log line) when the
+ * feed list is unreachable or the api key can't be derived — the combined cid
+ * ingest must never fail because of this.
  */
-async function runEnhancedFeeds(counters) {
+async function runFeedListFeeds(counters) {
   const key = (FEED_URL.match(/\/apikey\/([0-9a-f]+)/i) || [])[1];
-  if (!key) { console.log('[awin] enhanced: cannot derive feed api key from AWIN_FEED_URL — skipped'); return null; }
+  if (!key) { console.log('[awin] feed-list pass: cannot derive feed api key from AWIN_FEED_URL — skipped'); return null; }
   const listUrl = `https://ui.awin.com/productdata-darwin-download/publisher/${PUBLISHER_ID}/${key}/1/feedList`;
   const feeds = parseCsvString(await fetchText(listUrl));
-  const selected = feeds.filter((f) =>
-    f['Membership Status'] === 'active' && f['Datafeed Format'] === 'Google' &&
-    f['Language'] === ENHANCED_LANGUAGE && f['URL']);
-  // Advertisers with an ACTIVE Google feed in ANY language: their legacy rows
-  // are skipped (dual-format advertisers like ROCKBROS keep the fresher Google
-  // feed; their legacy feed was 2 months stale when this shipped).
-  const advertiserIds = new Set(feeds
+  const activeLang = feeds.filter((f) => f['Membership Status'] === 'active' && f['Language'] === ENHANCED_LANGUAGE);
+  const googleAdv = new Set(feeds
     .filter((f) => f['Membership Status'] === 'active' && f['Datafeed Format'] === 'Google')
     .map((f) => f['Advertiser ID']));
+  // Google feeds via their listed URL; legacy feeds via a canonical fid URL —
+  // skipping legacy feeds of dual-format advertisers (Google wins: ROCKBROS's
+  // legacy feed was 2 months stale when v2 shipped).
+  const selected = activeLang.filter((f) =>
+    f['Datafeed Format'] === 'Google' ? !!f['URL'] : !googleAdv.has(f['Advertiser ID']));
+  // Every advertiser consumed per-fid is excluded from the combined cid pass so
+  // the two acquisition paths can never double-publish one advertiser.
+  const advertiserIds = new Set(selected.map((f) => f['Advertiser ID']));
 
   const rows = [];
+  const enhancedRows = [];
   const unmapped = new Map();
   const perFeed = [];
+  const legacyScannedById = new Map();
   const ctx = {
     country: COUNTRY,
     allowedCurrencies: ALLOWED_CURRENCIES,
@@ -325,28 +355,53 @@ async function runEnhancedFeeds(counters) {
     onUnmappedCategory: (p) => unmapped.set(p, (unmapped.get(p) || 0) + 1),
   };
   for (const f of selected) {
+    const isGoogle = f['Datafeed Format'] === 'Google';
+    const url = isGoogle
+      ? f['URL']
+      : `https://productdata.awin.com/datafeed/download/apikey/${key}/fid/${f['Feed ID'].replace(/^F/i, '')}/columns/${LEGACY_FID_COLUMNS}/format/csv/delimiter/%2C/compression/gzip/`;
     let idx2 = null;
     let scanned2 = 0, kept2 = 0;
+    const feedRows2 = []; // legacy rows buffer per feed (capped below)
     try {
-      await ingest(f.URL,
+      await ingest(url,
         (header) => { idx2 = Object.fromEntries(header.map((name, i) => [name.replace(/^\uFEFF/, ''), i])); },
         (cols) => {
           scanned2++;
           const g = (k) => (idx2[k] !== undefined ? (cols[idx2[k]] ?? '') : '');
-          const row = normalizeEnhancedRow(g, ctx);
-          if (!row) return;
-          kept2++;
-          rows.push(row);
-          counters.byCategory.set(row.category, (counters.byCategory.get(row.category) || 0) + 1);
-          counters.byMerchant.set(row.shop_name, (counters.byMerchant.get(row.shop_name) || 0) + 1);
+          if (isGoogle) {
+            const row = normalizeEnhancedRow(g, ctx);
+            if (!row) return;
+            kept2++;
+            enhancedRows.push(row);
+            counters.byCategory.set(row.category, (counters.byCategory.get(row.category) || 0) + 1);
+            counters.byMerchant.set(row.shop_name, (counters.byMerchant.get(row.shop_name) || 0) + 1);
+          } else {
+            const mid = g('merchant_id').trim() || f['Advertiser ID'];
+            legacyScannedById.set(mid, (legacyScannedById.get(mid) || 0) + 1);
+            const row = normalizeRow(g);
+            if (!row) return;
+            kept2++;
+            if (!row.merchant_id) row.merchant_id = f['Advertiser ID'];
+            feedRows2.push(row);
+          }
         });
-      perFeed.push({ feed: f['Feed ID'], advertiser: f['Advertiser Name'], scanned: scanned2, kept: kept2 });
+      let taken = feedRows2;
+      if (!isGoogle && LEGACY_FEED_CAP && feedRows2.length > LEGACY_FEED_CAP) {
+        // Highest discounts win the cap — the deal-site lens on a mega-feed.
+        taken = [...feedRows2].sort((a, b) => b.discount_percent - a.discount_percent).slice(0, LEGACY_FEED_CAP);
+      }
+      for (const row of taken) {
+        rows.push(row);
+        counters.byCategory.set(row.category, (counters.byCategory.get(row.category) || 0) + 1);
+        counters.byMerchant.set(row.shop_name, (counters.byMerchant.get(row.shop_name) || 0) + 1);
+      }
+      perFeed.push({ feed: f['Feed ID'], advertiser: f['Advertiser Name'], format: f['Datafeed Format'], scanned: scanned2, kept: kept2, taken: taken.length });
     } catch (e) {
       // Per-feed isolation: one advertiser's broken feed must not sink the rest.
-      perFeed.push({ feed: f['Feed ID'], advertiser: f['Advertiser Name'], scanned: scanned2, kept: kept2, error: e.message });
+      perFeed.push({ feed: f['Feed ID'], advertiser: f['Advertiser Name'], format: f['Datafeed Format'], scanned: scanned2, kept: kept2, error: e.message });
     }
   }
-  return { rows, advertiserIds, unmapped, perFeed };
+  return { rows, enhancedRows, advertiserIds, unmapped, perFeed, legacyScannedById };
 }
 
 /**
@@ -468,36 +523,45 @@ async function fetchExistingPrices() {
 
   // ── ingest-v2: enhanced (Google-format) feeds — see audit/2026-07-16 ────────
   // Skipped on --limit smoke runs; a failure here never sinks the legacy pass.
-  let enhanced = null;
+  let feedListPass = null;
   if (ENHANCED && !LIMIT) {
-    try { enhanced = await runEnhancedFeeds({ byCategory, byMerchant }); }
-    catch (e) { console.warn('[awin] enhanced pass FAILED (legacy ingest unaffected):', e.message); }
+    try { feedListPass = await runFeedListFeeds({ byCategory, byMerchant }); }
+    catch (e) { console.warn('[awin] feed-list pass FAILED (cid ingest unaffected):', e.message); }
   }
   let excludedLegacy = 0;
-  if (enhanced) {
-    if (enhanced.advertiserIds.size) {
-      // Dual-format advertisers: the Google feed is the fresher source — their
-      // legacy rows are dropped so the two id namespaces never both publish.
+  if (feedListPass) {
+    if (feedListPass.advertiserIds.size) {
+      // Advertisers consumed per-fid (both formats) are dropped from the cid
+      // pass so the two acquisition paths never double-publish one advertiser.
       const before = legacyRows.length;
-      legacyRows = legacyRows.filter((r) => !enhanced.advertiserIds.has(String(r.merchant_id || '')));
+      legacyRows = legacyRows.filter((r) => !feedListPass.advertiserIds.has(String(r.merchant_id || '')));
       excludedLegacy = before - legacyRows.length;
       kept -= excludedLegacy;
     }
-    kept += enhanced.rows.length;
-    for (const f of enhanced.perFeed) {
-      console.log(`[awin] enhanced ${f.advertiser} (${f.feed}): scanned ${f.scanned}, kept ${f.kept}${f.error ? ` — ERROR: ${f.error}` : ''}`);
+    kept += feedListPass.rows.length + feedListPass.enhancedRows.length;
+    for (const f of feedListPass.perFeed) {
+      console.log(`[awin] feed ${f.advertiser} (${f.feed}, ${f.format}): scanned ${f.scanned}, kept ${f.kept}${f.error ? ` — ERROR: ${f.error}` : ''}`);
     }
-    if (excludedLegacy) console.log(`[awin] enhanced: skipped ${excludedLegacy} legacy rows from dual-format advertisers`);
-    if (enhanced.unmapped.size) {
+    if (excludedLegacy) console.log(`[awin] feed-list pass: skipped ${excludedLegacy} cid rows from per-fid advertisers`);
+    if (feedListPass.unmapped.size) {
       console.log('[awin] enhanced: UNMAPPED google categories (fell back):',
-        [...enhanced.unmapped.entries()].map(([p, n]) => `${p} ×${n}`).join(' | '));
+        [...feedListPass.unmapped.entries()].map(([p, n]) => `${p} ×${n}`).join(' | '));
+    }
+    // Per-fid scan counts join the cid pass's (watchdog evidence for both paths).
+    for (const [mid, n] of feedListPass.legacyScannedById) {
+      legacyScannedById.set(mid, (legacyScannedById.get(mid) || 0) + n);
     }
   }
-  const enhancedRows = enhanced ? enhanced.rows : [];
+  const enhancedRows = feedListPass ? feedListPass.enhancedRows : [];
 
   // Upsert in batches AFTER parsing (the parser callback is synchronous).
   if (DO_UPSERT) {
-    const all = [...legacyRows, ...enhancedRows];
+    // Dedupe by product_id: advertisers sometimes list the SAME feed twice
+    // (Lyra Pet: 102589+104303) — duplicate keys in one PostgREST payload 400.
+    const all = [...new Map(
+      [...legacyRows, ...(feedListPass ? feedListPass.rows : []), ...enhancedRows]
+        .map((r) => [r.product_id, r]),
+    ).values()];
     // Preserve verified prices for products we already have; the feed price is
     // only used for brand-new products (until the verifier first checks them).
     const existing = await fetchExistingPrices();
@@ -562,8 +626,8 @@ async function fetchExistingPrices() {
             ranAt: new Date().toISOString(),
             scanned, kept, upserted, excludedLegacy,
             hiddenNew: hiddenNew.length,
-            enhanced: enhanced ? enhanced.perFeed : null,
-            enhancedUnmapped: enhanced ? Object.fromEntries(enhanced.unmapped) : null,
+            feeds: feedListPass ? feedListPass.perFeed : null,
+            enhancedUnmapped: feedListPass ? Object.fromEntries(feedListPass.unmapped) : null,
             legacyScannedById: Object.fromEntries(legacyScannedById),
           },
         }]),
