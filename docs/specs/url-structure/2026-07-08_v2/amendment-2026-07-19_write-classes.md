@@ -16,7 +16,7 @@ Writers are split into two classes:
 | **Liveness-bearing** | `sale_price`, `original_price`, `discount_percent`, availability/visibility (`hidden`, and `status` transitions once M2 lands via the trigger) | **MUST send fresh `last_updated`** (unchanged from the original contract) |
 | **Content-only** | `gallery`, `description`, `description_html`, `feed_attrs`, rating/provenance fields, `last_verified`, capture-outcome metadata | **MUST NOT send `last_updated`** |
 
-A single PATCH containing both classes counts as liveness-bearing (it carries a price/availability confirmation) and bumps `last_updated`.
+A single PATCH containing both classes counts as liveness-bearing (it carries a price/availability confirmation) and bumps `last_updated`. **Clarification (2026-07-19):** a purely content-bearing PATCH on a VISIBLE row the same fetch verified alive also counts as liveness — the fetch itself confirmed availability, and the row would otherwise have received the heartbeat touch; only rows that STAY HIDDEN are strictly content-class.
 
 Unchanged and re-affirmed: no writer ever sends `status`, `expired_at`, or `content_changed_at`; the expiry cron and `update_historical_lows_batch` never touch `last_updated`.
 
@@ -24,4 +24,4 @@ Interpretation note: this *strengthens* the discriminator's semantics — `last_
 
 ## Enforcement
 
-EC-21 of the PDP full-content spec: static grep (no writer sends `status`/`expired_at`/`content_changed_at`) + runtime check that rows touched content-only by the latest verify run did **not** advance `last_updated`, while liveness-changed rows did.
+EC-21 of the PDP full-content spec: in-process static check (the write-shape builders — patchBody/toRow/normalizers — never emit `status`/`expired_at`/`content_changed_at`; content-class bodies never carry `last_updated`) + runtime check that hidden rows captured by the latest verify run did **not** advance `last_updated` (non-vacuous cohort required post-soak).

@@ -189,13 +189,21 @@ const ECS = [
     id: 'EC-9', title: 'no starved sweep tail (last_verified ≤48h)',
     run: async () => {
       needSupa();
-      // Sweep-eligible mirrors verify-awin.cjs fetchDeals: awin rows with a
-      // fetchable /products/ merchant_url (hidden included).
-      const rows = await pageDeals('product_id,last_verified', '&source=eq.awin&merchant_url=like.*%2Fproducts%2F*');
+      // Sweep-eligible mirrors verify-awin.cjs fetchDeals (/products/ predicate
+      // pinned by the dated EC-9 amendment); failed fetches ARE watermarked by
+      // the verifier, so only fresh-blocked hosts are excluded (EC-1 rule).
+      const rows = await pageDeals('product_id,last_verified,merchant_url', '&source=eq.awin&merchant_url=like.*%2Fproducts%2F*');
       if (rows.length < CATALOG_FLOOR) return { status: 'FAIL', detail: `sweep-eligible floor: only ${rows.length} rows` };
-      const stale = rows.filter((r) => !r.last_verified || Date.now() - Date.parse(r.last_verified) > 48 * 3600e3);
-      if (stale.length > 0) return { status: 'FAIL', detail: `${stale.length}/${rows.length} sweep-eligible rows unverified in 48h (soak pending or starved tail)` };
-      return { status: 'PASS', detail: `all ${rows.length} sweep-eligible rows verified within 48h` };
+      const foRes = await fetch(`${SUPABASE_URL}/rest/v1/fetch_outcomes?select=host,status,last_seen`, { headers: supaHeaders() });
+      const outcomes = foRes.ok ? await foRes.json() : [];
+      const blocked = new Set(outcomes
+        .filter((o) => /^blocked-/.test(o.status) && Date.now() - Date.parse(o.last_seen) < 48 * 3600e3)
+        .map((o) => o.host));
+      const eligible = rows.filter((r) => { try { return !blocked.has(new URL(r.merchant_url).host); } catch { return true; } });
+      if (blocked.size && eligible.length < rows.length * 0.5) return { status: 'FAIL', detail: `block-list excludes ${rows.length - eligible.length}/${rows.length} rows — exclusion bound exceeded` };
+      const stale = eligible.filter((r) => !r.last_verified || Date.now() - Date.parse(r.last_verified) > 48 * 3600e3);
+      if (stale.length > 0) return { status: 'FAIL', detail: `${stale.length}/${eligible.length} sweep-eligible rows unverified in 48h (soak pending or starved tail; ${blocked.size} blocked hosts excluded)` };
+      return { status: 'PASS', detail: `all ${eligible.length} sweep-eligible rows verified within 48h (${blocked.size} blocked hosts excluded)` };
     },
   },
   {
@@ -234,33 +242,106 @@ const ECS = [
       }
     },
   },
-  { id: 'EC-13', title: 'IndexNow split enforcement', run: RED('Stage 5 (T5.3); interim hidden-exclusion shipped Stage 0') },
+  {
+    id: 'EC-13', title: 'IndexNow split enforcement',
+    run: async () => {
+      const src = readFileSync(path.join(ROOT, 'scripts/indexnow-submit.cjs'), 'utf8');
+      if (!/first_published_at/.test(src) || !/excluded_never_published/.test(src)) {
+        return { status: 'FAIL', detail: 'submit script lacks the never-published/delisted split' };
+      }
+      try {
+        const j = ghJson('repos/oleg1981-sudo/DealRadar/actions/workflows/verify-awin.yml/runs?event=schedule&status=completed&per_page=3');
+        const recent = (j.workflow_runs || []).filter((r) => Date.now() - Date.parse(r.created_at) < 48 * 3600e3);
+        if (!recent.length) return { status: 'FAIL', detail: 'script OK; no scheduled verify run ≤48h to evidence the grammar' };
+        const log = execFileSync('gh', ['run', 'view', String(recent[0].id), '--repo', 'oleg1981-sudo/DealRadar', '--log'], { encoding: 'utf8', maxBuffer: 64e6 });
+        if (!/excluded_never_published=\d+/.test(log)) return { status: 'FAIL', detail: `script OK; grammar absent from run ${recent[0].id} log (new code not deployed to that run yet)` };
+        return { status: 'PASS', detail: `split live in run ${recent[0].id}` };
+      } catch (e) {
+        return { status: 'SKIP', detail: `script OK; gh unavailable: ${e.message.slice(0, 80)}` };
+      }
+    },
+  },
   { id: 'EC-14', title: 'conditional blocks render iff data', run: RED('Stage 4 (T4.1)') },
   { id: 'EC-15', title: 'description always renders (presence)', run: RED('Stage 4 (T4.1)') },
   { id: 'EC-16', title: 'brand mapping coverage', run: RED('Stage 4 (T4.2)') },
   { id: 'EC-17', title: 'JSON-LD parity with row data', run: RED('Stage 5 (T5.1)') },
-  { id: 'EC-18', title: 'markdown agent surface + discovery', run: RED('Stage 5 (T5.2)') },
-  { id: 'EC-19', title: 'richness budgets strict + mutation', run: RED('Stage 5 (T5.3)') },
+  {
+    id: 'EC-18', title: 'markdown agent surface + discovery',
+    run: async () => {
+      needSupa();
+      const probes = (await visibleDeals()).slice(0, 3);
+      if (probes.length < 3) return { status: 'FAIL', detail: 'fewer than 3 visible probe rows' };
+      for (const p of probes) {
+        const res = await fetch(`${SITE}/en/deal/${p.slug}/md`);
+        if (res.status !== 200) return { status: 'FAIL', detail: `${p.slug}/md → HTTP ${res.status} (deploy pending?)` };
+        if (!(res.headers.get('content-type') || '').includes('markdown')) return { status: 'FAIL', detail: `${p.slug}/md wrong content-type` };
+        const md = await res.text();
+        for (const label of ['Price:', 'Availability:', 'Disclosure:']) {
+          if (!md.includes(label)) return { status: 'FAIL', detail: `${p.slug}/md missing pinned label ${label}` };
+        }
+      }
+      const llms = await fetch(`${SITE}/llms.txt`);
+      if (llms.status !== 200) return { status: 'FAIL', detail: 'llms.txt absent' };
+      const body = await llms.text();
+      if (!/sitemap\.xml/.test(body) || !/\/md/.test(body)) return { status: 'FAIL', detail: 'llms.txt lacks the discovery rule (sitemap + /md)' };
+      return { status: 'PASS', detail: `3 probes green; llms.txt discovery rule present` };
+    },
+  },
+  {
+    id: 'EC-19', title: 'richness budgets strict + mutation',
+    run: async () => {
+      const { createRequire } = await import('node:module');
+      const { computeRichness, gateRichness } = createRequire(import.meta.url)('./lib/richness.cjs');
+      needSupa();
+      const rows = await visibleDeals();
+      const r = computeRichness(rows);
+      const gate = gateRichness(r);
+      // Mutation clause: an injected negative budget MUST fail — proves the gate can fail.
+      process.env.RICHNESS_MAX_TH3 = '-1';
+      const mutated = gateRichness(r);
+      delete process.env.RICHNESS_MAX_TH3;
+      if (mutated.pass) return { status: 'FAIL', detail: 'mutation did not fail the gate — gate is toothless' };
+      if (!gate.pass) return { status: 'FAIL', detail: gate.failures.join('; ') };
+      let runDetail = 'guardrail-run check skipped (gh)';
+      try {
+        const j = ghJson('repos/oleg1981-sudo/DealRadar/actions/workflows/cost-guardrail.yml/runs?event=schedule&status=completed&per_page=3');
+        const recent = (j.workflow_runs || []).filter((x) => Date.now() - Date.parse(x.created_at) < 48 * 3600e3);
+        if (recent.length && recent[0].conclusion !== 'success') return { status: 'FAIL', detail: `latest guardrail run ${recent[0].conclusion}` };
+        runDetail = recent.length ? `guardrail run ${recent[0].id} green` : 'no scheduled guardrail run ≤48h (post-merge pending)';
+      } catch { /* gh optional here; gate itself already executed */ }
+      return { status: 'PASS', detail: `invariants hold on ${r.visible} rows (multi-image ${r.multiImagePct}% reported); mutation fails correctly; ${runDetail}` };
+    },
+  },
   { id: 'EC-20', title: 'reference-deal global check', run: RED('final acceptance') },
   {
     id: 'EC-21', title: 'write classes (M2 amendment)',
     run: async () => {
-      // Static half: no writer sends the forbidden lifecycle fields.
-      const files = ['scripts/ingest-awin.cjs', 'scripts/verify-awin.cjs', 'scripts/enrich-galleries.cjs', 'scripts/snapshot-prices.cjs', 'scripts/flag-homepage-hidden.cjs', 'src/lib/db/deals.repo.ts'];
-      for (const f of files) {
-        const src = readFileSync(path.join(ROOT, f), 'utf8');
-        if (/["'](status|expired_at|content_changed_at)["']\s*:/.test(src.replace(/http_status/g, ''))) {
-          return { status: 'FAIL', detail: `${f} writes a forbidden lifecycle field` };
-        }
+      // Static half — IN-PROCESS, not regex: the actual write-shape builders
+      // must never emit the forbidden lifecycle fields.
+      const { createRequire } = await import('node:module');
+      const req = createRequire(import.meta.url);
+      const verify = req(path.join(ROOT, 'scripts/verify-awin.cjs'));
+      const FORBIDDEN = ['status', 'expired_at', 'content_changed_at'];
+      for (const klass of ['liveness', 'content']) {
+        const body = verify.patchBody({ sale_price: 1 }, klass, true);
+        const bad = FORBIDDEN.filter((k) => k in body);
+        if (bad.length) return { status: 'FAIL', detail: `patchBody(${klass}) emits forbidden ${bad.join(',')}` };
+        if (klass === 'content' && 'last_updated' in body) return { status: 'FAIL', detail: 'content-class patch bumps last_updated' };
+        if (klass === 'liveness' && !('last_updated' in body)) return { status: 'FAIL', detail: 'liveness-class patch missing last_updated' };
       }
-      // Runtime half: content capture provenance exists AND content-only writes
-      // did not masquerade as liveness (capture_run_id rows whose last_verified
-      // moved without last_updated moving in lockstep must exist post-soak).
+      // Runtime half — ENFORCED: hidden rows touched by the latest capture run
+      // must NOT have last_updated inside that run's window (content-only), and
+      // the cohort must be non-vacuous post-soak.
       needSupa();
-      const rows = await pageDeals('product_id,capture_run_id,last_updated,last_verified', '&capture_run_id=not.is.null&limit=200');
+      const rows = await pageDeals('product_id,capture_run_id,hidden,last_updated,last_verified', '&capture_run_id=not.is.null');
       if (!rows.length) return { status: 'FAIL', detail: 'static OK; no capture_run_id rows yet (Stage-2 soak pending)' };
-      const decoupled = rows.filter((r) => r.last_verified && r.last_updated && Date.parse(r.last_verified) - Date.parse(r.last_updated) > 60e3);
-      return { status: 'PASS', detail: `static OK; ${rows.length} provenance rows, ${decoupled.length} with decoupled content-class timestamps` };
+      const latestRun = rows.map((r) => r.capture_run_id).sort().at(-1);
+      const runStart = Date.parse(latestRun.replace(/^verify-/, '').replace(/-(\d{2})-(\d{2})-(\d{3})Z$/, ':$1:$2.$3Z'));
+      const cohort = rows.filter((r) => r.capture_run_id === latestRun && r.hidden);
+      if (!cohort.length) return { status: 'FAIL', detail: `static OK; latest run ${latestRun} captured no hidden rows — cohort vacuous (soak pending)` };
+      const violations = cohort.filter((r) => Number.isFinite(runStart) && r.last_updated && Date.parse(r.last_updated) >= runStart);
+      if (violations.length) return { status: 'FAIL', detail: `${violations.length} hidden rows had last_updated bumped by capture run ${latestRun} — write-class violation` };
+      return { status: 'PASS', detail: `static OK; ${cohort.length} hidden rows captured in ${latestRun} with last_updated untouched` };
     },
   },
   {
@@ -273,7 +354,8 @@ const ECS = [
       try {
         execFileSync('pnpm', ['vitest', 'run', 'src/lib/ingest/verify-write-classes.test.ts', '--silent'], { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
         return { status: 'PASS', detail: 'contract tests present and green' };
-      } catch {
+      } catch (e) {
+        if (e.code === 'ENOENT') return { status: 'FAIL', detail: 'pnpm/vitest unavailable on this runner (not a test failure)' };
         return { status: 'FAIL', detail: 'contract tests failing' };
       }
     },

@@ -1,0 +1,28 @@
+# DealRadar — machine-readable surfaces (llms.txt)
+
+DealRadar is a price-deals catalog (verified genuine discounts, DE market).
+
+## Agent markdown surface
+
+Every deal page has a markdown twin with pinned field labels
+(Price:, Was:, Availability:, Shop:, Brand:, GTIN:, MPN:, Attributes, Images,
+Disclosure:):
+
+- HTML:     https://dealradar.me/en/deal/<slug>
+- Markdown: https://dealradar.me/en/deal/<slug>/md
+
+## Discovery
+
+The full enumerable set of deal URLs is the sitemap index:
+https://dealradar.me/sitemap.xml — append `/md` to any listed deal URL for its
+markdown document. Hidden/expired deals answer 200 with a noindex signal.
+
+## Structured data
+
+Every deal page embeds schema.org Product JSON-LD (image array, offers,
+gtin/mpn/sku, additionalProperty from real feed attributes only — nothing
+fabricated).
+
+## Contact
+
+Imprint: https://dealradar.me/en/imprint

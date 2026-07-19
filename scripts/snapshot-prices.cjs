@@ -1,12 +1,16 @@
 // Daily price snapshot — records the REAL price history the cardiogram shows.
 //
-// Writes one `price_history` row per visible deal per UTC day. Runs twice a day
+// Writes one `price_history` row per deal per UTC day. Runs twice a day
 // from the workflows, and both runs are idempotent upserts on (product_id, day):
 //   - after the 03:00 UTC feed ingest  → snapshots feed prices (covers new deals)
 //   - after the 05:00 UTC live verify  → same-day upsert, so the live-verified
 //     price overwrites the feed price and wins the day
-// Hidden deals are skipped: sold-out / no-discount rows have no meaningful
-// "today's price". History rows are never deleted — a deal that disappears
+// Covers ALL rows, hidden included [FR-1.5, docs/specs/pdp-full-content]:
+// hidden rows' snapshots are the price baseline the price-drop promotion
+// route (Q-2) depends on. Growth math recorded in the spec todo: ~33k rows/day
+// ≈ 1M/month; retention deliberately unlimited (history IS the product value),
+// budget threshold to be revisited when check-budgets trips.
+// History rows are never deleted — a deal that disappears
 // keeps its recorded past, and the UI simply shows the days that exist.
 //
 // Dependency-free (Node built-ins + Supabase REST), like its siblings.
@@ -44,7 +48,7 @@ async function fetchVisibleDeals() {
   // PDP price-history depth depend on. The name is historical — this now
   // sweeps ALL deals.
   for (let from = 0; ; from += 1000) {
-    const r = await fetch(`${BASE}/rest/v1/deals?select=${cols}`,
+    const r = await fetch(`${BASE}/rest/v1/deals?select=${cols}&order=product_id.asc`,
       { headers: { ...SUPA, Range: `${from}-${from + 999}` } });
     if (!r.ok) throw new Error(`read deals failed: HTTP ${r.status} ${await r.text()}`);
     const batch = await r.json();
@@ -68,7 +72,7 @@ async function upsertBatch(rows) {
   const now = new Date();
   const day = now.toISOString().slice(0, 10); // UTC day — both daily runs land on the same date
   const deals = await fetchVisibleDeals();
-  console.log(`[snapshot] ${deals.length} visible deals → price_history day=${day} (apply=${APPLY})`);
+  console.log(`[snapshot] covered=${deals.length} total=${deals.length} deals → price_history day=${day} (apply=${APPLY})`);
 
   const rows = deals.map((d) => ({
     product_id: d.product_id,

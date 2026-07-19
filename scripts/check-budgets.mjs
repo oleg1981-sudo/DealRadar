@@ -178,11 +178,39 @@ function checkVertexTokenSpend() {
   );
 }
 
-console.log('[budgets] cost guardrail — v3.1 NFR-COST-1/2/3');
+// ── 5. PDP richness invariants [FR-5.3/EC-19, docs/specs/pdp-full-content] ──
+// TH-1..TH-3 via the SAME shared module the acceptance harness uses
+// (scripts/lib/richness.cjs) — PostgREST, no psql needed.
+async function checkRichness() {
+  const NAME = 'PDP richness invariants (TH-1 image / TH-2 title / TH-3 description)';
+  const url = (process.env.SUPABASE_URL || '').replace(/\/+$/, '');
+  const srk = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+  if (!url || !srk) return stub(NAME, 'SUPABASE_URL/SUPABASE_SERVICE_ROLE_KEY not set');
+  const { createRequire } = await import('node:module');
+  const { computeRichness, gateRichness } = createRequire(import.meta.url)('./lib/richness.cjs');
+  const rows = [];
+  try {
+    for (let from = 0; ; from += 1000) {
+      const res = await fetch(`${url}/rest/v1/deals?hidden=eq.false&select=product_name,description,description_html,gallery,image_url`,
+        { headers: { apikey: srk, Authorization: `Bearer ${srk}`, Range: `${from}-${from + 999}` } });
+      if (!res.ok) return stub(NAME, `PostgREST ${res.status}`);
+      const page = await res.json();
+      rows.push(...page);
+      if (page.length < 1000) break;
+    }
+  } catch (e) { return stub(NAME, `fetch failed: ${e.message}`); }
+  const r = computeRichness(rows);
+  const gate = gateRichness(r);
+  if (!gate.pass) return breach(NAME, gate.failures.join('; '));
+  pass(NAME, `${r.visible} visible; multi-image ${r.multiImagePct}% (reported)`);
+}
+
+console.log('[budgets] cost guardrail — v3.1 NFR-COST-1/2/3 + PDP richness');
 checkDbRowCount();
 checkAwinEgress();
 checkGhActionsMinutes();
 checkVertexTokenSpend();
+await checkRichness();
 
 console.log(`[budgets] ${breaches} breach(es), ${unmeasured} unmeasured check(s).`);
 // Strict mode [FR-5.3/FR-3.4, docs/specs/pdp-full-content]: in acceptance/CI

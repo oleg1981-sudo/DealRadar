@@ -34,7 +34,8 @@ export function DealDescription({ html, text, title }: Props) {
   const paragraphs = !safe && text ? splitPlainDescription(text) : [];
   if (!safe && paragraphs.length === 0) return null;
   return (
-    <section className="mt-10 border-t border-zinc-100 pt-8">
+    // data-block: stable machine marker for the acceptance harness [FR-4.1/EC-15].
+    <section data-block="description" className="mt-10 border-t border-zinc-100 pt-8">
       <h2 className="mb-4 text-lg font-semibold text-zinc-900">{title}</h2>
       <div className="max-w-3xl">
         {safe ? (

@@ -1,0 +1,28 @@
+{
+  "_doc": "FR-4.3 census-seeded brand normalization (EC-16, docs/specs/pdp-full-content). Seeded from the 2026-07-19 prod census (999 distinct (shop_name, brand) pairs: SELECT shop_name, brand, count(*) FROM deals GROUP BY 1,2). `map` lists every polluted alias observed — matched by brand-normalize.cjs as the WHOLE value, case-insensitively; no substring/token heuristics, unknown values pass through unchanged (a heuristic can't tell 'Welax DE' (polluted) from 'Don Dandrea Deutschland AG' (a legal name)). `exceptions` are values that pattern-match pollution (DE/EU suffix, country word, lowercase styling, shop-name echo) but are verified-legit distinct brands — never map these. Corporate manufacturer names carrying a legal-form token (GmbH, AG, KG, e.K., e.U., Inc.) — the entire Aliva Apotheke catalog — are legit by construction and belong in neither list. Re-run the census after onboarding a new advertiser and extend the map.",
+  "map": {
+    "Renogy DE": "Renogy",
+    "ROCKBROS-DE": "ROCKBROS",
+    "ROCKBROS-EU": "ROCKBROS",
+    "ROCKBORS": "ROCKBROS",
+    "sunshare": "Sunshare",
+    "Sunshare Deutschland": "Sunshare",
+    "aosu | SECURITY": "aosu",
+    "Welax DE": "Welax",
+    "ANTHBOT-DE": "ANTHBOT",
+    "OMIDI": "Omidi"
+  },
+  "exceptions": [
+    "aosu",
+    "GSMnet",
+    "Sunshine",
+    "ROAD TO SKY",
+    "Qunature",
+    "TVI",
+    "Velonuts",
+    "MAGPED",
+    "Don Dandrea Deutschland AG",
+    "Volopharm GmbH Deutschland",
+    "Lansinoh Laboratories Inc. Niederlassung Deutschland"
+  ]
+}

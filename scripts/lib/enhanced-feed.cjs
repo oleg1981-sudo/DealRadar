@@ -14,8 +14,12 @@
 // `awin:{aw_product_id}` rows. This namespace is PERMANENT (public_id will be
 // an md5 of it once M2 lands); never rename it.
 //
-// Dependency-free (Node built-ins only), same contract as description.cjs.
+// Dependency-free (Node built-ins only), same contract as description.cjs —
+// brand-normalize.cjs honors the same contract, so requiring it keeps this
+// module install-free on the ingest runner.
 'use strict';
+
+const { normalizeBrand } = require('./brand-normalize.cjs');
 
 const PRICE_RE = /^(\d+(?:[.,]\d+)?) ?([A-Z]{3})$/;
 
@@ -138,7 +142,7 @@ function normalizeEnhancedRow(g, ctx) {
     discount_percent: discountPercent,
     currency: price.currency,
     category: googleCat ?? ctx.fallbackCategory(g('title')),
-    brand: g('brand').trim() || null,
+    brand: normalizeBrand(g('brand').trim()) || null, // census-seeded alias → canonical (FR-4.3)
     image_url: g('image_link').trim() || null,
     gallery: gallery.length ? gallery : null,
     description: ctx.feedDescription(g('description')),

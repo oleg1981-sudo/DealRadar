@@ -55,8 +55,8 @@ const APPLY = has('--apply');
 const LIMIT = parseInt(opt('--limit', '0'), 10) || 0;
 const DELAY_MS = parseInt(opt('--delay', '1000'), 10) || 1000;  // pacing per host
 const ABANDON_AFTER = 5;                                        // consecutive blocks on a host -> skip the rest
-// Soft wall-clock budget: the sweep (~33k rows, several multi-thousand-page
-// hosts) can never finish exhaustively in one run — stop CLEANLY at the budget
+// Soft wall-clock budget: the fetchable sweep (~10k /products/ rows; several
+// multi-thousand-page hosts) can never reliably finish exhaustively in one run — stop CLEANLY at the budget
 // instead of getting timeout-cancelled (patches flush incrementally; the
 // stalest-first order below rotates coverage across runs).
 const MAX_MINUTES = parseInt(opt('--max-minutes', '120'), 10) || 0;
@@ -80,7 +80,7 @@ const HEADERS = {
   'Accept-Language': 'de-DE,de;q=0.9,en;q=0.8',
 };
 
-loadEnvLocal();
+if (require.main === module) loadEnvLocal();
 // Tolerate a SUPABASE_URL secret that's missing the scheme or has a trailing slash.
 function normalizeBaseUrl(u) {
   u = (u || '').trim();
@@ -178,9 +178,9 @@ async function liveState(deal) {
 
   // Classify every failed attempt so the caller can tell a REMOVED product
   // (all attempts 404 → hide it) from a flaky/blocking shop (skip, never hide).
-  let blocked = false, any404 = false, anyTransient = false;
+  let blocked = false, blockedStatus = null, any404 = false, anyTransient = false;
   const note = (r) => {
-    if (r.status === 429 || r.status === 403) blocked = true;
+    if (r.status === 429 || r.status === 403) { blocked = true; blockedStatus = r.status; }
     else if (r.status === 404) any404 = true;
     else anyTransient = true; // network error, 5xx, bad JSON — assume temporary
   };
@@ -207,7 +207,7 @@ async function liveState(deal) {
       note(jn);
     }
   }
-  if (blocked) return { error: 'blocked', blocked: true };
+  if (blocked) return { error: 'blocked', blocked: true, httpStatus: blockedStatus };
   if (anyTransient) return { error: 'unreachable' };
   if (any404) return { error: 'gone' };
   return { error: 'unreachable' };
@@ -281,8 +281,10 @@ async function fetchDeals() {
   for (let from = 0; ; from += 1000) {
     let r = await fetch(`${BASE}/rest/v1/deals?${filter}&select=${colSets[setIdx]}${order}`,
       { headers: { ...SUPA, Range: `${from}-${from + 999}` } });
-    while (!r.ok && from === 0 && setIdx < colSets.length - 1) {
+    while (!r.ok && r.status === 400 && from === 0 && setIdx < colSets.length - 1) {
       // Unknown select column (or missing last_verified in the order) — degrade.
+      // ONLY on 400: a transient 5xx/429 must fail the run loudly, not silently
+      // disable a whole write class for the day.
       setIdx++;
       if (setIdx === 1) { contentCols = false; console.error('[verify] Stage-1 columns missing — gallery capture + stalest-first disabled this run (run pnpm db:migrate)'); }
       if (setIdx === 2) { captureHtml = false; console.error('[verify] description_html column missing — content capture disabled this run'); }
@@ -418,7 +420,7 @@ function noteHost(host, ok, status) {
 }
 
 async function persistFetchOutcomes() {
-  if (!APPLY || !contentCols || hostStats.size === 0) return;
+  if (!APPLY || hostStats.size === 0) return;
   const now = new Date().toISOString();
   const rows = [...hostStats.entries()].map(([host, s]) => ({
     host,
@@ -453,7 +455,7 @@ if (IS_MAIN) (async () => {
   console.log(`[verify] checking ${deals.length} deals across ${byHost.size} shops (apply=${APPLY}, ${DELAY_MS}ms/host, run=${RUN_ID})…`);
 
   const reasons = {}, errKinds = {};
-  let ok = 0, errors = 0, done = 0, hidden = 0, unhidden = 0, priceUpdated = 0, htmlCaptured = 0, galleriesCaptured = 0;
+  let ok = 0, errors = 0, skippedRows = 0, done = 0, hidden = 0, unhidden = 0, priceUpdated = 0, htmlCaptured = 0, galleriesCaptured = 0;
   const samples = [];
   let stopDueToDeadline = false;
 
@@ -478,7 +480,7 @@ if (IS_MAIN) (async () => {
         errKinds[live.error] = (errKinds[live.error] || 0) + 1;
         continue;
       }
-      noteHost(host, !live.error || live.error === 'gone', live.blocked ? (live.error === 'blocked' ? 429 : 403) : live.error === 'gone' ? 404 : null);
+      noteHost(host, !live.error || live.error === 'gone', live.httpStatus ?? null);
       if (live.error === 'gone') {
         // Product page removed at the shop (hard 404, not a transient error).
         consec = 0;
@@ -494,6 +496,10 @@ if (IS_MAIN) (async () => {
         errors++;
         errKinds[live.error] = (errKinds[live.error] || 0) + 1;
         consec = live.blocked ? consec + 1 : 0;
+        // Watermark the attempt (content-class; never bumps last_updated) so
+        // stalest-first rotation moves past persistently-failing rows instead
+        // of re-spending budget on them at the head of every run [FR-3.2].
+        queueVerifiedOnly(deal.product_id);
       } else {
         consec = 0;
         // Content capture for EVERY fetched row [FR-1.2] — hidden included.
@@ -558,9 +564,10 @@ if (IS_MAIN) (async () => {
     }
     const skipped = list.length - i;
     if (skipped > 0) {
-      errors += skipped;
-      errKinds['skipped-blocked'] = (errKinds['skipped-blocked'] || 0) + skipped;
-      console.error(`\n[verify] ${host} is blocking automated checks — skipped ${skipped} (covered by feed + freshness note)`);
+      skippedRows += skipped;
+      const cause = (stopDueToDeadline || overBudget()) ? 'skipped-budget' : 'skipped-blocked';
+      errKinds[cause] = (errKinds[cause] || 0) + skipped;
+      if (cause === 'skipped-blocked') console.error(`\n[verify] ${host} is blocking automated checks — skipped ${skipped} (covered by feed + freshness note)`);
     }
   }));
   if (process.stdout.isTTY) process.stdout.write('\n');
@@ -576,7 +583,7 @@ if (IS_MAIN) (async () => {
   console.log(`  un-hidden (back in stock): ${unhidden}`);
   console.log(`  merchant descriptions captured/updated: ${htmlCaptured}${captureHtml ? '' : ' (capture disabled — column missing)'}`);
   console.log(`  galleries captured/topped-up: ${galleriesCaptured}${contentCols ? '' : ' (disabled — column missing)'}`);
-  console.log(`  errors/skipped: ${errors} ${JSON.stringify(errKinds)}`);
+  console.log(`  errors: ${errors}, skipped: ${skippedRows} ${JSON.stringify(errKinds)}`);
   if (samples.length) { console.log('  sample price updates:'); samples.forEach((s) => console.log(`    ${s}`)); }
 
   if (!APPLY) {
@@ -592,9 +599,9 @@ if (IS_MAIN) (async () => {
   console.log(`[verify] patches committed=${patchesCommitted} attempted=${patchesAttempted}`);
   console.log(`[verify] applied changes and confirmed unchanged.`);
 
-  // High-error exit threshold check: exit non-zero if errors/done > 80%
-  const totalProcessed = done + errors;
-  const errorRate = totalProcessed > 0 ? (errors / totalProcessed) : 0;
+  // High-error exit gate: fetch failures over rows actually fetched (done
+  // already includes errored rows — no double count); budget-skips excluded.
+  const errorRate = done > 0 ? (errors / done) : 0;
   if (errorRate > 0.80) {
     console.error(`\n[verify] FAILED: error rate too high: ${(errorRate * 100).toFixed(1)}%`);
     process.exit(1);

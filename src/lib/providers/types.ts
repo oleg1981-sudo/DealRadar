@@ -47,6 +47,16 @@ export interface NormalizedDeal {
   descriptionHtml?: string | null;
   /** Direct merchant product URL (not the affiliate link) — for live price/stock verification. */
   merchantUrl?: string | null;
+  /**
+   * Non-empty unmapped feed columns [FR-2.1] (colour, delivery_time, energy
+   * class, …) — drives the PDP attributes/shipping blocks and JSON-LD
+   * additionalProperty. Script-owned (ingest); never fabricated.
+   */
+  feedAttrs?: Record<string, string> | null;
+  /** Merchant-page rating [Q-5] — rendered/emitted ONLY when ratingSource is set (provenance). */
+  ratingValue?: number | null;
+  ratingCount?: number | null;
+  ratingSource?: string | null;
   country: CountryCode;
   city: string | null;
   /** True for every affiliate-derived deal — drives the "sponsored" badge. */

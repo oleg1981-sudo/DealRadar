@@ -87,14 +87,17 @@ async function fetchWithRetry(url, init) {
   }
 }
 
+let hasFirstPublished = true; // graceful degrade if the Stage-1 migration is absent
+
 async function changedDeals(sinceIso) {
   if (!SUPABASE_URL || !SRK) throw new Error('SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required');
   const rows = [];
   const PAGE = 1000; // PostgREST max-rows cap — page explicitly
+  let cols = 'slug,hidden,last_updated,first_published_at';
   for (let from = 0; ; from += PAGE) {
     const filter = sinceIso ? `&last_updated=gte.${encodeURIComponent(sinceIso)}` : '';
-    const res = await fetchWithRetry(
-      `${SUPABASE_URL}/rest/v1/deals?select=slug,hidden,last_updated${filter}&order=slug.asc`,
+    let res = await fetchWithRetry(
+      `${SUPABASE_URL}/rest/v1/deals?select=${cols}${filter}&order=slug.asc`,
       {
         headers: {
           apikey: SRK,
@@ -103,6 +106,20 @@ async function changedDeals(sinceIso) {
         },
       },
     );
+    if (!res.ok && from === 0 && hasFirstPublished) {
+      hasFirstPublished = false;
+      cols = 'slug,hidden,last_updated';
+      res = await fetchWithRetry(
+        `${SUPABASE_URL}/rest/v1/deals?select=${cols}${filter}&order=slug.asc`,
+        {
+          headers: {
+            apikey: SRK,
+            Authorization: `Bearer ${SRK}`,
+            Range: `${from}-${from + PAGE - 1}`,
+          },
+        },
+      );
+    }
     if (!res.ok) throw new Error(`PostgREST ${res.status}: ${(await res.text()).slice(0, 200)}`);
     const page = await res.json();
     rows.push(...page);
@@ -144,12 +161,16 @@ async function submit(urls) {
   const sinceIso = all ? null : new Date(Date.now() - hours * 3600e3).toISOString();
 
   const rows = await changedDeals(sinceIso);
-  // Interim FR-3.6: hidden rows (never-published + delisted alike) are not
-  // submitted — their PDPs serve 200+noindex, so a ping either wastes quota
-  // (never-published) or is premature (delisted split lands in Stage 5.3).
-  const visibleRows = rows.filter((r) => !r.hidden);
-  const excludedHidden = rows.length - visibleRows.length;
-  const urls = visibleRows.map((r) => `${SITE}/en/deal/${r.slug}`);
+  // FR-3.6 split (full, Stage 5.3): NEVER-PUBLISHED rows (hidden since insert,
+  // first_published_at NULL) are never submitted — nothing to refresh, thin
+  // pages would only waste quota. DELISTED rows (hidden but once published)
+  // ARE submitted: their PDPs now serve 200+noindex (Q-1), so engines re-crawl
+  // and drop the stale listing — freshness works in both directions again.
+  // Degrades to visible-only when first_published_at is missing (pre-migration).
+  const submitRows = rows.filter((r) =>
+    !r.hidden || (hasFirstPublished && r.first_published_at != null));
+  const excludedHidden = rows.length - submitRows.length;
+  const urls = submitRows.map((r) => `${SITE}/en/deal/${r.slug}`);
   // Homepage content shifts with ANY deal change — including hide-only runs
   // (delistings change the homepage/listings even though the hidden PDPs
   // themselves are excluded by policy). Gate on rows, not on the filtered set.
@@ -157,21 +178,21 @@ async function submit(urls) {
 
   console.log(
     `[indexnow] ${all ? 'ALL deals' : `changed since ${sinceIso}`}: ${rows.length} deals ` +
-      `(excluded_hidden=${excludedHidden}) → ${urls.length} URLs`,
+      `(excluded_never_published=${excludedHidden}) → ${urls.length} URLs`,
   );
   if (rows.length === 0) {
     console.log('[indexnow] nothing changed — no submission (protocol: only ping real changes).');
     return;
   }
   if (urls.length === 1 && excludedHidden > 0) {
-    console.log('[indexnow] all changed deals hidden — submitting homepage only (PDP URLs skipped by policy).');
+    console.log('[indexnow] all changed deals never-published — submitting homepage only.');
   }
   if (flag('--dry-run')) {
     console.log('[indexnow] dry-run — first 3 URLs:', urls.slice(0, 3));
     return;
   }
   const n = await submit(urls);
-  console.log(`[indexnow] DONE — submitted=${n} excluded_hidden=${excludedHidden} (endpoint propagates to all IndexNow engines).`);
+  console.log(`[indexnow] DONE — submitted=${n} excluded_never_published=${excludedHidden} (endpoint propagates to all IndexNow engines).`);
 })().catch((e) => {
   console.error(`[indexnow] FAILED: ${e.message}`);
   process.exit(1);

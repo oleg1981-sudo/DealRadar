@@ -22,7 +22,8 @@ export function DealGallery({ images, alt, badge }: { images: string[]; alt: str
   const [active, setActive] = useState(0);
 
   return (
-    <div>
+    // data-block: stable machine marker for the acceptance harness [FR-4.1].
+    <div data-block="gallery" data-gallery-count={gallery.length}>
       <div className="relative aspect-square w-full overflow-hidden rounded-xl bg-white p-6 shadow-sm">
         {gallery[active] ? (
           <Image

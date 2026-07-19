@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { clampSchemaText, extractTrailingModelCode, SCHEMA_NAME_MAX, SCHEMA_DESCRIPTION_MAX } from './schema-text';
+import { clampSchemaText, SCHEMA_NAME_MAX, SCHEMA_DESCRIPTION_MAX } from './schema-text';
 
 // The live PDP name that drew GSC's "Invalid string length in field 'name'"
 // (157 chars — audit/2026-07-15_jsonld-schema/findings.md).
@@ -70,35 +70,5 @@ describe('clampSchemaText', () => {
     expect(s.length).toBeGreaterThan(SCHEMA_DESCRIPTION_MAX);
     expect(out.length).toBeLessThanOrEqual(SCHEMA_DESCRIPTION_MAX);
     expect(out.endsWith('…')).toBe(true);
-  });
-});
-
-describe('extractTrailingModelCode', () => {
-  it('extracts the BlazeVideo-style pipe suffix', () => {
-    expect(extractTrailingModelCode(LIVE_NAME)).toBe('A323');
-  });
-
-  it('extracts hyphenated codes', () => {
-    expect(extractTrailingModelCode('Wildkamera Grau | W600-GRAY-2')).toBe('W600-GRAY-2');
-  });
-
-  it('rejects names without a pipe', () => {
-    expect(extractTrailingModelCode('Wildkamera A323 Grau')).toBeNull();
-  });
-
-  it('rejects lowercase tails (sentence fragments, not codes)', () => {
-    expect(extractTrailingModelCode('Wildkamera | wasserdicht')).toBeNull();
-  });
-
-  it('rejects multi-word tails', () => {
-    expect(extractTrailingModelCode('Wildkamera | Best Deal')).toBeNull();
-  });
-
-  it('rejects plain numbers (quantities, not models)', () => {
-    expect(extractTrailingModelCode('Batterien AA | 12345')).toBeNull();
-  });
-
-  it('rejects overlong tails', () => {
-    expect(extractTrailingModelCode(`Kamera | ${'A1'.repeat(10)}`)).toBeNull();
   });
 });

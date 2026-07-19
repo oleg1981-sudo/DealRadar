@@ -117,11 +117,11 @@ async function fetchShopImages(deal) {
     // re-trying the same head-of-list rows every day (interim until the
     // verifier owns gallery capture in Stage 2). Falls back to unordered
     // (sticky for the whole read) when last_verified isn't migrated yet.
-    let r = await fetch(`${BASE}/rest/v1/deals?hidden=eq.false&merchant_url=not.is.null&select=${cols}${orderClause}`,
+    let r = await fetch(`${BASE}/rest/v1/deals?hidden=eq.false&merchant_url=like.*%2Fproducts%2F*&select=${cols}${orderClause}`,
       { headers: { ...SUPA, Range: `${from}-${from + 999}` } });
     if (!r.ok && from === 0 && orderClause) {
       orderClause = '';
-      r = await fetch(`${BASE}/rest/v1/deals?hidden=eq.false&merchant_url=not.is.null&select=${cols}`,
+      r = await fetch(`${BASE}/rest/v1/deals?hidden=eq.false&merchant_url=like.*%2Fproducts%2F*&select=${cols}`,
         { headers: { ...SUPA, Range: `${from}-${from + 999}` } });
     }
     if (!r.ok) throw new Error(`read deals failed: HTTP ${r.status} ${await r.text()}`);
@@ -153,6 +153,11 @@ async function fetchShopImages(deal) {
       }
       const deal = list[i];
       const live = await fetchShopImages(deal);
+      if (live.error === 'no-product-url') {
+        // No network request was made — skip the pacing sleep entirely.
+        errors++;
+        continue;
+      }
       if (live.error) {
         errors++;
         consec = live.blocked ? consec + 1 : 0;

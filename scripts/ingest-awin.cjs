@@ -28,6 +28,7 @@ const zlib = require('zlib');
 const { feedDescription } = require('./lib/description.cjs');
 const { normalizeEnhancedRow } = require('./lib/enhanced-feed.cjs');
 const { makeAttrCollector, FillRates } = require('./lib/feed-attrs.cjs');
+const { normalizeBrand } = require('./lib/brand-normalize.cjs');
 
 // ── args & env ───────────────────────────────────────────────────────────────
 const args = process.argv.slice(2);
@@ -175,7 +176,7 @@ function normalizeRow(g, collectAttrs) {
     discount_percent: discountPercent,
     currency,
     category: nameOverrideCategory(g('product_name')) ?? mapCategory(g('category_name').trim(), g('merchant_category').trim()),
-    brand: g('brand_name').trim() || null,
+    brand: normalizeBrand(g('brand_name').trim()) || null, // census-seeded alias → canonical (FR-4.3)
     image_url: g('aw_image_url').trim() || g('merchant_image_url').trim() || null, // productserve proxy first
     gallery: gallery.length ? gallery : null,
     description,
