@@ -56,7 +56,7 @@ src/app/[locale]/deal/[slug]/        → PDP blocks + stable data-block markers 
 src/app/[locale]/deal/[slug]/md/     → NEW: route handler for the agent markdown surface (W5)
 src/lib/utils/product-details.ts     → gallery/attr selectors
 supabase/schema.sql                  → feed_attrs jsonb, last_verified, capture provenance, fetch_outcomes (W1–W3), via migration
-.github/workflows/                   → verify-awin.yml, ingest-awin.yml, NEW coverage-watchdog.yml (W2/W3)
+.github/workflows/                   → verify-awin.yml, ingest-awin.yml, awin-programmes-sync.yml (watchdog host, W2/W3)
 docs/specs/pdp-full-content/2026-07-16_v1/  → this spec + its plan.md/todo.md (Phase 2/3 — NEVER tasks/plan.md, which is the M2 plan)
 ```
 
@@ -96,7 +96,7 @@ Traceability: each FR cites the audit finding it neutralizes. §13 maps workstre
 
 ### W2 — Acquisition completeness (audit cause 1; coverage holes)
 - **FR-2.1** Both normalizers parse **all** feed columns; non-empty extras land in `deals.feed_attrs jsonb`. Per-advertiser × per-column fill-rate report emitted every ingest run with pinned grammar `[ingest] fill-rate adv=<id> col=<name> pct=<n>` (log + `ops_metrics` keys). Applies to the legacy ~70-column feed too.
-- **FR-2.2** Coverage watchdog (**named workflow: `.github/workflows/coverage-watchdog.yml`**) reconciles against the **acquired AWIN feed list** (ground truth — `affiliate_programmes` is stale: Hollyland/Autofull sit at `notjoined` there; it remains an enrichment join only): every downloadable feed for the account appears in the latest run log as `ingested|excluded(<reason>)`; any advertiser at 0 products without a recorded exclusion alerts. Also alerts when any `image_url`/`gallery` host is **not covered by `next.config.mjs` remotePatterns** (non-Shopify tripwire, replaces A-6's silent deferral).
+- **FR-2.2** *(re-pinned 2026-07-19: the watchdog ships INSIDE `.github/workflows/awin-programmes-sync.yml` — commit aba8a30 landed the reconciliation there first; extend-don't-rebuild)* Coverage watchdog reconciles against the **acquired AWIN feed list** (ground truth — `affiliate_programmes` is stale: Hollyland/Autofull sit at `notjoined` there; it remains an enrichment join only): every downloadable feed for the account appears in the latest run log as `ingested|excluded(<reason>)`; any advertiser at 0 products without a recorded exclusion alerts. Also alerts when any `image_url`/`gallery` host is **not covered by `next.config.mjs` remotePatterns** (non-Shopify tripwire, replaces A-6's silent deferral).
 - **FR-2.3** Language/currency scope becomes an explicit policy table (`docs/specs/pdp-full-content/2026-07-16_v1/feed-policy.md` or a repo JSON, path frozen at sign-off) — zero silent drops.
 - **FR-2.4** programmes-sync PGRST102 fixed (homogeneous bulk-upsert keys).
 - **FR-2.5** `ops_metrics` migration applied to prod.
@@ -140,7 +140,7 @@ Global EC rules: "latest run" always means **latest completed scheduled non-dry-
 | EC-3 | FR-1.4 (Q-3 approved) | **Mechanism:** extractor registry ships with the Renogy section extractor; latest capture run log shows Renogy section-captures > 0 (pinned grammar); HTTP: a qualifying visible Renogy deal renders `data-block="description"` and ≥2 distinct gallery URLs. **Reported:** share of Renogy rows with description beyond title-echo |
 | EC-4 | FR-1.5 | Latest snapshot run log: covered-row count == total deals count (pinned grammar); SQL guard: 0 deals older than 48h lacking any price_history row in 48h (client-side anti-join; non-empty floor); note: one row per UTC day (overwrite semantics) |
 | EC-5 | FR-2.1 | `feed_attrs` exists; fill-rate grammar present in latest ingest log for **both** formats (v2 predicate pinned: `product_id ~ '^awin:[A-Z]{2}:adv'`; legacy: `'^awin:[0-9]+$'`); attr-bearing rows > 0 **or** the fill-rate report proves all rich columns empty (captured attrs count toward the check) |
-| EC-6 | FR-2.2/2.3 | Ground truth = feed list acquired by the watchdog run itself: every feed appears as `ingested|excluded(<reason>)` in the latest completed `coverage-watchdog.yml` run (≤48h); TH-4 via SQL join against per-advertiser deal counts; remotePatterns tripwire clause evaluated (0 uncovered image hosts) |
+| EC-6 | FR-2.2/2.3 | Ground truth = feed list acquired by the watchdog run itself: every feed appears as `ingested|excluded(<reason>)` in the latest completed `awin-programmes-sync.yml` run (≤48h); TH-4 via SQL join against per-advertiser deal counts; remotePatterns tripwire clause evaluated (0 uncovered image hosts) |
 | EC-7 | FR-2.4/2.5 | Latest **scheduled** programmes-sync run ≤48h old AND success; PostgREST: `ops_metrics` rows for feed-size + fill-rate keys with `recorded_at ≥ now()-48h` |
 | EC-8 | FR-3.1 | File assertions: `--max-minutes` budget flags present on verify+enrich (re-pinned 2026-07-19), `continue-on-error` absent from IndexNow steps in both workflows; latest scheduled verify run (≤48h): steps Verify/Enrich/Snapshot/IndexNow each `conclusion=success` by exact name (dry-runs excluded) |
 | EC-9 | FR-3.2 | Count of sweep-eligible rows (`source='awin' AND merchant_url IS NOT NULL`, **hidden included**) with `last_verified IS NULL OR < now()-48h`, excluding fresh-blocked hosts (same rule as EC-1), = 0 (missing column = FAIL) |

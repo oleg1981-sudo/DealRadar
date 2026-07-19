@@ -28,10 +28,10 @@ Plan: `plan.md` v1.1 · Spec: `spec.md` v1.2 · Status legend: `[ ]` open · `[x
 - [ ] T2.5 Post-merge soak: ≥2 upstream cron cycles; EC-9 capacity check at ~35k rows (may need pacing/sharding revisit — flag if 2 daily deadline-bounded runs can't cover the eligible set).
 
 ## Stage 3 — acquisition
-- [ ] T3.1 All-column parse → feed_attrs (both formats) + fill-rate grammar + ops_metrics keys. Verify: EC-5.
-- [ ] T3.2 coverage-watchdog.yml wrapping/extending scripts/lib/coverage.cjs (aba8a30): TH-4, ROCKBROS freshness tripwire, remotePatterns tripwire, `ingested|excluded(reason)` grammar, Q-6 GitHub-issue alerts + FR-3.5 36h staleness + monthly alert-test; subordinate digest. Verify: EC-6, EC-12.
-- [ ] T3.3 scripts/lib/feed-policy.json (remaining exclusions: non-German, non-EUR). Verify: EC-6 clause.
-- [ ] T3.4 Loud no-ops (purge-alerts/db-migrate/cost-guardrail exit non-zero on missing secrets, upstream only). Verify: EC-11(rest).
+- [x] T3.1 All-column parse (feed-attrs.cjs generic collector, both normalizers, fill-rate grammar + awin_fill_rates ops_metric; +5 tests) → feed_attrs (both formats) + fill-rate grammar + ops_metrics keys. Verify: EC-5.
+- [x] T3.2 watchdog extended IN awin-programmes-sync.yml (remotePatterns tripwire, FR-3.5 36h capture-staleness red, EC-12 self-healing monthly alert-test; alert-issue lifecycle was pre-existing aba8a30); spec/harness re-pinned — no separate workflow scripts/lib/coverage.cjs (aba8a30): TH-4, ROCKBROS freshness tripwire, remotePatterns tripwire, `ingested|excluded(reason)` grammar, Q-6 GitHub-issue alerts + FR-3.5 36h staleness + monthly alert-test; subordinate digest. Verify: EC-6, EC-12.
+- [x] T3.3 scripts/lib/feed-policy.json (remaining exclusions: non-German, non-EUR). Verify: EC-6 clause.
+- [x] T3.4 Loud no-ops (purge-alerts + db-migrate exit 1 on missing secrets; check-budgets --strict wired in cost-guardrail) (purge-alerts/db-migrate/cost-guardrail exit non-zero on missing secrets, upstream only). Verify: EC-11(rest).
 
 ## Stage 4 — rendering
 - [ ] T4.1 data-block markers + new conditional blocks (attrs/shipping/condition/energy/variants) + FR-4.2-as-amended + rating block + FR-4.5 More-images with sanitizer-aware `<img>` coupling. Verify: EC-14, EC-15.

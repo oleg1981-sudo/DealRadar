@@ -38,4 +38,4 @@ jobs:
       - name: Check cost budgets
         env:
           SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
-        run: node scripts/check-budgets.mjs
+        run: node scripts/check-budgets.mjs --strict

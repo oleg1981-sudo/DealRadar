@@ -36,5 +36,6 @@ jobs:
               -H "Content-Type: application/json" \
               -d '{"retentionDays":365,"notifiedDays":30}'
           else
-            echo "APP_URL or CRON_SECRET not set — skipping purge"
+            echo "::error::APP_URL or CRON_SECRET not set — with owner-gating (FR-3.3) this job only runs where secrets must exist [FR-3.4]"
+            exit 1
           fi

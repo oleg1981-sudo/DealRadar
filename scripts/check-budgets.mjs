@@ -185,4 +185,14 @@ checkGhActionsMinutes();
 checkVertexTokenSpend();
 
 console.log(`[budgets] ${breaches} breach(es), ${unmeasured} unmeasured check(s).`);
+// Strict mode [FR-5.3/FR-3.4, docs/specs/pdp-full-content]: in acceptance/CI
+// on the secrets-bearing repo, an UNMEASURED check is a failure — a stubbed
+// guardrail must never read as green. (The Vertex stub is exempt: it is
+// documented as not-measurable-from-this-repo, not mis-configured.)
+const STRICT = process.argv.includes('--strict');
+const strictFailures = unmeasured - 1; // minus the permanent Vertex stub
+if (STRICT && strictFailures > 0) {
+  console.error(`[budgets] STRICT: ${strictFailures} configurable check(s) unmeasured — failing.`);
+  process.exit(1);
+}
 process.exit(breaches > 0 ? 1 : 0);

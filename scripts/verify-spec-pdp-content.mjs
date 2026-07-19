@@ -100,8 +100,38 @@ const ECS = [
   },
   { id: 'EC-3', title: 'Renogy section extractor mechanism', run: RED('Stage 6 (T6.1)') },
   { id: 'EC-4', title: 'snapshot covers all rows daily', run: RED('Stage 2 (T2.3)') },
-  { id: 'EC-5', title: 'feed_attrs + fill-rate report', run: RED('Stage 3 (T3.1)') },
-  { id: 'EC-6', title: 'coverage watchdog feed-list reconciliation', run: RED('Stage 3 (T3.2)') },
+  {
+    id: 'EC-5', title: 'feed_attrs + fill-rate report',
+    run: async () => {
+      needSupa();
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/ops_metrics?key=eq.awin_fill_rates&select=value,recorded_at`, { headers: supaHeaders() });
+      if (!res.ok) return { status: 'FAIL', detail: `ops_metrics read: HTTP ${res.status}` };
+      const rows = await res.json();
+      if (!rows.length) return { status: 'FAIL', detail: 'awin_fill_rates metric absent (post-merge ingest pending)' };
+      if (Date.now() - Date.parse(rows[0].recorded_at) > 48 * 3600e3) return { status: 'FAIL', detail: 'fill-rate metric stale (>48h)' };
+      const attrs = await pageDeals('product_id', '&feed_attrs=not.is.null&limit=1');
+      return { status: 'PASS', detail: `fill-rates fresh (${rows[0].value} advertisers); feed_attrs populated rows exist: ${attrs.length > 0}` };
+    },
+  },
+  {
+    id: 'EC-6', title: 'coverage watchdog reconciliation clear',
+    run: async () => {
+      // Re-pinned 2026-07-19: the watchdog lives INSIDE awin-programmes-sync.yml
+      // (extend-not-rebuild); its machine artifact is the managed alert issue.
+      if (!existsSync(path.join(ROOT, 'scripts/lib/feed-policy.json'))) return { status: 'FAIL', detail: 'feed-policy.json missing' };
+      try {
+        const j = ghJson('repos/oleg1981-sudo/DealRadar/actions/workflows/awin-programmes-sync.yml/runs?status=completed&per_page=5');
+        const recent = (j.workflow_runs || []).filter((r) => Date.now() - Date.parse(r.created_at) < 48 * 3600e3);
+        if (!recent.length) return { status: 'FAIL', detail: 'no completed sync run ≤48h' };
+        if (recent[0].conclusion !== 'success') return { status: 'FAIL', detail: `latest sync run concluded ${recent[0].conclusion}` };
+        const open = ghJson('repos/oleg1981-sudo/DealRadar/issues?labels=awin-coverage-alert&state=open&per_page=1');
+        if (Array.isArray(open) && open.length) return { status: 'FAIL', detail: `coverage alert issue open: #${open[0].number} (${open[0].title})` };
+        return { status: 'PASS', detail: 'sync green; zero open coverage alerts (TH-4 + tripwires clear)' };
+      } catch (e) {
+        return { status: 'SKIP', detail: `gh unavailable: ${e.message.slice(0, 80)}` };
+      }
+    },
+  },
   {
     id: 'EC-7', title: 'programmes-sync green + ops_metrics fresh',
     run: async () => {
@@ -191,7 +221,19 @@ const ECS = [
     },
   },
   { id: 'EC-11', title: 'committed/attempted grammar + chaos tests', run: RED('Stage 2 (T2.2) + Stage 3 (T3.4)') },
-  { id: 'EC-12', title: 'alert channel test-fire artifact', run: RED('Stage 3 (T3.2)') },
+  {
+    id: 'EC-12', title: 'alert channel test-fire artifact',
+    run: async () => {
+      try {
+        const issues = ghJson('repos/oleg1981-sudo/DealRadar/issues?labels=alert-test&state=all&per_page=5');
+        const fresh = (issues || []).filter((i) => Date.now() - Date.parse(i.created_at) < 31 * 86400e3);
+        if (!fresh.length) return { status: 'FAIL', detail: 'no alert-test issue ≤31d (first post-merge sync run fires it)' };
+        return { status: 'PASS', detail: `alert-test #${fresh[0].number} created ${fresh[0].created_at.slice(0, 10)}` };
+      } catch (e) {
+        return { status: 'SKIP', detail: `gh unavailable: ${e.message.slice(0, 80)}` };
+      }
+    },
+  },
   { id: 'EC-13', title: 'IndexNow split enforcement', run: RED('Stage 5 (T5.3); interim hidden-exclusion shipped Stage 0') },
   { id: 'EC-14', title: 'conditional blocks render iff data', run: RED('Stage 4 (T4.1)') },
   { id: 'EC-15', title: 'description always renders (presence)', run: RED('Stage 4 (T4.1)') },

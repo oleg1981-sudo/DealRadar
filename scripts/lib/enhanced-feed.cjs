@@ -148,6 +148,10 @@ function normalizeEnhancedRow(g, ctx) {
     model_number: null,
     merchant_sku: id, // the advertiser's own product id IS the enhanced `id`
     merchant_id: advertiserId,
+    // [FR-2.1] every other non-empty feed column (generic collector bound to
+    // the feed's real header list by the caller); key always present so bulk
+    // upsert signatures stay homogeneous.
+    feed_attrs: ctx.collectAttrs ? ctx.collectAttrs(g) : null,
     country: ctx.country,
     city: null,
     is_sponsored: true,

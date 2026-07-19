@@ -136,7 +136,7 @@ async function fetchDealAttribution() {
   const out = [];
   for (let from = 0; ; from += 1000) {
     const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/deals?source=eq.awin&select=product_id,merchant_id,shop_name,hidden&order=product_id`,
+      `${SUPABASE_URL}/rest/v1/deals?source=eq.awin&select=product_id,merchant_id,shop_name,hidden,image_url,gallery&order=product_id`,
       { headers: { ...pgHeaders, Range: `${from}-${from + 999}` } },
     );
     if (!res.ok) throw new Error(`deals read: HTTP ${res.status}`);
@@ -164,6 +164,44 @@ async function fetchIngestSummary() {
   return age > 27 * 3600000 ? null : rows[0].meta;
 }
 
+/** remotePatterns tripwire [FR-2.2]: any deal image host not covered by
+ *  next.config.mjs remotePatterns silently breaks next/image on prod — and a
+ *  non-Shopify host also means the verifier can't promote that advertiser. */
+function uncoveredImageHosts(dealRows) {
+  const fsLocal = require('fs');
+  const pathLocal = require('path');
+  const cfg = fsLocal.readFileSync(pathLocal.join(__dirname, '..', 'next.config.mjs'), 'utf8');
+  const patterns = [...cfg.matchAll(/hostname:\s*'([^']+)'/g)].map((m) => m[1]);
+  const covered = (host) => patterns.some((p) =>
+    p.startsWith('**.') ? host === p.slice(3) || host.endsWith(p.slice(2)) : host === p);
+  const hosts = new Map();
+  for (const d of dealRows) {
+    for (const u of [d.image_url, ...(Array.isArray(d.gallery) ? d.gallery : [])]) {
+      if (!u) continue;
+      try {
+        const h = new URL(u).host;
+        if (!covered(h)) hosts.set(h, (hosts.get(h) || 0) + 1);
+      } catch { /* malformed URL — ingest filters these; ignore */ }
+    }
+  }
+  return hosts;
+}
+
+/** Capture-cycle staleness [FR-3.5]: no successful verify capture sweep within
+ *  36h (resilient to the observed ~2.5h GitHub cron lateness) is a red. */
+async function captureStaleness() {
+  const res = await fetch(
+    `${SUPABASE_URL}/rest/v1/fetch_outcomes?select=last_seen&order=last_seen.desc&limit=1`,
+    { headers: pgHeaders },
+  );
+  if (!res.ok) return { red: true, detail: `fetch_outcomes read failed: HTTP ${res.status}` };
+  const rows = await res.json();
+  if (!rows.length) return { red: true, detail: 'no capture-cycle evidence yet (fetch_outcomes empty — verify capture has never completed)' };
+  const ageH = (Date.now() - Date.parse(rows[0].last_seen)) / 3600e3;
+  if (ageH > 36) return { red: true, detail: `last capture cycle ${ageH.toFixed(0)}h ago (>36h)` };
+  return { red: false, detail: `last capture cycle ${ageH.toFixed(1)}h ago` };
+}
+
 /** Returns { section, reds, fingerprint } — never throws. */
 async function coverageSection(joinedProgrammes) {
   try {
@@ -173,7 +211,24 @@ async function coverageSection(joinedProgrammes) {
       withRetry('ingest summary', fetchIngestSummary),
     ]);
     const report = buildCoverageReport({ feedRows, dealRows, joinedProgrammes, ingestSummary, now: new Date() });
-    return { section: formatCoverage(report), reds: report.reds, fingerprint: coverageFingerprint(report) };
+    let section = formatCoverage(report);
+    let reds = report.reds;
+    const fpExtra = [];
+    const uncovered = uncoveredImageHosts(dealRows);
+    if (uncovered.size) {
+      const list = [...uncovered.entries()].map(([h, n]) => `${h} (${n} rows)`).join(', ');
+      section += `\n- 🔴 **image hosts outside next.config remotePatterns** — next/image breaks on prod: ${list}`;
+      reds++;
+      fpExtra.push(`remotepatterns:${[...uncovered.keys()].sort().join(',')}`);
+    }
+    const cap = await captureStaleness();
+    if (cap.red) {
+      section += `\n- 🔴 **content-capture cycle stale** [FR-3.5]: ${cap.detail}`;
+      reds++;
+      fpExtra.push('capture-stale');
+    }
+    const fingerprint = [coverageFingerprint(report), ...fpExtra].join('|');
+    return { section, reds, fingerprint };
   } catch (e) {
     return {
       section: `## Feed coverage (watchdog)\n⚠️ **Coverage check failed** (after retry): ${e.message} — coverage state UNKNOWN this run.`,
@@ -229,6 +284,23 @@ async function syncAlertIssue(coverage) {
   await ghApi('PATCH', `/issues/${existing.number}`, { title: `🔴 AWIN coverage alerts (${coverage.reds})`, body });
   await ghApi('POST', `/issues/${existing.number}/comments`, { body: `Red set changed:\n\n${coverage.section}` });
   console.log(`[awin-sync] updated coverage alert issue #${existing.number}`);
+}
+
+/** [EC-12] Monthly proof the alert channel actually fires: keep a closed
+ *  `alert-test` issue fresher than 30 days (created+closed in one pass). */
+async function ensureAlertTestFresh() {
+  const since = new Date(Date.now() - 30 * 86400e3).toISOString();
+  const recent = await ghApi('GET', `/issues?labels=alert-test&state=all&since=${since}&per_page=5`);
+  if (Array.isArray(recent) && recent.some((i) => Date.parse(i.created_at) > Date.now() - 30 * 86400e3)) return;
+  const created = await ghApi('POST', '/issues', {
+    title: `alert-test ${new Date().toISOString().slice(0, 10)}`,
+    body: 'Automated alert-channel test fire [EC-12, docs/specs/pdp-full-content]. Auto-closed — no action needed.',
+    labels: ['alert-test'],
+  });
+  if (created) {
+    await ghApi('PATCH', `/issues/${created.number}`, { state: 'closed' });
+    console.log(`[awin-sync] alert-test fired: issue #${created.number} (created+closed)`);
+  }
 }
 
 async function githubIssue(title, body) {
@@ -313,6 +385,7 @@ async function githubIssue(title, body) {
   const joined = fetched.filter((r) => r.relationship === 'joined')
     .map((r) => ({ programme_id: r.programme_id, name: r.name }));
   const coverage = await coverageSection(joined);
+  await ensureAlertTestFresh();
   console.log(`[awin-sync] coverage: ${coverage.reds} red flag(s) [${coverage.fingerprint.slice(0, 80)}]`);
   await syncAlertIssue(coverage);
 
