@@ -21,10 +21,10 @@ Plan: `plan.md` v1.1 · Spec: `spec.md` v1.2 · Status legend: `[ ]` open · `[x
 - [x] T1.2 Harness skeleton (done; baseline run: 2 PASS / 5 FAIL / 17 RED; TH-1=0, TH-2=0, TH-3=2 via service-role SQL — invariants nearly green already) `scripts/verify-spec-pdp-content.mjs`: acceptance-mode env, EC registry, RED stubs ×24; implement EC-24, EC-8(file), TH-1..TH-3 SQL. Verify: exits non-zero listing RED ECs.
 
 ## Stage 2 — capture-at-verify
-- [ ] T2.1 Extractor library (shopify js/json → JSON-LD → OG; priceOk split; fixtures). Verify: vitest green.
-- [ ] T2.2 verify-awin.cjs three-write-class redesign (liveness PATCH / content-only PATCH / liveness touch on verified-alive-visible only; remove hidden-stays-hidden touches; stale-hide re-keyed to last_verified; stalest-first order; graceful degrade on missing columns; migration-applied checkpoint; committed/attempted grammar; chaos drill + invalid-key smoke via thin-loop-drill.yml). Verify: EC-21 cohorts non-vacuous post-soak; EC-1/2/9/11(part).
-- [ ] T2.3 snapshot-prices covers hidden; enrich-galleries → bounded backfill. Verify: EC-4.
-- [ ] T2.4 upsertDeals keep-richer (per-signature batching — PGRST102 trap) + FR-3.7 all-writers audit (+ deferral note for M2 watermark/tripwire). Verify: EC-22 vitest; EC-21 grep.
+- [~] T2.1 Extractor library (Shopify path live inline in verify incl. gallery capture; JSON-LD/OG fallback chain + fixtures pending) (shopify js/json → JSON-LD → OG; priceOk split; fixtures). Verify: vitest green.
+- [x] T2.2 verify-awin.cjs three-write-class redesign (done 2026-07-19: liveness/content/watermark classes, hidden-touch removal, /products/ sweep filter excl. 22.9k redirect rows, stalest-first order, fetch_outcomes persistence, capture provenance, committed/attempted grammar, graceful column degrade; EC-9/21 green post-soak) (liveness PATCH / content-only PATCH / liveness touch on verified-alive-visible only; remove hidden-stays-hidden touches; stale-hide re-keyed to last_verified; stalest-first order; graceful degrade on missing columns; migration-applied checkpoint; committed/attempted grammar; chaos drill + invalid-key smoke via thin-loop-drill.yml). Verify: EC-21 cohorts non-vacuous post-soak; EC-1/2/9/11(part).
+- [x] T2.3 snapshot-prices covers hidden (filter dropped); enrich-galleries → bounded backfill. Verify: EC-4.
+- [x] T2.4 upsertDeals keep-richer via uniform key omission (description_html precedent; PGRST102-safe) + FR-3.7 static audit clean + write-class/merge/retry vitest ×8 (per-signature batching — PGRST102 trap) + FR-3.7 all-writers audit (+ deferral note for M2 watermark/tripwire). Verify: EC-22 vitest; EC-21 grep.
 - [ ] T2.5 Post-merge soak: ≥2 upstream cron cycles; EC-9 capacity check at ~35k rows (may need pacing/sharding revisit — flag if 2 daily deadline-bounded runs can't cover the eligible set).
 
 ## Stage 3 — acquisition

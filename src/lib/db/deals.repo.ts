@@ -20,17 +20,20 @@ const TABLE = 'deals';
 const REST_PAGE = 1000;
 
 /** Camel ⇄ snake mapping for the deals table.
- *  description_html is deliberately ABSENT: it is owned by the live-shop
- *  verifier (scripts/verify-awin.cjs); a provider upsert including the key
- *  would clobber captured merchant content with null. */
-function toRow(d: NormalizedDeal) {
+ *  description_html, gallery and description are deliberately ABSENT
+ *  [FR-1.6/EC-22, docs/specs/pdp-full-content]: they are owned by the pipeline
+ *  scripts (ingest-awin.cjs keep-richer merge, verify-awin.cjs capture) — a
+ *  provider upsert including the keys would clobber enriched content with the
+ *  provider's thinner (or null) values. Uniform omission also keeps every row
+ *  in the bulk upsert on the same key signature (heterogeneous keys are
+ *  rejected by PostgREST with PGRST102). */
+export function toRow(d: NormalizedDeal) {
   const generatedSlug = d.slug || `${slugify(d.productName)}-${d.productId.replace(/[^a-z0-9]/gi, '-')}`;
   return {
     product_id: d.productId, product_name: d.productName, shop_name: d.shopName,
     shop_url: d.shopUrl, shop_logo_url: d.shopLogoUrl, original_price: d.originalPrice,
     sale_price: d.salePrice, discount_percent: d.discountPercent, currency: d.currency,
     category: d.category, brand: d.brand, image_url: d.imageUrl,
-    gallery: d.gallery ?? null, description: d.description ?? null,
     merchant_url: d.merchantUrl ?? null, country: d.country,
     city: d.city, is_sponsored: d.isSponsored, source: d.source, last_updated: d.lastUpdated,
     slug: generatedSlug, ean_code: d.eanCode ?? null, upc_code: d.upcCode ?? null,

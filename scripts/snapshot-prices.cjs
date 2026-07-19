@@ -39,8 +39,12 @@ const SUPA = { apikey: KEY, Authorization: `Bearer ${KEY}` };
 async function fetchVisibleDeals() {
   const out = [];
   const cols = 'product_id,sale_price,original_price,currency';
+  // [FR-1.5, docs/specs/pdp-full-content] hidden rows are snapshotted too:
+  // their price baseline is what the price-drop promotion route (Q-2) and the
+  // PDP price-history depth depend on. The name is historical — this now
+  // sweeps ALL deals.
   for (let from = 0; ; from += 1000) {
-    const r = await fetch(`${BASE}/rest/v1/deals?hidden=eq.false&select=${cols}`,
+    const r = await fetch(`${BASE}/rest/v1/deals?select=${cols}`,
       { headers: { ...SUPA, Range: `${from}-${from + 999}` } });
     if (!r.ok) throw new Error(`read deals failed: HTTP ${r.status} ${await r.text()}`);
     const batch = await r.json();

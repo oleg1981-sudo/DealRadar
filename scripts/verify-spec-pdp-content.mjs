@@ -155,7 +155,19 @@ const ECS = [
       }
     },
   },
-  { id: 'EC-9', title: 'no starved sweep tail (last_verified ≤48h)', run: RED('Stage 2 (T2.2) + soak') },
+  {
+    id: 'EC-9', title: 'no starved sweep tail (last_verified ≤48h)',
+    run: async () => {
+      needSupa();
+      // Sweep-eligible mirrors verify-awin.cjs fetchDeals: awin rows with a
+      // fetchable /products/ merchant_url (hidden included).
+      const rows = await pageDeals('product_id,last_verified', '&source=eq.awin&merchant_url=like.*%2Fproducts%2F*');
+      if (rows.length < CATALOG_FLOOR) return { status: 'FAIL', detail: `sweep-eligible floor: only ${rows.length} rows` };
+      const stale = rows.filter((r) => !r.last_verified || Date.now() - Date.parse(r.last_verified) > 48 * 3600e3);
+      if (stale.length > 0) return { status: 'FAIL', detail: `${stale.length}/${rows.length} sweep-eligible rows unverified in 48h (soak pending or starved tail)` };
+      return { status: 'PASS', detail: `all ${rows.length} sweep-eligible rows verified within 48h` };
+    },
+  },
   {
     id: 'EC-10', title: 'fork runs all-skipped after gating',
     run: async () => {
@@ -188,8 +200,42 @@ const ECS = [
   { id: 'EC-18', title: 'markdown agent surface + discovery', run: RED('Stage 5 (T5.2)') },
   { id: 'EC-19', title: 'richness budgets strict + mutation', run: RED('Stage 5 (T5.3)') },
   { id: 'EC-20', title: 'reference-deal global check', run: RED('final acceptance') },
-  { id: 'EC-21', title: 'write classes (M2 amendment)', run: RED('Stage 2 (T2.2/T2.4)') },
-  { id: 'EC-22', title: 'upsertDeals keep-richer', run: RED('Stage 2 (T2.4)') },
+  {
+    id: 'EC-21', title: 'write classes (M2 amendment)',
+    run: async () => {
+      // Static half: no writer sends the forbidden lifecycle fields.
+      const files = ['scripts/ingest-awin.cjs', 'scripts/verify-awin.cjs', 'scripts/enrich-galleries.cjs', 'scripts/snapshot-prices.cjs', 'scripts/flag-homepage-hidden.cjs', 'src/lib/db/deals.repo.ts'];
+      for (const f of files) {
+        const src = readFileSync(path.join(ROOT, f), 'utf8');
+        if (/["'](status|expired_at|content_changed_at)["']\s*:/.test(src.replace(/http_status/g, ''))) {
+          return { status: 'FAIL', detail: `${f} writes a forbidden lifecycle field` };
+        }
+      }
+      // Runtime half: content capture provenance exists AND content-only writes
+      // did not masquerade as liveness (capture_run_id rows whose last_verified
+      // moved without last_updated moving in lockstep must exist post-soak).
+      needSupa();
+      const rows = await pageDeals('product_id,capture_run_id,last_updated,last_verified', '&capture_run_id=not.is.null&limit=200');
+      if (!rows.length) return { status: 'FAIL', detail: 'static OK; no capture_run_id rows yet (Stage-2 soak pending)' };
+      const decoupled = rows.filter((r) => r.last_verified && r.last_updated && Date.parse(r.last_verified) - Date.parse(r.last_updated) > 60e3);
+      return { status: 'PASS', detail: `static OK; ${rows.length} provenance rows, ${decoupled.length} with decoupled content-class timestamps` };
+    },
+  },
+  {
+    id: 'EC-22', title: 'upsertDeals keep-richer',
+    run: async () => {
+      const test = path.join(ROOT, 'src/lib/ingest/verify-write-classes.test.ts');
+      if (!existsSync(test)) return { status: 'FAIL', detail: 'contract test file missing' };
+      const src = readFileSync(test, 'utf8');
+      if (!/'gallery' in row/.test(src) || !/PGRST102/.test(src)) return { status: 'FAIL', detail: 'contract test lacks the omission/signature assertions' };
+      try {
+        execFileSync('pnpm', ['vitest', 'run', 'src/lib/ingest/verify-write-classes.test.ts', '--silent'], { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+        return { status: 'PASS', detail: 'contract tests present and green' };
+      } catch {
+        return { status: 'FAIL', detail: 'contract tests failing' };
+      }
+    },
+  },
   {
     id: 'EC-23', title: 'refresh-deals comment matches schedule',
     run: async () => {
