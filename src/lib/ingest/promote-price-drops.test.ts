@@ -21,10 +21,26 @@ describe('decidePromotion', () => {
     expect(decidePromotion(95, series([100, 100, 100, 100, 100, 100, 100]))).toBeNull();
   });
 
-  it('baseline is the window MAX — a briefly-raised price cannot fake a deal', () => {
-    // Price sat at 50, spiked to 60 once, now 50: only a 17% drop vs max 60
-    // would promote — 50 vs 60 is 17%… guard: current 55 vs max 60 = 8% → null.
+  it('a single-day price spike can NEVER fake a deal (sustained baseline)', () => {
+    // Price sat at 50 for 6 days, spiked to 60 for ONE day, now 50 again:
+    // 60 is not sustained (≥3 distinct days required) → baseline stays 50 →
+    // no promotion. This is the exact fake-deal vector the review caught.
+    expect(decidePromotion(50, series([50, 50, 60, 50, 50, 50, 50]))).toBeNull();
     expect(decidePromotion(55, series([50, 50, 60, 50, 50, 50, 50]))).toBeNull();
+  });
+
+  it('a price sustained ≥3 days IS a valid baseline', () => {
+    // 100 held for 3 days then dropped to 85 for 4 days: current 85 vs 100 = 15%.
+    expect(decidePromotion(85, series([100, 100, 100, 85, 85, 85, 85]))).toEqual({ original: 100, discount: 15 });
+  });
+
+  it('threshold compares the UNROUNDED drop — 9.5% must not round up to 10%', () => {
+    expect(decidePromotion(90.5, series([100, 100, 100, 100, 100, 100, 100]))).toBeNull();
+  });
+
+  it('rejects non-finite / non-positive current prices', () => {
+    expect(decidePromotion(NaN, series([100, 100, 100, 100, 100, 100, 100]))).toBeNull();
+    expect(decidePromotion(0, series([100, 100, 100, 100, 100, 100, 100]))).toBeNull();
   });
 
   it('duplicate days do not inflate the baseline depth', () => {

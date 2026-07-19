@@ -6,10 +6,12 @@
  * The rating block renders ONLY with provenance (ratingSource, Q-5).
  */
 
+import { renderableAttrs } from '@/lib/utils/renderable-attrs';
+
 const SHIPPING_KEYS = ['delivery_cost', 'delivery_time', 'shipping', 'shipping_weight'] as const;
-// item_group_id: variants block deferred — empty in every active feed today
-// (audit/2026-07-16 §Empirical schema); tracking/meta keys never render.
-const NEVER_RENDER = new Set(['item_group_id', 'availability', 'identifier_exists', 'adult']);
+// Which attrs surface at all is owned by the shared gate (renderableAttrs —
+// three-surface parity with JSON-LD and /md). item_group_id: variants block
+// deferred — empty in every active feed today (audit/2026-07-16).
 const ROW_MARKERS: Record<string, string> = {
   condition: 'condition',
   energy_efficiency_class: 'energy',
@@ -44,7 +46,7 @@ interface Props {
 }
 
 export function DealAttributes({ attrs, ratingValue, ratingCount, ratingSource, attrsTitle, shippingTitle, ratingTitle }: Props) {
-  const entries = Object.entries(attrs ?? {}).filter(([k, v]) => v && !NEVER_RENDER.has(k));
+  const entries = Object.entries(renderableAttrs(attrs));
   const shipping = entries.filter(([k]) => (SHIPPING_KEYS as readonly string[]).includes(k));
   const general = entries.filter(([k]) => !(SHIPPING_KEYS as readonly string[]).includes(k));
   const hasRating = ratingSource != null && ratingValue != null;

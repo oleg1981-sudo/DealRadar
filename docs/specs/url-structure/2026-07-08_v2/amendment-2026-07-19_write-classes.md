@@ -16,7 +16,9 @@ Writers are split into two classes:
 | **Liveness-bearing** | `sale_price`, `original_price`, `discount_percent`, availability/visibility (`hidden`, and `status` transitions once M2 lands via the trigger) | **MUST send fresh `last_updated`** (unchanged from the original contract) |
 | **Content-only** | `gallery`, `description`, `description_html`, `feed_attrs`, rating/provenance fields, `last_verified`, capture-outcome metadata | **MUST NOT send `last_updated`** |
 
-A single PATCH containing both classes counts as liveness-bearing (it carries a price/availability confirmation) and bumps `last_updated`. **Clarification (2026-07-19):** a purely content-bearing PATCH on a VISIBLE row the same fetch verified alive also counts as liveness — the fetch itself confirmed availability, and the row would otherwise have received the heartbeat touch; only rows that STAY HIDDEN are strictly content-class.
+**Scoping rule (clarified 2026-07-19, second pass):** the class is determined by VISIBILITY, not by fields alone — writes to rows that REMAIN HIDDEN are always content-class (no `last_updated`), even when they carry `sale_price` (price *tracking* for the Q-2 baseline). Liveness only has meaning for visible rows and for visibility transitions: once M2 lands, an expired no-discount product whose price is merely being tracked must NOT resurrect nightly; resurrection comes only from promotion (an explicit `hidden:false` transition, which IS liveness).
+
+A single PATCH containing both classes on a VISIBLE row (or a visibility transition) counts as liveness-bearing and bumps `last_updated`. **Clarification (2026-07-19):** a purely content-bearing PATCH on a VISIBLE row the same fetch verified alive also counts as liveness — the fetch itself confirmed availability, and the row would otherwise have received the heartbeat touch; only rows that STAY HIDDEN are strictly content-class.
 
 Unchanged and re-affirmed: no writer ever sends `status`, `expired_at`, or `content_changed_at`; the expiry cron and `update_historical_lows_batch` never touch `last_updated`.
 

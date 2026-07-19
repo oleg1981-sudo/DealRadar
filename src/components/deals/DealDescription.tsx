@@ -25,12 +25,14 @@ const PROSE =
 
 interface Props {
   readonly html?: string | null;
+  /** Pre-sanitized HTML (page.tsx sanitizes once per request); wins over `html`. */
+  readonly safeHtml?: string;
   readonly text?: string | null;
   readonly title: string;
 }
 
-export function DealDescription({ html, text, title }: Props) {
-  const safe = html ? sanitizeDescriptionHtml(html) : '';
+export function DealDescription({ html, safeHtml, text, title }: Props) {
+  const safe = safeHtml ?? (html ? sanitizeDescriptionHtml(html) : '');
   const paragraphs = !safe && text ? splitPlainDescription(text) : [];
   if (!safe && paragraphs.length === 0) return null;
   return (

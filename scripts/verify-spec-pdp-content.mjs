@@ -388,6 +388,8 @@ const ECS = [
       needSupa();
       const rows = await pageDeals('slug,gallery,image_url,feed_attrs,rating_source,mpn,model_number', '&hidden=eq.false&order=product_id.asc&limit=3');
       if (!rows.length) return { status: 'FAIL', detail: 'no probe rows (empty read — RLS/anon key?)' };
+      const { createRequire } = await import('node:module');
+      const req = createRequire(import.meta.url);
       const unproxy = (u) => {
         if (!/(^|\.)productserve\.com\//i.test(u)) return u;
         try { const inner = new URL(u).searchParams.get('url'); if (!inner) return u; const o = /^https?:\/\//i.test(inner) ? inner : 'https://' + inner.replace(/^ssl:/i, ''); return new URL(o).protocol === 'https:' ? o : u; } catch { return u; }
@@ -403,7 +405,8 @@ const ECS = [
         const expected = [...new Set((d.gallery?.length ? d.gallery : [d.image_url]).filter(Boolean).map(unproxy))];
         const img = Array.isArray(ld.image) ? ld.image.length : ld.image ? 1 : 0;
         if (img !== expected.length) return { status: 'FAIL', detail: `${d.slug}: JSON-LD image ${img} ≠ deduped gallery ${expected.length}` };
-        if (!!ld.additionalProperty !== !!(d.feed_attrs && Object.keys(d.feed_attrs).length)) return { status: 'FAIL', detail: `${d.slug}: additionalProperty presence mismatch` };
+        const renderable = req(path.join(ROOT, 'scripts/lib/feed-attrs.cjs')).renderableAttrs(d.feed_attrs);
+        if (!!ld.additionalProperty !== !!Object.keys(renderable).length) return { status: 'FAIL', detail: `${d.slug}: additionalProperty presence mismatch vs renderable attrs` };
         if (ld.aggregateRating && !d.rating_source) return { status: 'FAIL', detail: `${d.slug}: aggregateRating without provenance` };
         if (ld.model && !(d.mpn || d.model_number)) return { status: 'FAIL', detail: `${d.slug}: synthetic model emitted (Q-7 violation)` };
       }

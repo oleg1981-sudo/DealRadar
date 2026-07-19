@@ -30,12 +30,18 @@ const NOISE = new Set([
   'custom_label_0', 'custom_label_1', 'custom_label_2', 'custom_label_3',
   'custom_label_4', 'promotion_id', 'display_ads_link', 'merchant_thumb_url',
   'aw_thumb_url', 'data_feed_id', 'promotional_text', 'commission_group',
+  'basket_link', 'keywords',
+  'custom_1', 'custom_2', 'custom_3', 'custom_4', 'custom_5',
+  'custom_6', 'custom_7', 'custom_8', 'custom_9',
 ]);
+// Any *_link/*_url column not explicitly first-class is tracking plumbing —
+// never an attribute (cid feed columns are secret-config-dependent).
+const URL_KEY_RE = /(_link|_url)$/;
 
 /** Build a collector bound to a feed's header list. Returns (g) => attrs|null. */
 function makeAttrCollector(headers, format, onFill) {
   const mapped = format === 'google' ? ENHANCED_MAPPED : LEGACY_MAPPED;
-  const cols = (headers || []).filter((h) => h && !mapped.has(h) && !NOISE.has(h));
+  const cols = (headers || []).filter((h) => h && !mapped.has(h) && !NOISE.has(h) && !URL_KEY_RE.test(h));
   return (g) => {
     const attrs = {};
     for (const h of cols) {
@@ -84,4 +90,12 @@ class FillRates {
   }
 }
 
-module.exports = { makeAttrCollector, FillRates, ENHANCED_MAPPED, LEGACY_MAPPED, NOISE, MAX_VALUE_LEN };
+// Render/emission gate [FR-4.1/FR-5.1]: the SINGLE source of truth for which
+// stored attrs surface — visible block, JSON-LD additionalProperty, and the
+// /md agent surface must agree (three-surface parity).
+const NEVER_RENDER = new Set(['item_group_id', 'availability', 'identifier_exists', 'adult']);
+function renderableAttrs(attrs) {
+  return Object.fromEntries(Object.entries(attrs || {}).filter(([k, v]) => v && !NEVER_RENDER.has(k)));
+}
+
+module.exports = { makeAttrCollector, FillRates, ENHANCED_MAPPED, LEGACY_MAPPED, NOISE, MAX_VALUE_LEN, NEVER_RENDER, renderableAttrs };

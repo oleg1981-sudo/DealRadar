@@ -118,10 +118,10 @@ async function fetchUrl(url, attempt = 0) {
 async function fetchPageHtml(url, attempt = 0) {
   let res;
   try { res = await fetch(url, { headers: HEADERS }); }
-  catch { return null; }
+  catch { return { html: null, status: 0 }; }
   if (res.status === 429 && attempt < 1) { await sleep(2000); return fetchPageHtml(url, attempt + 1); }
-  if (!res.ok) return null;
-  try { return await res.text(); } catch { return null; }
+  if (!res.ok) return { html: null, status: res.status };
+  try { return { html: await res.text(), status: res.status }; } catch { return { html: null, status: res.status }; }
 }
 
 /** Pick the variant: by the ?variant=<id> in the deal URL, else price-closest. */
@@ -276,7 +276,7 @@ async function fetchDeals() {
   const out = [];
   const baseCols = 'product_id,merchant_url,sale_price,original_price,discount_percent,currency,hidden';
   const colSets = [
-    `${baseCols},description_html,gallery,image_url,country`,
+    `${baseCols},description_html,gallery,image_url,country,rating_source`,
     `${baseCols},description_html`,
     baseCols,
   ];
@@ -315,25 +315,26 @@ async function fetchDeals() {
 /** Build the PATCH body for a write class [M2 amendment]:
  *  liveness → last_updated + last_verified; content → last_verified only.
  *  capture_run_id stamps content-bearing patches (EC-1 provenance). */
-function patchBody(fields, klass, hasContent) {
+function patchBody(fields, klass, hasContent, outcome) {
   const now = new Date().toISOString();
   const body = { ...fields };
   if (klass === 'liveness') body.last_updated = now;
   if (contentCols) {
     body.last_verified = now;
     if (hasContent) body.capture_run_id = RUN_ID;
+    if (outcome) body.last_verify_outcome = outcome;
   }
   return body;
 }
 
-async function applyPatch(productId, fields, klass, hasContent) {
+async function applyPatch(productId, fields, klass, hasContent, outcome) {
   if (!/^[\w:.-]+$/.test(productId)) {
     throw new Error(`Invalid/unsafe product ID for patch: ${productId}`);
   }
   const r = await fetch(`${BASE}/rest/v1/deals?product_id=eq.${encodeURIComponent(productId)}`, {
     method: 'PATCH',
     headers: { ...SUPA, 'Content-Type': 'application/json', Prefer: 'return=minimal' },
-    body: JSON.stringify(patchBody(fields, klass, hasContent)),
+    body: JSON.stringify(patchBody(fields, klass, hasContent, outcome)),
   });
   if (!r.ok) throw new Error(`patch ${productId}: HTTP ${r.status} ${await r.text()}`);
 }
@@ -370,12 +371,12 @@ async function flushPatches() {
   for (const p of batch) {
     patchesAttempted++;
     try {
-      await applyPatch(p.id, p.fields, p.klass, p.hasContent);
+      await applyPatch(p.id, p.fields, p.klass, p.hasContent, p.outcome);
       patchesCommitted++;
     } catch (e) {
       // One retry [FR-3.4] — transient PostgREST hiccups shouldn't drop a row.
       try {
-        await applyPatch(p.id, p.fields, p.klass, p.hasContent);
+        await applyPatch(p.id, p.fields, p.klass, p.hasContent, p.outcome);
         patchesCommitted++;
       } catch (e2) {
         console.error(`[verify] Failed to apply patch for ${p.id} (after retry):`, e2.message);
@@ -397,9 +398,9 @@ async function flushTouches() {
   }
 }
 
-function queuePatch(id, fields, klass, hasContent) {
+function queuePatch(id, fields, klass, hasContent, outcome) {
   if (!APPLY) return;
-  pendingPatches.push({ id, fields, klass, hasContent });
+  pendingPatches.push({ id, fields, klass, hasContent, outcome });
   if (pendingPatches.length >= 50) {
     writePromise = writePromise.then(() => flushPatches());
   }
@@ -497,7 +498,7 @@ if (IS_MAIN) (async () => {
         // Product page removed at the shop (hard 404, not a transient error).
         consec = 0;
         if (!isHidden) {
-          queuePatch(deal.product_id, { hidden: true }, 'liveness', false);
+          queuePatch(deal.product_id, { hidden: true }, 'liveness', false, 'gone');
           hidden++;
           reasons.gone = (reasons.gone || 0) + 1;
         } else {
@@ -519,13 +520,16 @@ if (IS_MAIN) (async () => {
         let rawDescription = live.descriptionHtml;
         // Renogy-class fallback [FR-1.4/Q-3]: product JSON has no description →
         // one extra paced page fetch; sections/metafields + JSON-LD rating.
-        if (captureHtml && !rawDescription && !deal.description_html) {
-          const pageHtml = await fetchPageHtml(deal.merchant_url);
-          if (pageHtml) {
-            const pc = extractPageContent(pageHtml);
+        // Skip when a prior page fetch already rated the row but found no
+        // extractable description — avoids re-fetching permanently thin pages.
+        if (captureHtml && !rawDescription && !deal.description_html && !deal.rating_source) {
+          const pg = await fetchPageHtml(deal.merchant_url);
+          if (pg.status === 403 || pg.status === 429) { noteHost(host, false, pg.status); consec++; }
+          if (pg.html) {
+            const pc = extractPageContent(pg.html);
             if (pc.descriptionHtml) { rawDescription = pc.descriptionHtml; pageCaptured++; }
             if (contentCols && pc.rating && pc.rating.value != null) {
-              contentFields.rating_value = Math.round(pc.rating.value * 100) / 100;
+              contentFields.rating_value = pc.rating.value;
               if (pc.rating.count != null) contentFields.rating_count = pc.rating.count;
               contentFields.rating_source = 'merchant-jsonld';
             }
@@ -547,18 +551,33 @@ if (IS_MAIN) (async () => {
 
         const want = decide(deal, live);
         if (want.hide) {
+          const outcome = want.reason; // 'no-discount' | 'out-of-stock'
           if (!isHidden) {
             // Visibility change = liveness; carry the captured content along.
-            queuePatch(deal.product_id, { hidden: true, ...contentFields }, 'liveness', hasContent);
+            queuePatch(deal.product_id, { hidden: true, ...contentFields }, 'liveness', hasContent, outcome);
             hidden++;
             reasons[want.reason] = (reasons[want.reason] || 0) + 1;
-          } else if (hasContent) {
-            // Stays hidden — content-only write, never bumps last_updated.
-            queuePatch(deal.product_id, contentFields, 'content', true);
-            ok++;
           } else {
-            ok++;
-            queueVerifiedOnly(deal.product_id);
+            // Stays hidden. Price TRACKING for in-stock no-discount rows [Q-2]:
+            // the promotion baseline needs the live price recorded — a
+            // content-class write per the amendment's visibility scoping rule
+            // (a tracked price on a hidden row is NOT proof of deal-ness and
+            // must never bump last_updated / resurrect under M2).
+            const track = { ...contentFields };
+            if (want.reason === 'no-discount') {
+              const liveSale = round2(live.price);
+              if (liveSale > 0 && liveSale !== Number(deal.sale_price)) {
+                track.sale_price = liveSale;
+                if (!(Number(deal.original_price) > liveSale)) track.original_price = liveSale;
+              }
+            }
+            if (Object.keys(track).length) {
+              queuePatch(deal.product_id, track, 'content', hasContent, outcome);
+              ok++;
+            } else {
+              ok++;
+              queueVerifiedOnly(deal.product_id);
+            }
           }
         } else {
           const fields = { ...contentFields };
@@ -578,7 +597,7 @@ if (IS_MAIN) (async () => {
             // Verified alive: price/visibility changes are liveness; a purely
             // content-bearing patch on a VISIBLE verified-alive row is also
             // liveness (the fetch itself proved availability).
-            queuePatch(deal.product_id, fields, 'liveness', hasContent);
+            queuePatch(deal.product_id, fields, 'liveness', hasContent, 'ok-live');
           } else {
             ok++;
             queueTouch(deal.product_id);

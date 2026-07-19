@@ -17,6 +17,7 @@ import { DealAttributes } from '@/components/deals/DealAttributes';
 import { SponsoredBadge } from '@/components/deals/SponsoredBadge';
 import { productGallery } from '@/lib/utils/product-details';
 import { sanitizeDescriptionHtml } from '@/lib/utils/description-render';
+import { renderableAttrs } from '@/lib/utils/renderable-attrs';
 import { Badge } from '@/components/ui/badge';
 import { routing } from '@/i18n/routing';
 import { siteUrl } from '@/lib/utils/site-url';
@@ -108,6 +109,9 @@ export default async function DealDetailPage({ params }: Props) {
   // the deal record. A single-seller deal is a plain Offer, not an AggregateOffer
   // (which models multiple sellers and triggers Search Console warnings at offerCount:1).
   const gallery = productGallery(deal);
+  // Sanitize the captured description ONCE per request — reused by the
+  // description block and the more-images coupling check [FR-4.5].
+  const safeDescriptionHtml = deal.descriptionHtml ? sanitizeDescriptionHtml(deal.descriptionHtml) : '';
   const jsonLd = {
     '@context': 'https://schema.org/',
     '@type': 'Product',
@@ -127,22 +131,24 @@ export default async function DealDetailPage({ params }: Props) {
     // derived from the product name.
     ...(deal.modelNumber || deal.mpn ? { model: deal.modelNumber || deal.mpn } : {}),
     // [FR-5.1] Real feed attributes only (FR-PDP-6: nothing fabricated) —
-    // additionalProperty mirrors the visible attrs block one-to-one.
-    ...(deal.feedAttrs && Object.keys(deal.feedAttrs).length
+    // the SHARED renderable gate keeps markup identical to the visible attrs
+    // block and the /md surface (three-surface parity).
+    ...(Object.keys(renderableAttrs(deal.feedAttrs)).length
       ? {
-          additionalProperty: Object.entries(deal.feedAttrs).map(([name, value]) => ({
+          additionalProperty: Object.entries(renderableAttrs(deal.feedAttrs)).map(([name, value]) => ({
             '@type': 'PropertyValue', name, value,
           })),
         }
       : {}),
-    // [Q-5] aggregateRating ONLY with provenance — second-hand ratings are
-    // never emitted unattributed.
-    ...(deal.ratingSource && deal.ratingValue != null
+    // [Q-5] aggregateRating ONLY with provenance AND a count — Google requires
+    // ratingCount/reviewCount inside AggregateRating; the visible block may
+    // still show count-less ratings, the markup must not.
+    ...(deal.ratingSource && deal.ratingValue != null && deal.ratingCount != null
       ? {
           aggregateRating: {
             '@type': 'AggregateRating',
             ratingValue: deal.ratingValue,
-            ...(deal.ratingCount != null ? { ratingCount: deal.ratingCount } : {}),
+            ratingCount: deal.ratingCount,
           },
         }
       : {}),
@@ -336,7 +342,7 @@ export default async function DealDetailPage({ params }: Props) {
       {/* Product details: merchant-captured HTML (sanitized in DealDescription)
           with the plain feed description as fallback. The component owns the
           section — it renders nothing when neither source yields content. */}
-      <DealDescription html={deal.descriptionHtml} text={deal.description} title={t('details')} />
+      <DealDescription safeHtml={safeDescriptionHtml} text={deal.description} title={t('details')} />
 
       {/* Real product attributes from the feed [FR-4.1]: attrs + shipping
           tables and the provenance-gated rating block. Renders nothing when
@@ -384,7 +390,7 @@ export default async function DealDetailPage({ params }: Props) {
       {/* [FR-4.5] The suppression check runs on the SANITIZED output — what
           actually renders — not the raw stored HTML, so a sanitizer change can
           never silently strip inline images while this section stays hidden. */}
-      {!(deal.descriptionHtml && sanitizeDescriptionHtml(deal.descriptionHtml).includes('<img')) && gallery.length > 1 && (
+      {gallery.length > 1 && !safeDescriptionHtml.includes('<img') && (
         <section data-block="more-images" className="mt-10 border-t border-zinc-100 pt-8">
           <h2 className="mb-4 text-lg font-semibold text-zinc-900">{t('moreImages')}</h2>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">

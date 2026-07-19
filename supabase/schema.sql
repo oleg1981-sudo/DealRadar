@@ -400,6 +400,7 @@ alter table public.deals add column if not exists rating_value       numeric(3,2
 alter table public.deals add column if not exists rating_count       integer check (rating_count is null or rating_count >= 0);
 alter table public.deals add column if not exists rating_source      text;         -- provenance (Q-5): e.g. 'merchant-jsonld'; markup emitted ONLY when set
 alter table public.deals add column if not exists capture_run_id     text;         -- verify run that last wrote content (EC-1 provenance)
+alter table public.deals add column if not exists last_verify_outcome text;      -- per-row fetch outcome ('no-discount','out-of-stock','gone',…) — promotion eligibility (Q-2) + EC-21 cohorts
 
 -- Stalest-first ordering support (FR-3.2).
 create index if not exists deals_last_verified_idx

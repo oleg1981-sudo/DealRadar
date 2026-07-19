@@ -29,9 +29,9 @@ jobs:
   verify:
     if: github.repository_owner == 'oleg1981-sudo'
     runs-on: ubuntu-latest
-    # Budget arithmetic (2026-07-19, catalog ~33.3k sweep rows): verify
-    # --max-minutes 110 + enrich --max-minutes 25 + snapshot/IndexNow ~5 min
-    # < 150-min job timeout. The sweep can NEVER finish exhaustively in one
+    # Budget arithmetic (2026-07-19, catalog ~33.3k rows, ~10k fetchable):
+    # verify --max-minutes 105 + enrich --max-minutes 25 + snapshot ~5 +
+    # promote ~5 + IndexNow ~2 < 150-min job timeout (~8 min margin). The sweep can NEVER finish exhaustively in one
     # run (t23.intelliad.de alone holds ~22.9k redirect rows; ROCKBROS ~4.6k)
     # — the soft budgets stop each step cleanly so every later step always
     # runs, and stalest-first ordering (Stage 2) rotates coverage across runs.
@@ -48,9 +48,9 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: |
           if [ "${{ github.event.inputs.dry_run }}" = "true" ]; then
-            node scripts/verify-awin.cjs --max-minutes 110
+            node scripts/verify-awin.cjs --max-minutes 105
           else
-            node scripts/verify-awin.cjs --apply --max-minutes 110
+            node scripts/verify-awin.cjs --apply --max-minutes 105
           fi
 
       # Top up sparse galleries from the live shop (feeds like BlazeVideo ship

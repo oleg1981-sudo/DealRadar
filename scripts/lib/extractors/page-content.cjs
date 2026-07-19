@@ -18,10 +18,15 @@
 /** All parsed JSON-LD objects in the page (malformed blocks skipped). */
 function jsonLdBlocks(html) {
   const out = [];
-  const re = /<script type="application\/ld\+json">([\s\S]*?)<\/script>/g;
+  const re = /<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/g;
   let m;
   while ((m = re.exec(html))) {
-    try { out.push(JSON.parse(m[1])); } catch { /* malformed block — skip */ }
+    try {
+      const parsed = JSON.parse(m[1]);
+      // Unwrap @graph containers; flatten arrays.
+      const nodes = Array.isArray(parsed) ? parsed : parsed && parsed['@graph'] ? parsed['@graph'] : [parsed];
+      out.push(...(Array.isArray(nodes) ? nodes : [nodes]));
+    } catch { /* malformed block — skip */ }
   }
   return out;
 }
@@ -39,7 +44,11 @@ function metafieldRichTextBlocks(html) {
     let t;
     while (depth > 0 && (t = tag.exec(html))) {
       depth += t[0][1] === '/' ? -1 : 1;
-      if (depth === 0) { blocks.push(html.slice(i, t.index)); break; }
+      if (depth === 0) {
+        blocks.push(html.slice(i, t.index));
+        re.lastIndex = t.index; // nested metafield divs must not extract twice
+        break;
+      }
     }
   }
   return blocks;
@@ -55,44 +64,53 @@ function ogDescription(html) {
  * descriptionHtml is RAW page HTML — the caller MUST pass it through
  * reduceMerchantHtml (same sanitation contract as product-JSON captures).
  */
+/** Normalize a JSON-LD aggregateRating node to the deals schema (0–5, 2dp,
+ *  integer count) — or null when out of range/scale-unknown. */
+function normalizeRating(ar) {
+  if (!ar || ar.ratingValue == null) return null;
+  let value = Number(ar.ratingValue);
+  const best = ar.bestRating != null ? Number(ar.bestRating) : 5;
+  if (Number.isFinite(best) && best > 0 && best !== 5) value = (value / best) * 5;
+  if (!Number.isFinite(value) || value < 0 || value > 5) return null;
+  const rawCount = ar.ratingCount != null ? Number(ar.ratingCount) : (ar.reviewCount != null ? Number(ar.reviewCount) : null);
+  const count = Number.isInteger(rawCount) && rawCount >= 0 ? rawCount : null;
+  return { value: Math.round(value * 100) / 100, count };
+}
+
 function extractPageContent(html) {
+  // Rating binds to the FIRST Product/ProductGroup node (page order) — later
+  // blocks (related-product carousels, bundles) must never overwrite it.
   let rating = null;
   let ldDescription = null;
-  for (const b of jsonLdBlocks(html)) {
-    const nodes = Array.isArray(b) ? b : [b];
-    for (const n of nodes) {
-      if (!n || typeof n !== 'object') continue;
-      if ((n['@type'] === 'Product' || n['@type'] === 'ProductGroup')) {
-        if (!ldDescription && typeof n.description === 'string' && n.description.trim()) ldDescription = n.description;
-        const ar = n.aggregateRating;
-        if (ar && ar.ratingValue != null) {
-          const value = Number(ar.ratingValue);
-          const count = ar.ratingCount != null ? Number(ar.ratingCount) : (ar.reviewCount != null ? Number(ar.reviewCount) : null);
-          if (Number.isFinite(value)) rating = { value, count: Number.isFinite(count) ? count : null };
-        }
-      }
+  for (const n of jsonLdBlocks(html)) {
+    if (!n || typeof n !== 'object') continue;
+    const types = Array.isArray(n['@type']) ? n['@type'] : [n['@type']];
+    if (types.includes('Product') || types.includes('ProductGroup')) {
+      if (!ldDescription && typeof n.description === 'string' && n.description.trim()) ldDescription = n.description;
+      if (!rating) rating = normalizeRating(n.aggregateRating);
     }
   }
   if (ldDescription) return { descriptionHtml: ldDescription, descriptionSource: 'page-jsonld', rating };
   // Anchor on the PRODUCT-description section: pages carry metafield rich-text
-  // in unrelated sections too (returns policy, loyalty banners) and "largest
-  // wins" picks boilerplate — verified on de.renogy.com. Only when no product
-  // section exists do we fall back to page-wide blocks.
+  // in unrelated sections too (returns policy, loyalty banners) and page-wide
+  // extraction picks boilerplate — verified on de.renogy.com. No product
+  // section → NO metafield extraction (og:description is the safe fallback);
+  // publishing boilerplate is worse than publishing a short description.
   const secStart = html.search(/class="[^"]*section-product-description/);
-  const scope = secStart >= 0
-    ? html.slice(secStart, html.indexOf('</section>', secStart) + 10 || undefined)
-    : html;
-  let blocks = metafieldRichTextBlocks(scope);
-  if (!blocks.length && secStart >= 0) blocks = metafieldRichTextBlocks(html);
-  if (blocks.length) {
-    // Within the product section every block is product content (description,
-    // notes, package contents) — keep them all, in page order.
-    const joined = blocks.map((b) => b.trim()).filter(Boolean).join('\n');
-    if (joined) return { descriptionHtml: joined, descriptionSource: 'page-metafield', rating };
+  if (secStart >= 0) {
+    const end = html.indexOf('</section>', secStart);
+    const scope = html.slice(secStart, end >= 0 ? end + 10 : undefined);
+    const blocks = metafieldRichTextBlocks(scope);
+    if (blocks.length) {
+      // Within the product section every block is product content
+      // (description, notes, package contents) — keep them all, in page order.
+      const joined = blocks.map((b) => b.trim()).filter(Boolean).join('\n');
+      if (joined) return { descriptionHtml: joined, descriptionSource: 'page-metafield', rating };
+    }
   }
   const og = ogDescription(html);
   if (og) return { descriptionHtml: `<p>${og}</p>`, descriptionSource: 'page-og', rating };
   return { descriptionHtml: null, descriptionSource: null, rating };
 }
 
-module.exports = { extractPageContent, jsonLdBlocks, metafieldRichTextBlocks, ogDescription };
+module.exports = { extractPageContent, jsonLdBlocks, metafieldRichTextBlocks, ogDescription, normalizeRating };

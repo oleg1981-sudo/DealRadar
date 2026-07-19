@@ -8,7 +8,9 @@
  */
 import { getDealBySlug } from '@/lib/db/deals.repo';
 import { unproxyImage } from '@/lib/utils/product-details';
+import { renderableAttrs } from '@/lib/utils/renderable-attrs';
 import { siteUrl } from '@/lib/utils/site-url';
+import { routing } from '@/i18n/routing';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,12 +18,18 @@ const DISCLOSURE =
   'DealRadar may earn a commission when you buy through links on this site — at no extra cost to you.';
 
 export async function GET(_req: Request, { params }: { params: { locale: string; slug: string } }) {
+  // Route handlers bypass the locale layout's notFound() AND the middleware
+  // matcher (dotted paths) — validate here or /en.%0A…/md reflects attacker
+  // text into the pinned-label surface [review wf_0a8eb867].
+  if (!(routing.locales as readonly string[]).includes(params.locale)) {
+    return new Response('not found', { status: 404 });
+  }
   const deal = await getDealBySlug(params.slug);
   if (!deal) return new Response('not found', { status: 404 });
 
   const base = siteUrl();
   const gallery = [...new Set((deal.gallery?.length ? deal.gallery : [deal.imageUrl]).filter(Boolean).map((u) => unproxyImage(u as string)))];
-  const attrs = Object.entries(deal.feedAttrs ?? {});
+  const attrs = Object.entries(renderableAttrs(deal.feedAttrs));
   const lines = [
     `# ${deal.productName}`,
     '',
