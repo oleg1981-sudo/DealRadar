@@ -42,6 +42,11 @@ const opt = (f, d) => { const i = args.indexOf(f); return i >= 0 && args[i + 1] 
 const APPLY = has('--apply');
 const LIMIT = parseInt(opt('--limit', '0'), 10) || 0;
 const DELAY_MS = parseInt(opt('--delay', '1000'), 10) || 1000; // per-host pacing
+// Soft wall-clock budget [FR-3.1]: bounded so this step cannot overrun the
+// shared 150-min verify job (default present-with-invalid → 20).
+const MAX_MINUTES = (() => { const i = args.indexOf('--max-minutes'); if (i < 0) return 0; const n = parseInt(args[i + 1], 10); return Number.isFinite(n) && n > 0 ? n : 20; })();
+const T_START = Date.now();
+const overBudget = () => MAX_MINUTES && Date.now() - T_START > MAX_MINUTES * 60000;
 const ABANDON_AFTER = 5;                                        // consecutive blocks on a host -> skip its rest
 const HEADERS = {
   'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36',
@@ -128,6 +133,7 @@ function groupByHost(items) {
   await Promise.all([...byHost.entries()].map(async ([host, list]) => {
     let consec = 0, i = 0;
     for (; i < list.length; i++) {
+      if (overBudget()) { console.log(`[liveness] --max-minutes budget reached — leaving ${host} early`); break; }
       const deal = list[i];
       const status = await liveStatus(deal.merchant_url);
       done++;

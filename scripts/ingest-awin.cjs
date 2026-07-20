@@ -39,7 +39,7 @@ const DO_UPSERT = has('--upsert');
 const LIMIT = parseInt(opt('--limit', '0'), 10) || 0; // 0 = no cap
 const COUNTRY = opt('--country', 'DE').toUpperCase();
 const ALLOWED_CURRENCIES = new Set((opt('--currency', 'EUR')).toUpperCase().split(','));
-const BATCH = 500;
+const BATCH = 200;   // wider rows (feed_attrs jsonb) + more indexes → keep each bulk upsert under the statement timeout (57014)
 // Ingest-v2 (audit/2026-07-16): additionally pull every ACTIVE Google-format
 // feed via the feed-list endpoint. Google feeds are invisible to the
 // category-based AWIN_FEED_URL and carry no sale_price — their rows land
@@ -454,12 +454,30 @@ function supaHeaders(extra) {
 
 async function upsertBatch(rows) {
   if (!SUPABASE_URL || !KEY) throw new Error('--upsert needs SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY');
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/deals?on_conflict=product_id`, {
-    method: 'POST',
-    headers: supaHeaders({ 'Content-Type': 'application/json', Prefer: 'resolution=merge-duplicates,return=minimal' }),
-    body: JSON.stringify(rows),
-  });
-  if (!res.ok) throw new Error(`Supabase upsert failed: HTTP ${res.status} ${await res.text()}`);
+  // Bounded retry: a statement-timeout (57014 → HTTP 500) or transient 5xx on
+  // a bulk write is usually lock contention / a cold cache — retry with
+  // backoff before failing the whole ingest.
+  const backoff = [2000, 6000, 15000];
+  for (let attempt = 0; ; attempt++) {
+    let res;
+    try {
+      res = await fetch(`${SUPABASE_URL}/rest/v1/deals?on_conflict=product_id`, {
+        method: 'POST',
+        headers: supaHeaders({ 'Content-Type': 'application/json', Prefer: 'resolution=merge-duplicates,return=minimal' }),
+        body: JSON.stringify(rows),
+      });
+    } catch (e) {
+      if (attempt >= backoff.length) throw e;
+      await new Promise((r) => setTimeout(r, backoff[attempt]));
+      continue;
+    }
+    if (res.ok) return;
+    const body = await res.text();
+    const transient = res.status >= 500 || /57014|statement timeout/i.test(body);
+    if (!transient || attempt >= backoff.length) throw new Error(`Supabase upsert failed: HTTP ${res.status} ${body}`);
+    console.warn(`[awin] upsert ${rows.length} rows HTTP ${res.status} — retry ${attempt + 1}/${backoff.length}`);
+    await new Promise((r) => setTimeout(r, backoff[attempt]));
+  }
 }
 
 /**

@@ -3,6 +3,12 @@
 
 create extension if not exists pg_trgm;
 
+-- service_role is server-only (pipeline scripts' bulk upserts/PATCHes) — a
+-- generous statement timeout so a 33k-row catalog write can't hit 57014
+-- (statement timeout). Client-facing roles stay protective: anon 3s,
+-- authenticated 8s. [FR-3.4 follow-up: scheduled ingest #33 failed mid-upsert.]
+alter role service_role set statement_timeout = '60s';
+
 create table if not exists public.deals (
   product_id        text primary key,          -- provider-prefixed: "kelkoo:12345"
   product_name      text not null,
