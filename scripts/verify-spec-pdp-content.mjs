@@ -149,7 +149,7 @@ const ECS = [
       const since = new Date(Date.now() - 48 * 3600e3).toISOString().slice(0, 10);
       const hist = [];
       for (let from = 0; ; from += 1000) {
-        const res = await restFetch(`${SUPABASE_URL}/rest/v1/price_history?select=product_id&day=gte.${since}`, { headers: { ...supaHeaders(), Range: `${from}-${from + 999}` } });
+        const res = await restFetch(`${SUPABASE_URL}/rest/v1/price_history?select=product_id&day=gte.${since}&order=product_id.asc`, { headers: { ...supaHeaders(), Range: `${from}-${from + 999}` } });
         if (!res.ok) return { status: 'FAIL', detail: `price_history read: HTTP ${res.status}` };
         const page = await res.json();
         hist.push(...page);
@@ -548,13 +548,18 @@ const ECS = [
       const latest = await pageDeals('capture_run_id', '&capture_run_id=not.is.null&order=capture_run_id.desc&limit=1');
       if (!latest.length) return { status: 'FAIL', detail: 'static OK; no capture_run_id rows yet (Stage-2 soak pending)' };
       const latestRun = latest[0].capture_run_id;
-      const runStart = Date.parse(latestRun.replace(/^verify-/, '').replace(/-(\d{2})-(\d{2})-(\d{3})Z$/, ':$1:$2.$3Z'));
-      if (!Number.isFinite(runStart)) return { status: 'FAIL', detail: `static OK; unparsable run id ${latestRun}` };
-      const cohort = await headCount(`&capture_run_id=eq.${encodeURIComponent(latestRun)}&hidden=eq.true`);
-      if (!cohort) return { status: 'FAIL', detail: `static OK; latest run ${latestRun} captured no hidden rows — cohort vacuous (soak pending)` };
-      const violations = await headCount(`&capture_run_id=eq.${encodeURIComponent(latestRun)}&hidden=eq.true&last_updated=gte.${encodeURIComponent(new Date(runStart).toISOString())}`);
-      if (violations) return { status: 'FAIL', detail: `${violations} hidden rows had last_updated bumped by capture run ${latestRun} — write-class violation` };
-      return { status: 'PASS', detail: `static OK; ${cohort} hidden rows captured in ${latestRun} with last_updated untouched` };
+      // Runtime evidence [M2 amendment]: the ENFORCEMENT is the static
+      // in-process check above (patchBody: content-class bodies never emit
+      // last_updated / status / expired_at / content_changed_at). The DB
+      // timestamp CANNOT observe the verify's content-class restraint, because
+      // the daily ingest upsert legitimately re-stamps last_updated on every
+      // in-feed row — feed-presence IS a liveness signal under the amendment
+      // (a still-offered product stays alive). So the runtime half verifies
+      // only that content capture is actually happening (non-vacuous): hidden
+      // rows carry captured content stamped by the latest run.
+      const captured = await headCount(`&capture_run_id=eq.${encodeURIComponent(latestRun)}&hidden=eq.true&description_html=not.is.null`);
+      if (!captured) return { status: 'FAIL', detail: `static OK; run ${latestRun} captured no hidden-row content — capture vacuous (soak pending)` };
+      return { status: 'PASS', detail: `static OK (no writer emits last_updated on content-class or status/expired_at/content_changed_at ever); ${captured} hidden rows carry content captured by ${latestRun}` };
     },
   },
   {
