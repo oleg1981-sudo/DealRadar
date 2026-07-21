@@ -24,6 +24,37 @@ interface SearchResult {
 
 const EMPTY: SearchResult = { products: [], categories: [], brands: [] };
 
+/**
+ * Modern Apple-style activity indicator: a faint full-circle track with one
+ * rounded arc sweeping smoothly around it. (The older iOS look — 8 tapered
+ * spokes stepping discretely — reads as choppy at 16px.)
+ *
+ * The rotation MUST be the only transform on this element: Tailwind's `spin`
+ * keyframes are `none → rotate(360deg)`, so the `from: none` wipes any other
+ * transform for the whole animation. Centering therefore lives on the wrapper.
+ * Decorative — the input carries `aria-busy` for assistive tech.
+ */
+function SearchSpinner({ className }: { className?: string }) {
+  // r=6.25 → circumference ≈ 39.3; a 10.5 dash draws roughly a quarter arc.
+  return (
+    <svg
+      viewBox="0 0 16 16"
+      aria-hidden
+      className={`animate-spin [animation-duration:0.7s] ${className ?? ''}`}
+    >
+      <circle cx="8" cy="8" r="6.25" fill="none" stroke="currentColor" strokeWidth="2" opacity="0.2" />
+      <circle
+        cx="8" cy="8" r="6.25"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeDasharray="10.5 28.8"
+      />
+    </svg>
+  );
+}
+
 export function SearchBar({ variant = 'header' }: { variant?: 'header' | 'hero' } = {}) {
   const isHero = variant === 'hero';
   const t = useTranslations();
@@ -34,6 +65,7 @@ export function SearchBar({ variant = 'header' }: { variant?: 'header' | 'hero' 
   const [q, setQ] = useState('');
   const [results, setResults] = useState<SearchResult>(EMPTY);
   const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
   const abortRef = useRef<AbortController>();
   const rootRef = useRef<HTMLDivElement>(null);
@@ -55,8 +87,12 @@ export function SearchBar({ variant = 'header' }: { variant?: 'header' | 'hero' 
     if (value.trim().length < 3) {
       setResults(EMPTY);
       setOpen(false);
+      setLoading(false);
       return;
     }
+    // Spin from the keystroke, not from the fetch: the 200 ms debounce is dead
+    // time the user would otherwise read as "nothing happened".
+    setLoading(true);
     debounceRef.current = setTimeout(async () => {
       const ctrl = new AbortController();
       abortRef.current = ctrl;
@@ -70,6 +106,11 @@ export function SearchBar({ variant = 'header' }: { variant?: 'header' | 'hero' 
           setOpen(true);
         }
       } catch { /* aborted or offline — keep previous state */ }
+      finally {
+        // Only the newest request may stop the spinner: an aborted older one
+        // settling here would otherwise blink it off mid-typing.
+        if (abortRef.current === ctrl) setLoading(false);
+      }
     }, 200);
   };
 
@@ -93,13 +134,26 @@ export function SearchBar({ variant = 'header' }: { variant?: 'header' | 'hero' 
         className={isHero ? 'flex gap-2' : ''}
       >
         <div className="relative flex-1">
-          <Search
-            className={`pointer-events-none absolute top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400 ${isHero ? 'left-3.5' : 'left-3'}`}
-            aria-hidden
-          />
+          {loading ? (
+            // The centering transform lives on the WRAPPER, never on the
+            // spinning SVG: `animate-spin`'s keyframes set `transform: rotate()`
+            // outright, which would overwrite `-translate-y-1/2` and drop the
+            // icon half its height mid-animation.
+            <span
+              className={`pointer-events-none absolute top-1/2 -translate-y-1/2 ${isHero ? 'left-3.5' : 'left-3'}`}
+            >
+              <SearchSpinner className="h-4 w-4 text-accent" />
+            </span>
+          ) : (
+            <Search
+              className={`pointer-events-none absolute top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400 ${isHero ? 'left-3.5' : 'left-3'}`}
+              aria-hidden
+            />
+          )}
           <input
             type="search"
             role="combobox"
+            aria-busy={loading}
             aria-expanded={open}
             aria-controls={dropdownId}
             aria-label={t('search.placeholder')}
