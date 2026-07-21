@@ -37,8 +37,6 @@ export function PriceHeatBar({
   rangeCaptionLabel: string;
   todayLabel: string;
 }) {
-  const low = formatPrice(window.low, currency, locale);
-  const high = formatPrice(window.high, currency, locale);
   const today = formatPrice(window.current, currency, locale);
 
   // Chronological mode plots the recorded curve oldest → newest. The fallback
@@ -55,10 +53,20 @@ export function PriceHeatBar({
   const points = chronological ? series.points : [window.low, window.high];
   // Caption is mode-bound: a synthetic range must never read as history.
   const caption = chronological ? captionLabel : rangeCaptionLabel;
+  // Axis bounds must frame whatever the line actually plots. In history mode
+  // that is the RECORDED data — scaling to window.high (the compare-at
+  // reference, which was never an observed price) squashes real movement into
+  // a sliver at the floor: 999.99 for five days then 699.99 today, drawn
+  // against a 1699.99 reference, occupied the bottom 30% and read as flat.
+  // Range mode keeps window.low/high, because there the line IS that range.
+  const axisLow = chronological ? Math.min(...points) : window.low;
+  const axisHigh = chronological ? Math.max(...points) : window.high;
+  const low = formatPrice(axisLow, currency, locale);
+  const high = formatPrice(axisHigh, currency, locale);
   const last = points.length - 1;
-  const span = window.high - window.low || 1;
+  const span = axisHigh - axisLow || 1;
   const x = (i: number) => PAD_X + (i / last) * (VB_W - 2 * PAD_X);
-  const y = (v: number) => PAD_Y + (1 - (v - window.low) / span) * (VB_H - 2 * PAD_Y); // high→top, low→bottom
+  const y = (v: number) => PAD_Y + (1 - (v - axisLow) / span) * (VB_H - 2 * PAD_Y); // high→top, low→bottom
 
   const pts = points.map((v, i) => `${x(i).toFixed(2)},${y(v).toFixed(2)}`);
   const line = `M${pts.join(' L')}`;
