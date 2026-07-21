@@ -7,6 +7,7 @@
   "home": {
     "heroTitle": "Znajdź <em>prawdziwe</em> okazje, nie fałszywe promocje",
     "heroSubtitle": "Śledź spadki cen, porównuj historię cen i przechodź prosto do zaufanych sklepów.",
+    "dealCount": "<hl>{count, number}</hl> prawdziwych ofert w serwisie",
     "heroDisclosure": "Nie sprzedajemy produktów bezpośrednio — pomagamy znaleźć zweryfikowane okazje i przekierowujemy Cię do zaufanych sklepów.",
     "heroCta": "Szukaj",
     "topDeals": "Najlepsze okazje w {country}",

@@ -7,6 +7,7 @@
   "home": {
     "heroTitle": "Find <em>ægte</em> tilbud, ikke falske rabatter",
     "heroSubtitle": "Følg prisfald, sammenlign prishistorik, og gå direkte til betroede forhandlere.",
+    "dealCount": "<hl>{count, number}</hl> ægte tilbud på siden",
     "heroDisclosure": "Vi sælger ikke produkter direkte — vi hjælper dig med at finde verificerede tilbud og sender dig videre til betroede forhandlere.",
     "heroCta": "Søg",
     "topDeals": "Bedste tilbud i {country}",

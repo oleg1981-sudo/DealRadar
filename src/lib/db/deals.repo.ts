@@ -272,6 +272,28 @@ export async function dealsByIds(productIds: string[]): Promise<NormalizedDeal[]
   return out;
 }
 
+/**
+ * How many deals a visitor in `country` can actually browse right now — the
+ * hero's "N real deals" counter. HEAD + count only (no rows over the wire).
+ * Non-fatal: a counter is decoration, so a failure returns 0 and the caller
+ * simply omits the line rather than taking the homepage down.
+ */
+export async function countDeals(country: CountryCode): Promise<number> {
+  if (!supabaseConfigured()) {
+    return (await fetchDealsAcrossProviders({ country, limit: 500 })).length;
+  }
+  const { count, error } = await supabase()
+    .from(TABLE)
+    .select('product_id', { count: 'exact', head: true })
+    .eq('country', country)
+    .eq('hidden', false);
+  if (error) {
+    console.error('[deals.repo] countDeals failed (counter hidden):', error.message);
+    return 0;
+  }
+  return count ?? 0;
+}
+
 export async function distinctBrands(country: CountryCode, category?: CategorySlug): Promise<string[]> {
   if (!supabaseConfigured()) {
     const deals = await fetchDealsAcrossProviders({ country, category, limit: 500 });

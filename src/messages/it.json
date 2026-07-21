@@ -7,6 +7,7 @@
   "home": {
     "heroTitle": "Trova <em>vere</em> offerte, non finti sconti",
     "heroSubtitle": "Monitora i cali di prezzo, confronta lo storico dei prezzi e vai direttamente ai rivenditori affidabili.",
+    "dealCount": "<hl>{count, number}</hl> offerte reali sul sito",
     "heroDisclosure": "Non vendiamo prodotti direttamente: ti aiutiamo a trovare offerte verificate e ti reindirizziamo a rivenditori affidabili.",
     "heroCta": "Cerca",
     "topDeals": "Migliori offerte in {country}",

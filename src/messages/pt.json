@@ -7,6 +7,7 @@
   "home": {
     "heroTitle": "Encontre ofertas <em>reais</em>, não descontos falsos",
     "heroSubtitle": "Acompanhe descidas de preço, compare o histórico de preços e vá diretamente a lojas de confiança.",
+    "dealCount": "<hl>{count, number}</hl> ofertas reais no site",
     "heroDisclosure": "Não vendemos produtos diretamente — ajudamos a encontrar ofertas verificadas e encaminhamos para lojas de confiança.",
     "heroCta": "Pesquisar",
     "topDeals": "Melhores ofertas em {country}",

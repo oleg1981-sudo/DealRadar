@@ -1,17 +1,27 @@
+import { cookies } from 'next/headers';
 import { getTranslations } from 'next-intl/server';
 import Image from 'next/image';
 import { ShieldCheck } from 'lucide-react';
-import { SearchBar } from '@/components/search/SearchBar';
+import { countDeals } from '@/lib/db/deals.repo';
+import { parseLocationCookie, LOCATION_COOKIE } from '@/lib/geo/resolve';
+import { DEFAULT_COUNTRY } from '@/lib/geo/countries';
 
 /**
- * Home hero: headline + value prop, a prominent search (the dynamic SearchBar
- * with live suggestions) and a trust disclosure, with a decorative
- * illustration. A rounded warm-peach card constrained to the content width
- * (same as the deal grid); sits between the header and the category bar.
- * Server component.
+ * Home hero: headline + value prop, a live count of the deals a visitor can
+ * actually browse, and a trust disclosure, with a decorative illustration. A
+ * rounded warm-peach card constrained to the content width (same as the deal
+ * grid); sits between the header and the category bar. Server component.
+ *
+ * The hero search was removed 2026-07-21: the header carries a search on every
+ * page, so the prime slot now shows catalogue size instead of a duplicate box.
  */
 export async function HeroBanner() {
   const t = await getTranslations();
+  // Count what THIS visitor can browse (country-scoped), so the number always
+  // matches the catalogue behind it rather than a global figure they can't see.
+  const cookieStore = await cookies();
+  const loc = parseLocationCookie(cookieStore.get(LOCATION_COOKIE)?.value);
+  const dealCount = await countDeals(loc?.country ?? DEFAULT_COUNTRY);
 
   return (
     <section className="mx-auto max-w-7xl px-4 pt-8">
@@ -28,9 +38,16 @@ export async function HeroBanner() {
             </h1>
             <p className="mt-3 max-w-md text-sm text-zinc-600 sm:text-base">{t('home.heroSubtitle')}</p>
 
-            <div className="mt-5 max-w-xl">
-              <SearchBar variant="hero" />
-            </div>
+            {/* Catalogue size. Hidden when the count is unavailable (0) rather
+                than announcing "0 real deals". */}
+            {dealCount > 0 && (
+              <p className="mt-5 text-2xl font-bold tracking-tight text-zinc-900 sm:text-3xl">
+                {t.rich('home.dealCount', {
+                  count: dealCount,
+                  hl: (chunks) => <span className="text-accent">{chunks}</span>,
+                })}
+              </p>
+            )}
 
             <p className="mt-3 flex items-start gap-1.5 text-xs text-zinc-500">
               <ShieldCheck className="mt-px h-4 w-4 shrink-0 text-accent" aria-hidden />

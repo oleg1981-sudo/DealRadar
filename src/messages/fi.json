@@ -7,6 +7,7 @@
   "home": {
     "heroTitle": "Löydä <em>aitoja</em> tarjouksia, ei valealennuksia",
     "heroSubtitle": "Seuraa hinnanlaskuja, vertaa hintahistoriaa ja siirry suoraan luotettuihin kauppoihin.",
+    "dealCount": "<hl>{count, number}</hl> aitoa tarjousta sivustolla",
     "heroDisclosure": "Emme myy tuotteita suoraan — autamme sinua löytämään vahvistettuja tarjouksia ja ohjaamme sinut luotettaviin kauppoihin.",
     "heroCta": "Hae",
     "topDeals": "Parhaat tarjoukset – {country}",
