@@ -91,6 +91,11 @@ export interface DealFilters extends DealQuery {
    *  page whose displayed price changes after JS runs). Category/search pages
    *  leave this unset so those deals stay findable there. */
   excludeHomepageHidden?: boolean;
+  /** OR-any match: a product matches if its name contains ANY of these terms.
+   *  Used for a mega-menu DEPARTMENT click ("show everything under Fix It
+   *  Yourself") — the union of its leaf terms, which no single `q` can express.
+   *  Terms come from the trusted category tree, but are sanitized anyway. */
+  anyTerms?: string[];
 }
 
 export interface PagedDeals {
@@ -131,6 +136,16 @@ function applyDealFilters(q: any, filters: DealFilters): any {
   // wildcards), so they're safe to interpolate into ilike.
   for (const tok of filters.q ? queryTokens(filters.q) : []) {
     q = q.or(`product_name.ilike.%${tok}%,brand.ilike.%${tok}%`);
+  }
+  // OR-any (department "show all"): match products whose name contains any one
+  // of the terms. Sanitized to letters/digits/space/hyphen so the values are
+  // safe to interpolate (strips PostgREST specials , ( ) " and LIKE wildcards).
+  if (filters.anyTerms?.length) {
+    const parts = filters.anyTerms
+      .map((t) => t.replace(/[^\p{L}\p{N} -]/gu, '').trim())
+      .filter(Boolean)
+      .map((t) => `product_name.ilike.%${t}%`);
+    if (parts.length) q = q.or(parts.join(','));
   }
   if (filters.minDiscountPercent) q = q.gte('discount_percent', filters.minDiscountPercent);
   if (filters.minPrice !== undefined) q = q.gte('sale_price', filters.minPrice);
@@ -256,11 +271,25 @@ export async function distinctBrands(country: CountryCode, category?: CategorySl
     return [...new Set(deals.map((d) => d.brand).filter((b): b is string => Boolean(b)))].sort();
   }
   // Supabase has no DISTINCT in the JS client; use the RPC defined in schema.sql.
-  const { data, error } = await supabase().rpc('distinct_brands', {
-    p_country: country,
-    p_category: category ?? null,
-  });
-  if (error) throw new Error(`[deals.repo] distinct_brands failed: ${error.message}`);
+  // NON-FATAL + time-boxed: on a huge category (e.g. ~22k pharmacy rows) the
+  // DISTINCT scan can exceed the DB statement timeout (~8s) and would otherwise
+  // crash OR stall the whole category/search page. The brand filter is a nicety,
+  // not core, so we race it against a short timeout and degrade to an empty list.
+  // (A `deals(country, category, brand)` index makes this fast — see schema.sql.)
+  const rpc = supabase()
+    .rpc('distinct_brands', { p_country: country, p_category: category ?? null })
+    .then((r) => r); // PostgREST builder resolves {data,error}; it never rejects
+  const timeout = new Promise<null>((resolve) => setTimeout(() => resolve(null), 3000));
+  const result = await Promise.race([rpc, timeout]);
+  if (!result) {
+    console.warn('[deals.repo] distinct_brands slow — brand filter skipped for this view');
+    return [];
+  }
+  const { data, error } = result;
+  if (error) {
+    console.error('[deals.repo] distinct_brands failed (brand filter disabled):', error.message);
+    return [];
+  }
   return ((data ?? []) as { brand: string }[]).map((r) => r.brand);
 }
 

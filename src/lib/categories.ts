@@ -27,6 +27,11 @@ export const CATEGORIES: Category[] = [
       { name: 'TVs', children: ['OLED TVs', 'QLED & LED TVs', 'Soundbars', 'Streaming Devices', 'TV Accessories'] },
       { name: 'Home Audio', children: ['Speakers', 'Headphones', 'Hi-Fi Systems', 'Microphones'] },
       { name: 'Phones & Wearables', children: ['Smartphones', 'Smartwatches', 'Tablets', 'Cases & Chargers'] },
+      // DIY repair parts (GSMnet et al.). Leaf terms are the German words in the
+      // part names — "Rückkamera" (10) beats "Kamera" (6) in matchSubCategory's
+      // longest-match, so a replacement camera module lands here, not under
+      // Cameras, while a real "Digitalkamera" (no repair leaf) stays in Cameras.
+      { name: 'Fix It Yourself', children: ['Rückkamera', 'Frontkamera', 'Displayeinheit', 'Ladebuchse', 'Ladeanschluss', 'Ersatzakku', 'Akkudeckel', 'Flexkabel', 'Mittelrahmen', 'Backcover', 'Ersatzteil', 'Reparatur'] },
       { name: 'Gaming', children: ['Consoles', 'Video Games', 'Controllers', 'Gaming PCs', 'VR Headsets'] },
       { name: 'Cameras', children: ['Digital Cameras', 'Lenses', 'Drones', 'Action Cameras', 'Kamera'] },
       { name: 'Home Appliances', children: ['Washing Machines', 'Fridges', 'Vacuum Cleaners', 'Coffee Machines'] },
@@ -138,6 +143,32 @@ export const CATEGORIES: Category[] = [
       { name: 'Outdoor & Camping', children: ['Tents', 'Sleeping Bags', 'Camping Gear', 'Cool Boxes'] },
       { name: 'Holidays', children: ['City Breaks', 'Beach Holidays', 'Package Deals', 'Flights'] },
       { name: 'Experiences', children: ['Day Trips', 'Activities', 'Spa & Wellness'] },
+    ],
+  },
+  {
+    // Leaf terms are the search `q` and — because the pet catalogue is
+    // German (Lyra Pet) — are the German words that actually occur in the
+    // product names, so the subcategory filters return real results.
+    slug: 'pets',
+    icon: 'PawPrint',
+    children: [
+      { name: 'Dogs', children: ['Hundefutter', 'Entenhälse'] },
+      { name: 'Cats', children: ['Katzenfutter', 'Katzenstreu'] },
+      { name: 'Horses', children: ['Mineralfutter', 'Lyra Horse'] },
+      { name: 'Wet Food', children: ['Fleischmahlzeit'] },
+      { name: 'Pet Care', children: ['Flohspray', 'Wespenspray'] },
+    ],
+  },
+  {
+    // Pharmacy catalogue (Aliva) is German — leaf terms are the German words
+    // in the product names.
+    slug: 'health',
+    icon: 'HeartPulse',
+    children: [
+      { name: 'Supplements', children: ['Nahrungsergänzung', 'Vitamin', 'Magnesium', 'Mikronährstoffe'] },
+      { name: 'Medicines', children: ['Kapseln', 'Tabletten', 'Tropfen', 'Ampullen'] },
+      { name: 'Medical Nutrition', children: ['Fresubin', 'Fortimel'] },
+      { name: 'Personal Care', children: ['Salbe', 'Balsam', 'Shampoo'] },
     ],
   },
 ];

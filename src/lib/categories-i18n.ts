@@ -35,6 +35,7 @@ const TERMS: Record<string, T> = {
   'Smartwatches': { de: 'Smartwatches', es: 'Smartwatches', fr: 'Montres connectées', it: 'Smartwatch', nl: 'Smartwatches', pl: 'Smartwatche', pt: 'Smartwatches', sv: 'Smartklockor', ro: 'Smartwatch-uri' },
   'Tablets': { de: 'Tablets', es: 'Tablets', fr: 'Tablettes', it: 'Tablet', nl: 'Tablets', pl: 'Tablety', pt: 'Tablets', sv: 'Surfplattor', ro: 'Tablete' },
   'Cases & Chargers': { de: 'Hüllen & Ladegeräte', es: 'Fundas y cargadores', fr: 'Coques et chargeurs', it: 'Custodie e caricatori', nl: 'Hoesjes & opladers', pl: 'Etui i ładowarki', pt: 'Capas e carregadores', sv: 'Fodral & laddare', ro: 'Huse și încărcătoare' },
+  'Fix It Yourself': { de: 'Selbst reparieren', es: 'Repáralo tú mismo', fr: 'Réparez vous-même', it: 'Ripara da te', nl: 'Zelf repareren', pl: 'Napraw samodzielnie', pt: 'Repare você mesmo', sv: 'Reparera själv', ro: 'Repară singur', da: 'Reparér selv', fi: 'Korjaa itse', no: 'Reparer selv' },
   'Gaming': { de: 'Gaming', es: 'Gaming', fr: 'Gaming', it: 'Gaming', nl: 'Gaming', pl: 'Gaming', pt: 'Gaming', sv: 'Gaming', ro: 'Gaming' },
   'Consoles': { de: 'Konsolen', es: 'Consolas', fr: 'Consoles', it: 'Console', nl: 'Consoles', pl: 'Konsole', pt: 'Consolas', sv: 'Konsoler', ro: 'Console' },
   'Video Games': { de: 'Videospiele', es: 'Videojuegos', fr: 'Jeux vidéo', it: 'Videogiochi', nl: 'Videogames', pl: 'Gry wideo', pt: 'Videojogos', sv: 'TV-spel', ro: 'Jocuri video' },

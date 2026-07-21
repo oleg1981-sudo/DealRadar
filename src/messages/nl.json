@@ -1,4 +1,9 @@
 {
+  "healthDisclaimer": {
+    "title": "Over gezondheids- en geneesmiddelaanbiedingen",
+    "body": "DealRadar is een prijsvergelijkingsdienst. Wij verkopen, verstrekken, adviseren of promoten het gebruik van geneesmiddelen niet — we tonen alleen aanbiedingen en verwijzen je door naar externe verkopers. Lees altijd de bijsluiter en vraag je arts of apotheker naar risico's en bijwerkingen.",
+    "acknowledge": "Ik begrijp het"
+  },
   "home": {
     "heroTitle": "Vind <em>echte</em> deals, geen nepkortingen",
     "heroSubtitle": "Volg prijsdalingen, vergelijk de prijsgeschiedenis en ga rechtstreeks naar betrouwbare winkels.",
@@ -19,7 +24,9 @@
     "toys": "Speelgoed",
     "automotive": "Auto",
     "books": "Boeken",
-    "travel": "Reizen"
+    "travel": "Reizen",
+    "pets": "Huisdieren",
+    "health": "Gezondheid"
   },
   "deal": {
     "goToDeal": "Bekijk bij <chip>{shop}</chip>",

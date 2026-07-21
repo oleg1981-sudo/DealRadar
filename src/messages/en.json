@@ -1,4 +1,9 @@
 {
+  "healthDisclaimer": {
+    "title": "About health & medicine listings",
+    "body": "DealRadar is a price-comparison service. We do not sell, dispense, advise on, or promote the use of any medicine — we only show deals and link you to third-party retailers. Always read the package leaflet and ask your doctor or pharmacist about risks and side effects.",
+    "acknowledge": "I understand"
+  },
   "home": {
     "heroTitle": "Find <em>real</em> deals, not fake discounts",
     "heroSubtitle": "Track price drops, compare price history, and go directly to trusted retailers.",
@@ -19,7 +24,9 @@
     "toys": "Toys",
     "automotive": "Automotive",
     "books": "Books",
-    "travel": "Travel"
+    "travel": "Travel",
+    "pets": "Pets",
+    "health": "Health"
   },
   "deal": {
     "goToDeal": "View at <chip>{shop}</chip>",

@@ -1,4 +1,9 @@
 {
+  "healthDisclaimer": {
+    "title": "Om hälso- och läkemedelserbjudanden",
+    "body": "DealRadar är en tjänst för prisjämförelse. Vi säljer, lämnar ut, ger råd om eller marknadsför inte användning av några läkemedel — vi visar bara erbjudanden och länkar dig till tredjepartsåterförsäljare. Läs alltid bipacksedeln och fråga din läkare eller farmaceut om risker och biverkningar.",
+    "acknowledge": "Jag förstår"
+  },
   "home": {
     "heroTitle": "Hitta <em>riktiga</em> erbjudanden, inte falska rabatter",
     "heroSubtitle": "Följ prissänkningar, jämför prishistorik och gå direkt till pålitliga butiker.",
@@ -19,7 +24,9 @@
     "toys": "Leksaker",
     "automotive": "Bil",
     "books": "Böcker",
-    "travel": "Resor"
+    "travel": "Resor",
+    "pets": "Husdjur",
+    "health": "Hälsa"
   },
   "deal": {
     "goToDeal": "Se hos <chip>{shop}</chip>",

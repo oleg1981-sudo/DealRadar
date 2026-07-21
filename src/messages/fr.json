@@ -1,4 +1,9 @@
 {
+  "healthDisclaimer": {
+    "title": "À propos des offres santé et médicaments",
+    "body": "DealRadar est un service de comparaison de prix. Nous ne vendons, ne délivrons, ne conseillons ni ne faisons la promotion de l'usage d'aucun médicament — nous montrons uniquement des offres et vous redirigeons vers des marchands tiers. Lisez toujours la notice et demandez conseil à votre médecin ou pharmacien concernant les risques et effets indésirables.",
+    "acknowledge": "J'ai compris"
+  },
   "home": {
     "heroTitle": "Trouvez de <em>vraies</em> offres, pas de fausses promos",
     "heroSubtitle": "Suivez les baisses de prix, comparez l'historique des prix et accédez directement aux marchands de confiance.",
@@ -19,7 +24,9 @@
     "toys": "Jouets",
     "automotive": "Auto",
     "books": "Livres",
-    "travel": "Voyage"
+    "travel": "Voyage",
+    "pets": "Animaux",
+    "health": "Santé"
   },
   "deal": {
     "goToDeal": "Voir sur <chip>{shop}</chip>",

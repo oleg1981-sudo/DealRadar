@@ -39,16 +39,17 @@ const nextConfig = {
     return [{ source: '/:path*', headers: SECURITY_HEADERS }];
   },
   images: {
-    // Provider CDNs vary per network; tighten this list once live feeds are on.
-    remotePatterns: [
-      { protocol: 'https', hostname: 'cdn.dummyjson.com' },    // mock product images
-      { protocol: 'https', hostname: '**.kelkoogroup.net' },
-      { protocol: 'https', hostname: '**.awin1.com' },
-      { protocol: 'https', hostname: '**.productserve.com' },  // AWIN feed image CDN (aw_image_url)
-      { protocol: 'https', hostname: 'cdn.shopify.com' },      // AWIN merchant gallery images (alternate_image)
-      { protocol: 'https', hostname: '**.tradedoubler.com' },
-      { protocol: 'https', hostname: '**.strackr.com' },
-    ],
+    // Any https host is allowed ON PURPOSE. The product-detail standard serves
+    // FULL-RES merchant originals (unproxyImage swaps AWIN's 200x200
+    // productserve thumbnail for the real image embedded in its `url` param),
+    // and those originals live on each merchant's own CDN — www.sanicare.de,
+    // cdn.shopify.com, … A fixed allowlist means every new advertiser that
+    // ingest-v2 onboards CRASHES its product pages with
+    // "Invalid src prop … hostname is not configured" until someone edits this
+    // file. Image URLs come from our own ingested feed rows, not user input,
+    // and CSP already permits `img-src https:`.
+    // Trade-off: /_next/image will optimize any https URL it is handed.
+    remotePatterns: [{ protocol: 'https', hostname: '**' }],
   },
 };
 

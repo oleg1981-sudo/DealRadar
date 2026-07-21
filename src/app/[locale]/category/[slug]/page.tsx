@@ -4,6 +4,7 @@ import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { DealGrid } from '@/components/deals/DealGrid';
 import { FilterBar } from '@/components/search/FilterBar';
 import { Pagination } from '@/components/search/Pagination';
+import { HealthDisclaimer } from '@/components/legal/HealthDisclaimer';
 import { queryDealsPaged, distinctBrands, type DealFilters } from '@/lib/db/deals.repo';
 import { randomSeed } from '@/lib/utils/rng';
 import { parseLocationCookie, LOCATION_COOKIE } from '@/lib/geo/resolve';
@@ -76,6 +77,7 @@ export default async function CategoryPage({
 
   return (
     <div>
+      {category === 'health' && <HealthDisclaimer />}
       <FilterBar brands={brands} />
       <section aria-live="polite">
         <h1 className="mb-6 text-xl font-semibold tracking-tight">

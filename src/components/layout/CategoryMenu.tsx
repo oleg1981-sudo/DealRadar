@@ -15,15 +15,21 @@ import { CATEGORIES } from '@/lib/categories';
 import { categoryTerm } from '@/lib/categories-i18n';
 import {
   ChevronLeft, ChevronRight, MonitorSmartphone, Shirt, Sofa, Bike, Sparkles,
-  ShoppingBasket, Blocks, Car, BookOpen, Plane, type LucideIcon,
+  ShoppingBasket, Blocks, Car, BookOpen, Plane, PawPrint, HeartPulse, type LucideIcon,
 } from 'lucide-react';
 
 const ICONS: Record<string, LucideIcon> = {
   MonitorSmartphone, Shirt, Sofa, Bike, Sparkles, ShoppingBasket, Blocks, Car, BookOpen, Plane,
+  PawPrint, HeartPulse,
 };
 
 const termHref = (slug: string, name: string) =>
   `/search?category=${slug}&q=${encodeURIComponent(name)}`;
+
+// A DEPARTMENT click shows everything beneath it: the search page expands
+// `dept` into the union of the department's leaf terms (a single `q` can't).
+const deptHref = (slug: string, name: string) =>
+  `/search?category=${slug}&dept=${encodeURIComponent(name)}`;
 
 export function CategoryMenu() {
   const t = useTranslations('categories');
@@ -185,7 +191,7 @@ export function CategoryMenu() {
               {active.children[activeSub] && (
                 <>
                   <Link
-                    href={termHref(active.slug, active.children[activeSub].name)}
+                    href={deptHref(active.slug, active.children[activeSub].name)}
                     onClick={close}
                     className="mb-3 inline-flex items-center gap-1 text-sm font-semibold text-zinc-900 hover:text-accent"
                   >
