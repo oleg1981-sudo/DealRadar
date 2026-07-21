@@ -44,7 +44,14 @@ export function PriceHeatBar({
   // Chronological mode plots the recorded curve oldest → newest. The fallback
   // draws cheapest → dearest, left to right (and bottom → top on the price
   // axis), so the line runs from the green bottom-left up to the red top-right.
-  const chronological = series !== undefined && !series.synthetic && series.points.length >= 2;
+  // A recorded series whose points are all the SAME price carries no shape: it
+  // renders as a flat line pinned to the axis floor while the axis top (the
+  // compare-at reference) is never touched — which reads as a broken chart. A
+  // freshly-tracked deal looks exactly like that until its price first moves.
+  // Until there is real variation the honest, informative view is the range
+  // (reference → today), which also re-captions away from "history".
+  const varies = series !== undefined && new Set(series.points).size > 1;
+  const chronological = series !== undefined && !series.synthetic && series.points.length >= 2 && varies;
   const points = chronological ? series.points : [window.low, window.high];
   // Caption is mode-bound: a synthetic range must never read as history.
   const caption = chronological ? captionLabel : rangeCaptionLabel;
