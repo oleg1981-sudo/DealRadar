@@ -26,6 +26,7 @@ const CATEGORY_HINT: Record<CategorySlug, string> = {
   electronics: 'electronics', fashion: 'fashion', 'home-garden': 'home garden',
   sports: 'sports', beauty: 'beauty health', 'food-grocery': 'food drink',
   toys: 'toys games', automotive: 'car accessories', books: 'books', travel: 'travel luggage',
+  pets: 'pet supplies', health: 'health pharmacy',
 };
 
 export class KelkooProvider implements PriceProvider {

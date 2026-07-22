@@ -1,7 +1,13 @@
 {
+  "healthDisclaimer": {
+    "title": "Despre ofertele de sănătate și medicamente",
+    "body": "DealRadar este un serviciu de comparare a prețurilor. Nu vindem, nu eliberăm, nu oferim sfaturi și nu promovăm utilizarea niciunui medicament — afișăm doar oferte și vă redirecționăm către comercianți terți. Citiți întotdeauna prospectul și întrebați medicul sau farmacistul despre riscuri și efecte secundare.",
+    "acknowledge": "Am înțeles"
+  },
   "home": {
     "heroTitle": "Găsește oferte <em>reale</em>, nu reduceri false",
     "heroSubtitle": "Urmărește scăderile de preț, compară istoricul prețurilor și mergi direct la comercianți de încredere.",
+    "dealCount": "<hl>{count, number}</hl> oferte reale pe site",
     "heroDisclosure": "Nu vindem produse direct — te ajutăm să găsești oferte verificate și te redirecționăm către comercianți de încredere.",
     "heroCta": "Caută",
     "topDeals": "Cele mai bune oferte în {country}",
@@ -19,7 +25,9 @@
     "toys": "Jucării",
     "automotive": "Auto",
     "books": "Cărți",
-    "travel": "Călătorii"
+    "travel": "Călătorii",
+    "pets": "Animale de companie",
+    "health": "Sănătate"
   },
   "deal": {
     "goToDeal": "Vezi pe <chip>{shop}</chip>",

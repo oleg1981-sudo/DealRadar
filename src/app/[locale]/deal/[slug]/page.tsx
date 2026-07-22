@@ -26,6 +26,7 @@ import { gaItem, gaItemAttr } from '@/lib/analytics/items';
 import { TrackViewItem } from '@/components/analytics/TrackView';
 import { matchSubCategory } from '@/lib/categories';
 import { categoryTerm } from '@/lib/categories-i18n';
+import { HealthDisclaimer } from '@/components/legal/HealthDisclaimer';
 
 // Always render from live data — like the category/search pages. Without this
 // Next caches the Supabase fetches, so the daily price verifier's updates (and
@@ -211,6 +212,7 @@ export default async function DealDetailPage({ params }: Props) {
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8">
+      {deal.category === 'health' && <HealthDisclaimer />}
       <TrackViewItem item={gaItem(deal)} currency={deal.currency} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdHtml }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: breadcrumbJsonLdHtml }} />

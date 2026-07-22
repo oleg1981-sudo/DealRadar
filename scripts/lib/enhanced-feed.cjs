@@ -48,7 +48,7 @@ const GOOGLE_TOP_LEVEL = {
   'Home & Garden': 'home-garden',
   'Furniture': 'home-garden',
   'Hardware': 'home-garden',
-  'Animals & Pet Supplies': 'home-garden',
+  'Animals & Pet Supplies': 'pets',
   'Business & Industrial': 'home-garden',
   'Sporting Goods': 'sports',
   'Health & Beauty': 'beauty',
@@ -111,6 +111,10 @@ function normalizeEnhancedRow(g, ctx) {
   const deepLink = g('aw_deep_link').trim();
   if (!advertiserId || !id || !deepLink) return null;
 
+  // Drop prescription-only medicines — not advertisable to the public (HWG).
+  // Optional-guarded so older callers without the predicate still work.
+  if (ctx.isPrescriptionOnly && ctx.isPrescriptionOnly(g('title'), g('description'))) return null;
+
   const price = parseEnhancedPrice(g('price'));
   if (!price || !ctx.allowedCurrencies.has(price.currency)) return null;
 
@@ -141,7 +145,12 @@ function normalizeEnhancedRow(g, ctx) {
     sale_price: salePrice,
     discount_percent: discountPercent,
     currency: price.currency,
-    category: googleCat ?? ctx.fallbackCategory(g('title')),
+    // Advertiser identity is the strongest signal for single-vertical
+    // merchants (a pharmacy's product titles vary wildly but the shop is 100%
+    // health), so it wins over the feed taxonomy and the title fallback.
+    // Optional-guarded so older callers without the field still work.
+    category: (ctx.advertiserCategory && ctx.advertiserCategory(g('advertiser_name')))
+      ?? googleCat ?? ctx.fallbackCategory(g('title')),
     brand: normalizeBrand(g('brand').trim()) || null, // census-seeded alias → canonical (FR-4.3)
     image_url: g('image_link').trim() || null,
     gallery: gallery.length ? gallery : null,

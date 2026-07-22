@@ -64,6 +64,16 @@ const PRODUCTS: Record<CategorySlug, { names: string[]; brands: string[]; base: 
     brands: ['Samsonite', 'TUI', 'Osprey', 'Booking Deals', 'American Tourister', 'Deuter'],
     base: [11, 1299],
   },
+  pets: {
+    names: ['Dry Dog Food 12kg', 'Cat Food Variety 24-Pack', 'Horse Mineral Feed 20kg', 'Scratching Post XL', 'Dog Chew Treats 1kg', 'Cat Litter 10L', 'Aquarium Filter Pro', 'Bird Seed Mix 5kg'],
+    brands: ['Josera', 'Royal Canin', 'Lyra Pet', 'Trixie', 'Purina', 'Vitakraft'],
+    base: [4, 149],
+  },
+  health: {
+    names: ['Vitamin D3 Drops', 'Magnesium 400 Capsules', 'Omega-3 Softgels', 'Probiotic Complex 60', 'Electrolyte Effervescent 20', 'Zinc Immune Support', 'Collagen Powder 300g', 'First-Aid Kit Compact'],
+    brands: ['Orthomol', 'Doppelherz', 'Abtei', 'tetesept', 'Pure Encapsulations', 'Vigantol'],
+    base: [5, 89],
+  },
 };
 
 const SHOPS: Partial<Record<CountryCode, string[]>> & { default: string[] } = {

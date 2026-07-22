@@ -48,6 +48,11 @@ create index if not exists deals_country_category_discount_idx
   on public.deals (country, category, discount_percent desc);
 create index if not exists deals_country_brand_idx
   on public.deals (country, brand) where brand is not null;
+-- distinct_brands(country, category): without category in the key, a huge
+-- category (e.g. ~22k pharmacy rows) makes the DISTINCT scan exceed the
+-- statement timeout. This composite serves it directly.
+create index if not exists deals_country_category_brand_idx
+  on public.deals (country, category, brand) where brand is not null;
 create index if not exists deals_last_updated_idx
   on public.deals (last_updated desc);
 

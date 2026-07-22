@@ -121,10 +121,54 @@ const CATEGORY_RULES = [
 // feed-taxonomy mapping so a bad category_name can't override a clear name match.
 const NAME_CATEGORY_OVERRIDES = [
   [/balkonkraftwerk|solarmodul|solarpanel|wechselrichter|erweiterungsakku|photovoltaik|\bsolar\b/i, 'electronics'],
+  // Pets (Lyra Pet): German pet-food/care words that occur in the titles.
+  [/lecker\.?pet|lyra\s*pet|lyra\s*horse|katzenfutter|hundefutter|pferdefutter|mineralfutter|fleischmahlzeit|entenhälse|flohspray|katzenstreu|tierfutter/i, 'pets'],
+  // Health (pharmacies): strong, unambiguous pharma signals only — bare words
+  // like "Vitamin"/"Shampoo"/"Salbe" are left out to avoid stealing beauty rows.
+  [/nahrungsergänzung|mikronährstoffe|brausetabletten|\bampullen?\b|\bglobuli\b|homöopath|arznei|orthomol|fresubin|fortimel/i, 'health'],
+  // Household cleaning/care chemicals. The feed taxonomy rules are English-only
+  // ("kitchen|garden|house|…"), so a German chemicals catalogue matched nothing
+  // and fell through to the `electronics` default (Profichemie, 2026-07-19).
+  // Placed LAST so the pharma/pet/solar rules above still win a shared word.
+  [/reiniger|reinigungs|putzmittel|spülmittel|waschmittel|entkalker|enteiser|entfeuchter|scheibenklar|allzweckreiniger/i, 'home-garden'],
 ];
 function nameOverrideCategory(productName) {
   for (const [re, slug] of NAME_CATEGORY_OVERRIDES) if (re.test(productName || '')) return slug;
   return null;
+}
+
+// Whole-merchant category override — the most reliable signal for advertisers
+// that sell a single vertical (a pharmacy is 100% health regardless of how any
+// one product is titled). Matched on the AWIN advertiser name; wins first.
+const ADVERTISER_CATEGORY = [
+  [/lyra\s*pet|lecker\.?pet/i, 'pets'],
+  [/\bapotheke\b|\baliva\b/i, 'health'],
+  [/\bbinu\b|korean\s+cosmetics/i, 'beauty'],
+  [/profichemie/i, 'home-garden'],   // household cleaning chemicals
+];
+function advertiserCategory(advertiserName) {
+  for (const [re, slug] of ADVERTISER_CATEGORY) if (re.test(advertiserName || '')) return slug;
+  return null;
+}
+
+// Prescription-only (Rx) exclusion — belt-and-suspenders for pharmacy feeds.
+// Advertising prescription-only medicines to the public is prohibited in DE
+// (HWG §10), so we drop them entirely rather than merely disclaiming. The
+// affiliate feed today carries ~0 genuine Rx (a Versandapotheke feed is
+// OTC/apothekenpflichtig), so this almost never fires — but it guards against a
+// feed change. CONSERVATIVE: only a clear POSITIVE Rx statement excludes; the
+// far more common "nicht verschreibungspflichtig" / "apothekenpflichtig" OTC
+// disclaimers must NOT (they'd wrongly drop 100+ OTC supplements).
+function isPrescriptionOnly(name, description) {
+  const hay = `${name || ''} ${description || ''}`.toLowerCase();
+  // Negated/OTC markers win — "nicht verschreibungspflichtig", "freiverkäuflich".
+  if (/nicht\s+(rezeptpflichtig|(apothekenpflichtig[, ]+)?verschreibungspflichtig)|frei\s*verk[äa]uflich/.test(hay)) return false;
+  // Only SELF-REFERENTIAL Rx statements exclude. The generic phrase
+  // "verschreibungspflichtige Medikamente" appears in interaction WARNINGS on
+  // OTC supplements ("persons taking prescription medicines…"), so it must not
+  // match — we require "IST verschreibungspflichtig", "rezeptpflichtig",
+  // "nur auf/gegen Rezept", or "verschreibungspflichtigeS Arzneimittel".
+  return /\brezeptpflichtig\b|\bist\s+verschreibungspflichtig\b|\bnur\s+(auf|gegen)\s+rezept\b|verschreibungspflichtiges\s+arzneimittel/.test(hay);
 }
 function mapCategory(categoryName, merchantCategory) {
   if (CATEGORY_EXACT[categoryName]) return CATEGORY_EXACT[categoryName];
@@ -137,6 +181,7 @@ function mapCategory(categoryName, merchantCategory) {
 const num = (v) => { v = (v || '').trim(); if (!v) return null; const f = parseFloat(v); return Number.isFinite(f) ? f : null; };
 function normalizeRow(g, collectAttrs) {
   if (g('in_stock').trim() !== '1') return null;            // only buyable items
+  if (isPrescriptionOnly(g('product_name'), g('description'))) return null; // Rx not advertisable
   const currency = (g('currency') || 'EUR').trim().toUpperCase();
   if (!ALLOWED_CURRENCIES.has(currency)) return null;       // keep the market's currency only
 
@@ -175,7 +220,7 @@ function normalizeRow(g, collectAttrs) {
     sale_price: sale,
     discount_percent: discountPercent,
     currency,
-    category: nameOverrideCategory(g('product_name')) ?? mapCategory(g('category_name').trim(), g('merchant_category').trim()),
+    category: advertiserCategory(g('merchant_name')) ?? nameOverrideCategory(g('product_name')) ?? mapCategory(g('category_name').trim(), g('merchant_category').trim()),
     brand: normalizeBrand(g('brand_name').trim()) || null, // census-seeded alias → canonical (FR-4.3)
     image_url: g('aw_image_url').trim() || g('merchant_image_url').trim() || null, // productserve proxy first
     gallery: gallery.length ? gallery : null,
@@ -356,6 +401,8 @@ async function runFeedListFeeds(counters) {
     country: COUNTRY,
     allowedCurrencies: ALLOWED_CURRENCIES,
     feedDescription,
+    advertiserCategory,
+    isPrescriptionOnly,
     fallbackCategory: (title) => nameOverrideCategory(title) ?? 'electronics',
     onUnmappedCategory: (p) => unmapped.set(p, (unmapped.get(p) || 0) + 1),
   };

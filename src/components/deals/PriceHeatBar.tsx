@@ -37,21 +37,36 @@ export function PriceHeatBar({
   rangeCaptionLabel: string;
   todayLabel: string;
 }) {
-  const low = formatPrice(window.low, currency, locale);
-  const high = formatPrice(window.high, currency, locale);
   const today = formatPrice(window.current, currency, locale);
 
   // Chronological mode plots the recorded curve oldest → newest. The fallback
   // draws cheapest → dearest, left to right (and bottom → top on the price
   // axis), so the line runs from the green bottom-left up to the red top-right.
-  const chronological = series !== undefined && !series.synthetic && series.points.length >= 2;
+  // A recorded series whose points are all the SAME price carries no shape: it
+  // renders as a flat line pinned to the axis floor while the axis top (the
+  // compare-at reference) is never touched — which reads as a broken chart. A
+  // freshly-tracked deal looks exactly like that until its price first moves.
+  // Until there is real variation the honest, informative view is the range
+  // (reference → today), which also re-captions away from "history".
+  const varies = series !== undefined && new Set(series.points).size > 1;
+  const chronological = series !== undefined && !series.synthetic && series.points.length >= 2 && varies;
   const points = chronological ? series.points : [window.low, window.high];
   // Caption is mode-bound: a synthetic range must never read as history.
   const caption = chronological ? captionLabel : rangeCaptionLabel;
+  // Axis bounds must frame whatever the line actually plots. In history mode
+  // that is the RECORDED data — scaling to window.high (the compare-at
+  // reference, which was never an observed price) squashes real movement into
+  // a sliver at the floor: 999.99 for five days then 699.99 today, drawn
+  // against a 1699.99 reference, occupied the bottom 30% and read as flat.
+  // Range mode keeps window.low/high, because there the line IS that range.
+  const axisLow = chronological ? Math.min(...points) : window.low;
+  const axisHigh = chronological ? Math.max(...points) : window.high;
+  const low = formatPrice(axisLow, currency, locale);
+  const high = formatPrice(axisHigh, currency, locale);
   const last = points.length - 1;
-  const span = window.high - window.low || 1;
+  const span = axisHigh - axisLow || 1;
   const x = (i: number) => PAD_X + (i / last) * (VB_W - 2 * PAD_X);
-  const y = (v: number) => PAD_Y + (1 - (v - window.low) / span) * (VB_H - 2 * PAD_Y); // high→top, low→bottom
+  const y = (v: number) => PAD_Y + (1 - (v - axisLow) / span) * (VB_H - 2 * PAD_Y); // high→top, low→bottom
 
   const pts = points.map((v, i) => `${x(i).toFixed(2)},${y(v).toFixed(2)}`);
   const line = `M${pts.join(' L')}`;

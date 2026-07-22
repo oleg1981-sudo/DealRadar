@@ -3,11 +3,14 @@ import { getTranslations, setRequestLocale } from 'next-intl/server';
 import { DealGrid } from '@/components/deals/DealGrid';
 import { FilterBar } from '@/components/search/FilterBar';
 import { Pagination } from '@/components/search/Pagination';
+import { HealthDisclaimer } from '@/components/legal/HealthDisclaimer';
 import { queryDealsPaged, distinctBrands, type DealFilters } from '@/lib/db/deals.repo';
 import { randomSeed } from '@/lib/utils/rng';
 import { parseLocationCookie, LOCATION_COOKIE } from '@/lib/geo/resolve';
 import { DEFAULT_COUNTRY } from '@/lib/geo/countries';
 import { CATEGORY_SLUGS, type CategorySlug } from '@/lib/providers/types';
+import { CATEGORIES } from '@/lib/categories';
+import { categoryTerm } from '@/lib/categories-i18n';
 
 export const dynamic = 'force-dynamic';
 
@@ -43,6 +46,16 @@ export default async function SearchPage({
     ? (rawCategory as CategorySlug)
     : undefined;
 
+  // Mega-menu DEPARTMENT click (?dept=Fix It Yourself): expand to the union of
+  // its leaf terms from the trusted category tree, so "show all repair parts"
+  // returns results (a single `q` can't OR-match many terms). Ignored if the
+  // dept name isn't a real department of the current category.
+  const deptName = one(sp.dept);
+  const deptNode = deptName && category
+    ? CATEGORIES.find((c) => c.slug === category)?.children.find((d) => d.name === deptName)
+    : undefined;
+  const anyTerms = deptNode ? [...(deptNode.children ?? []), deptNode.name] : undefined;
+
   const requestedPage = Math.max(1, Math.floor(toNum(one(sp.page)) ?? 1));
   const sort = (one(sp.sort) as DealFilters['sort']) ?? 'discount';
   // sort:'random': pin a seed so pagination continues ONE shuffle; a fresh
@@ -58,6 +71,7 @@ export default async function SearchPage({
     minDiscountPercent: toNum(one(sp.minDiscount)),
     minPrice: toNum(one(sp.minPrice)),
     maxPrice: toNum(one(sp.maxPrice)),
+    anyTerms,
     sort,
     seed,
     limit: PAGE_SIZE,
@@ -74,7 +88,7 @@ export default async function SearchPage({
 
   // Query params each pagination link must preserve.
   const linkParams: Record<string, string> = {};
-  for (const k of ['q', 'category', 'brand', 'sort', 'minDiscount', 'minPrice', 'maxPrice'] as const) {
+  for (const k of ['q', 'category', 'brand', 'sort', 'minDiscount', 'minPrice', 'maxPrice', 'dept'] as const) {
     const v = one(sp[k]);
     if (v) linkParams[k] = v;
   }
@@ -82,10 +96,15 @@ export default async function SearchPage({
 
   return (
     <div>
+      {category === 'health' && <HealthDisclaimer />}
       <FilterBar brands={brands} />
       <section aria-live="polite">
         <h1 className="mb-6 text-xl font-semibold tracking-tight">
-          {filters.q ? t('resultsFor', { q: filters.q }) : t('allResults')}
+          {filters.q
+            ? t('resultsFor', { q: filters.q })
+            : deptNode
+              ? t('resultsFor', { q: categoryTerm(deptNode.name, locale) })
+              : t('allResults')}
           <span className="ml-2 text-sm font-normal text-zinc-400">({total})</span>
         </h1>
         {deals.length > 0 ? (

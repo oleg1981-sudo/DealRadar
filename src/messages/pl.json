@@ -1,7 +1,13 @@
 {
+  "healthDisclaimer": {
+    "title": "O ofertach zdrowotnych i lekach",
+    "body": "DealRadar to serwis porównywania cen. Nie sprzedajemy, nie wydajemy, nie doradzamy ani nie promujemy stosowania żadnych leków — pokazujemy tylko oferty i przekierowujemy do zewnętrznych sprzedawców. Zawsze czytaj ulotkę i zapytaj lekarza lub farmaceutę o ryzyko i skutki uboczne.",
+    "acknowledge": "Rozumiem"
+  },
   "home": {
     "heroTitle": "Znajdź <em>prawdziwe</em> okazje, nie fałszywe promocje",
     "heroSubtitle": "Śledź spadki cen, porównuj historię cen i przechodź prosto do zaufanych sklepów.",
+    "dealCount": "<hl>{count, number}</hl> prawdziwych ofert w serwisie",
     "heroDisclosure": "Nie sprzedajemy produktów bezpośrednio — pomagamy znaleźć zweryfikowane okazje i przekierowujemy Cię do zaufanych sklepów.",
     "heroCta": "Szukaj",
     "topDeals": "Najlepsze okazje w {country}",
@@ -19,7 +25,9 @@
     "toys": "Zabawki",
     "automotive": "Motoryzacja",
     "books": "Książki",
-    "travel": "Podróże"
+    "travel": "Podróże",
+    "pets": "Zwierzęta",
+    "health": "Zdrowie"
   },
   "deal": {
     "goToDeal": "Zobacz w <chip>{shop}</chip>",

@@ -13,6 +13,7 @@ export type CountryCode = (typeof SUPPORTED_COUNTRIES)[number];
 export const CATEGORY_SLUGS = [
   'electronics', 'fashion', 'home-garden', 'sports', 'beauty',
   'food-grocery', 'toys', 'automotive', 'books', 'travel',
+  'pets', 'health',
 ] as const;
 export type CategorySlug = (typeof CATEGORY_SLUGS)[number];
 

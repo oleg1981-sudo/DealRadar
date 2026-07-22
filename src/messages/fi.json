@@ -1,7 +1,13 @@
 {
+  "healthDisclaimer": {
+    "title": "Tietoa terveys- ja lääketarjouksista",
+    "body": "DealRadar on hintavertailupalvelu. Emme myy, luovuta, neuvo emmekä mainosta minkään lääkkeen käyttöä — näytämme vain tarjouksia ja ohjaamme sinut kolmansien osapuolten myyjille. Lue aina pakkausseloste ja kysy lääkäriltä tai apteekista riskeistä ja haittavaikutuksista.",
+    "acknowledge": "Ymmärrän"
+  },
   "home": {
     "heroTitle": "Löydä <em>aitoja</em> tarjouksia, ei valealennuksia",
     "heroSubtitle": "Seuraa hinnanlaskuja, vertaa hintahistoriaa ja siirry suoraan luotettuihin kauppoihin.",
+    "dealCount": "<hl>{count, number}</hl> aitoa tarjousta sivustolla",
     "heroDisclosure": "Emme myy tuotteita suoraan — autamme sinua löytämään vahvistettuja tarjouksia ja ohjaamme sinut luotettaviin kauppoihin.",
     "heroCta": "Hae",
     "topDeals": "Parhaat tarjoukset – {country}",
@@ -19,7 +25,9 @@
     "toys": "Lelut",
     "automotive": "Autoilu",
     "books": "Kirjat",
-    "travel": "Matkailu"
+    "travel": "Matkailu",
+    "pets": "Lemmikit",
+    "health": "Terveys"
   },
   "deal": {
     "goToDeal": "Katso kaupassa <chip>{shop}</chip>",

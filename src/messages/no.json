@@ -1,7 +1,13 @@
 {
+  "healthDisclaimer": {
+    "title": "Om helse- og legemiddeltilbud",
+    "body": "DealRadar er en prissammenligningstjeneste. Vi selger, utleverer, gir råd om eller markedsfører ikke bruken av noen legemidler — vi viser kun tilbud og videresender deg til tredjepartsforhandlere. Les alltid pakningsvedlegget og spør legen din eller apoteket om risiko og bivirkninger.",
+    "acknowledge": "Jeg forstår"
+  },
   "home": {
     "heroTitle": "Finn <em>ekte</em> tilbud, ikke falske rabatter",
     "heroSubtitle": "Følg prisfall, sammenlign prishistorikk, og gå direkte til pålitelige forhandlere.",
+    "dealCount": "<hl>{count, number}</hl> ekte tilbud på siden",
     "heroDisclosure": "Vi selger ikke produkter direkte — vi hjelper deg å finne verifiserte tilbud og sender deg videre til pålitelige forhandlere.",
     "heroCta": "Søk",
     "topDeals": "Beste tilbud i {country}",
@@ -19,7 +25,9 @@
     "toys": "Leker",
     "automotive": "Bil",
     "books": "Bøker",
-    "travel": "Reise"
+    "travel": "Reise",
+    "pets": "Kjæledyr",
+    "health": "Helse"
   },
   "deal": {
     "goToDeal": "Se hos <chip>{shop}</chip>",
