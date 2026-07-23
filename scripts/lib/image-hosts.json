@@ -1,0 +1,15 @@
+{
+  "_doc": "Merchant/CDN image hosts allowed through next/image [FR-2.2 tripwire class]. next.config.mjs builds remotePatterns from this list; SmartImage falls back to a plain <img> for any host NOT listed, so an unlisted host degrades optimization instead of crashing the PDP. The coverage watchdog alerts when deal rows carry a host missing here.",
+  "hosts": [
+    "**.awin1.com",
+    "**.kelkoogroup.net",
+    "**.productserve.com",
+    "**.strackr.com",
+    "**.tradedoubler.com",
+    "cdn.dummyjson.com",
+    "cdn.shopify.com",
+    "lyra-pet.de",
+    "mediakos.de",
+    "www.sanicare.de"
+  ]
+}

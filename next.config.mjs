@@ -33,6 +33,8 @@ const SECURITY_HEADERS = [
   { key: 'X-DNS-Prefetch-Control', value: 'on' },
 ];
 
+import { readFileSync } from 'node:fs';
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   async headers() {
@@ -40,17 +42,9 @@ const nextConfig = {
   },
   images: {
     // Provider CDNs vary per network; tighten this list once live feeds are on.
-    remotePatterns: [
-      { protocol: 'https', hostname: 'cdn.dummyjson.com' },    // mock product images
-      { protocol: 'https', hostname: '**.kelkoogroup.net' },
-      { protocol: 'https', hostname: '**.awin1.com' },
-      { protocol: 'https', hostname: '**.productserve.com' },  // AWIN feed image CDN (aw_image_url)
-      { protocol: 'https', hostname: 'cdn.shopify.com' },      // AWIN merchant gallery images (alternate_image)
-      { protocol: 'https', hostname: 'www.sanicare.de' },      // Aliva/Sanicare merchant images (per-fid feeds, watchdog #17)
-      { protocol: 'https', hostname: 'lyra-pet.de' },          // Lyra Pet merchant images (watchdog #17)
-      { protocol: 'https', hostname: '**.tradedoubler.com' },
-      { protocol: 'https', hostname: '**.strackr.com' },
-    ],
+    remotePatterns: JSON.parse(
+      readFileSync(new URL('./scripts/lib/image-hosts.json', import.meta.url), 'utf8'),
+    ).hosts.map((hostname) => ({ protocol: 'https', hostname })),
   },
 };
 

@@ -1,7 +1,7 @@
 'use client';
 
 import { type ReactNode } from 'react';
-import Image from 'next/image';
+import { SmartImage as Image } from '@/components/deals/SmartImage';
 import Link from 'next/link';
 import { useTranslations, useLocale } from 'next-intl';
 import { Card } from '@/components/ui/card';

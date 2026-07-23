@@ -8,7 +8,7 @@ import { formatPrice, formatDiscount } from '@/lib/utils/format';
 import { decorateAffiliateUrl } from '@/lib/utils/affiliate';
 import { priceWindow, priceSeries } from '@/lib/utils/price-history';
 import { queryPriceHistory } from '@/lib/db/price-history.repo';
-import Image from 'next/image';
+import { SmartImage as Image } from '@/components/deals/SmartImage';
 import { PriceAlertButton } from '@/components/deals/PriceAlertButton';
 import { PriceHeatBar } from '@/components/deals/PriceHeatBar';
 import { DealGallery } from '@/components/deals/DealGallery';

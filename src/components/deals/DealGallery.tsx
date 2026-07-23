@@ -12,7 +12,7 @@
  * fallback for deals that ship nothing else.
  */
 import { useState, type ReactNode } from 'react';
-import Image from 'next/image';
+import { SmartImage as Image } from '@/components/deals/SmartImage';
 
 const PRODUCTSERVE_RE = /(^|\.)productserve\.com\//i;
 
