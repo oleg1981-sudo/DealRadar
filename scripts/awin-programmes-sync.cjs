@@ -164,28 +164,11 @@ async function fetchIngestSummary() {
   return age > 27 * 3600000 ? null : rows[0].meta;
 }
 
-/** remotePatterns tripwire [FR-2.2]: any deal image host not covered by
- *  next.config.mjs remotePatterns silently breaks next/image on prod — and a
- *  non-Shopify host also means the verifier can't promote that advertiser. */
-function uncoveredImageHosts(dealRows) {
-  const fsLocal = require('fs');
-  const pathLocal = require('path');
-  const cfg = fsLocal.readFileSync(pathLocal.join(__dirname, '..', 'next.config.mjs'), 'utf8');
-  const patterns = [...cfg.matchAll(/hostname:\s*'([^']+)'/g)].map((m) => m[1]);
-  const covered = (host) => patterns.some((p) =>
-    p.startsWith('**.') ? host === p.slice(3) || host.endsWith(p.slice(2)) : host === p);
-  const hosts = new Map();
-  for (const d of dealRows) {
-    for (const u of [d.image_url, ...(Array.isArray(d.gallery) ? d.gallery : [])]) {
-      if (!u) continue;
-      try {
-        const h = new URL(u).host;
-        if (!covered(h)) hosts.set(h, (hosts.get(h) || 0) + 1);
-      } catch { /* malformed URL — ingest filters these; ignore */ }
-    }
-  }
-  return hosts;
-}
+/** remotePatterns tripwire [FR-2.2]: any deal image host outside the shared
+ *  allowlist can't be optimized by next/image — SmartImage degrades it to a
+ *  plain <img>, and a non-Shopify host also means the verifier can't promote
+ *  that advertiser. Matcher + list live in scripts/lib/image-hosts.cjs. */
+const { uncoveredImageHosts } = require('./lib/image-hosts.cjs');
 
 /** Capture-cycle staleness [FR-3.5]: no successful verify capture sweep within
  *  36h (resilient to the observed ~2.5h GitHub cron lateness) is a red. */
@@ -217,7 +200,9 @@ async function coverageSection(joinedProgrammes) {
     const uncovered = uncoveredImageHosts(dealRows);
     if (uncovered.size) {
       const list = [...uncovered.entries()].map(([h, n]) => `${h} (${n} rows)`).join(', ');
-      section += `\n- 🔴 **image hosts outside next.config remotePatterns** — next/image breaks on prod: ${list}`;
+      // Since the SmartImage fallback landed these degrade (plain <img>, no
+      // optimization) instead of crashing the PDP — still act, don't overstate.
+      section += `\n- 🔴 **image hosts outside the next/image allowlist** (scripts/lib/image-hosts.json) — served unoptimized via the SmartImage fallback: ${list}`;
       reds++;
       fpExtra.push(`remotepatterns:${[...uncovered.keys()].sort().join(',')}`);
     }
