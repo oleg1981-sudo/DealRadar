@@ -29,6 +29,14 @@ export const COUNTRIES: CountryInfo[] = [
 
 export const DEFAULT_COUNTRY: CountryCode = 'DE';
 
+/**
+ * Markets whose deals may be user-visible/crawlable (i.e. sitemap-eligible).
+ * Mirrors the owner's `legal_cleared` gate per market
+ * (docs/specs/multi-market-activation/2026-07-23_v1/spec.md §4.7, §6).
+ * Extend only when the owner explicitly flips a market's legal_cleared status.
+ */
+export const SITEMAP_ACTIVE_COUNTRIES: CountryCode[] = ['DE'];
+
 export function isSupportedCountry(code: string): code is CountryCode {
   return COUNTRIES.some((c) => c.code === code);
 }

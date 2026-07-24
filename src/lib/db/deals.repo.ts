@@ -12,6 +12,7 @@ import { queryTokens } from '../utils/search-tokens';
 import { slugify } from '../utils/slug';
 import { randomSeed } from '../utils/rng';
 import type { CategorySlug, CountryCode, DealQuery, NormalizedDeal } from '../providers/types';
+import { SITEMAP_ACTIVE_COUNTRIES } from '../geo/countries';
 
 const TABLE = 'deals';
 
@@ -395,23 +396,32 @@ export async function getRecentlyUpdatedDeals(sinceIso: string): Promise<Normali
 }
 
 /**
- * All persisted deal slugs (every partner/country) for the sitemap. Slugs are
- * globally unique, so one query covers Awin/Kelkoo/Tradedoubler/Strackr alike.
- * Dev/mock fallback samples the registry so the sitemap is non-empty locally.
+ * All persisted deal slugs (every partner, active/legal-cleared countries only)
+ * for the sitemap. Slugs are globally unique, so one query covers
+ * Awin/Kelkoo/Tradedoubler/Strackr alike.
+ * Dev/mock fallback samples the registry for each active country so the sitemap
+ * is non-empty locally.
  */
 export async function getAllDealSlugs(): Promise<{ slug: string; lastUpdated: string }[]> {
   if (!supabaseConfigured()) {
-    const deals = await fetchDealsAcrossProviders({ country: 'DE', limit: 200 });
-    return deals.map((d) => ({ slug: d.slug || slugify(d.productName), lastUpdated: d.lastUpdated }));
+    const results: { slug: string; lastUpdated: string }[] = [];
+    for (const country of SITEMAP_ACTIVE_COUNTRIES) {
+      const deals = await fetchDealsAcrossProviders({ country, limit: 200 });
+      results.push(...deals.map((d) => ({ slug: d.slug || slugify(d.productName), lastUpdated: d.lastUpdated })));
+    }
+    return results;
   }
   const out: { slug: string; lastUpdated: string }[] = [];
   // Page explicitly past the 1000-row REST cap and exclude hidden deals — a
   // hidden/delisted deal must never appear in the sitemap.
+  // Only include deals from active (legal-cleared) countries so non-cleared
+  // markets never reach the crawl surface even after their rows unhide.
   for (let offset = 0; ; offset += REST_PAGE) {
     const { data, error } = await supabase()
       .from(TABLE)
       .select('slug,last_updated')
       .eq('hidden', false)
+      .in('country', SITEMAP_ACTIVE_COUNTRIES)
       .not('slug', 'is', null)
       .order('slug', { ascending: true })
       .range(offset, offset + REST_PAGE - 1);
