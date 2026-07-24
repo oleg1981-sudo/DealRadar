@@ -29,6 +29,7 @@ const { feedDescription } = require('./lib/description.cjs');
 const { normalizeEnhancedRow } = require('./lib/enhanced-feed.cjs');
 const { makeAttrCollector, FillRates } = require('./lib/feed-attrs.cjs');
 const { normalizeBrand } = require('./lib/brand-normalize.cjs');
+const { planUrlCanonicalisation, feedAgeDays } = require('./lib/dedupe-url.cjs');
 
 // ── args & env ───────────────────────────────────────────────────────────────
 const args = process.argv.slice(2);
@@ -61,11 +62,28 @@ const EXTRA_MARKET_LANGUAGES = new Set(opt('--extra-languages', 'English').split
 // 20k+ genuine UVP discounts). The flag stays as the emergency brake if
 // capacity (Netlify usage, verifier, price_history) bites.
 const LEGACY_FEED_CAP = parseInt(opt('--legacy-cap', '0'), 10) || 0;
+// Per-page duplicate detail. Always on for a dry run (that is what a dry run is
+// for); opt-in on a real run so the nightly log stays readable.
+const EXPLAIN_DUPES = has('--explain-duplicates');
 
 loadEnvLocal();
 const FEED_URL = process.env.AWIN_FEED_URL;
 if (!FEED_URL) {
   console.error('AWIN_FEED_URL is not set. Put the AWIN datafeed download URL in .env.local or the environment.');
+  process.exit(1);
+}
+// Fail fast, BEFORE downloading ~300 MB of feed, when a write run has no
+// credentials to write with. Previously this surfaced as an obscure URL-parse
+// error from the first Supabase read; now the planning steps run before that
+// read, so without this guard an --upsert run would plan the whole catalogue
+// against an empty map, print a canonicalisation report that does not reflect
+// what it would write, and only then die at the first flush.
+if (has('--upsert') && !(process.env.SUPABASE_URL || '').trim()) {
+  console.error('--upsert needs SUPABASE_URL (and SUPABASE_SERVICE_ROLE_KEY).');
+  process.exit(1);
+}
+if (has('--upsert') && !(process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim()) {
+  console.error('--upsert needs SUPABASE_SERVICE_ROLE_KEY (and SUPABASE_URL).');
   process.exit(1);
 }
 // Tolerate a SUPABASE_URL secret that's missing the scheme or has a trailing slash.
@@ -403,6 +421,11 @@ async function runFeedListFeeds(counters) {
 
   const rows = [];
   const enhancedRows = [];
+  // Which feed each row came from, and that feed's AWIN-side import date.
+  // Kept OUT of the row objects on purpose: they are posted verbatim to
+  // PostgREST, and an unknown column 400s the whole batch. URL-level
+  // canonicalisation reads this to decide which of two feeds owns a page.
+  const feedMeta = new Map();
   const fillRates = counters.fillRates;
   const unmapped = new Map();
   const perFeed = [];
@@ -418,6 +441,7 @@ async function runFeedListFeeds(counters) {
   };
   for (const f of selected) {
     const isGoogle = f['Datafeed Format'] === 'Google';
+    const thisFeed = { feedId: String(f['Feed ID'] || '').replace(/^F/i, ''), lastImported: f['Last Imported'] || null };
     const url = isGoogle
       ? f['URL']
       : `https://productdata.awin.com/datafeed/download/apikey/${key}/fid/${f['Feed ID'].replace(/^F/i, '')}/columns/${LEGACY_FID_COLUMNS}/format/csv/delimiter/%2C/compression/gzip/`;
@@ -442,6 +466,7 @@ async function runFeedListFeeds(counters) {
             if (!row) return;
             kept2++;
             if (fillRates) fillRates.row(advId2);
+            feedMeta.set(row.product_id, thisFeed);
             enhancedRows.push(row);
             counters.byCategory.set(row.category, (counters.byCategory.get(row.category) || 0) + 1);
             counters.byMerchant.set(row.shop_name, (counters.byMerchant.get(row.shop_name) || 0) + 1);
@@ -462,6 +487,7 @@ async function runFeedListFeeds(counters) {
         taken = [...feedRows2].sort((a, b) => b.discount_percent - a.discount_percent).slice(0, LEGACY_FEED_CAP);
       }
       for (const row of taken) {
+        feedMeta.set(row.product_id, thisFeed);
         rows.push(row);
         counters.byCategory.set(row.category, (counters.byCategory.get(row.category) || 0) + 1);
         counters.byMerchant.set(row.shop_name, (counters.byMerchant.get(row.shop_name) || 0) + 1);
@@ -472,7 +498,7 @@ async function runFeedListFeeds(counters) {
       perFeed.push({ feed: f['Feed ID'], advertiser: f['Advertiser Name'], format: f['Datafeed Format'], scanned: scanned2, kept: kept2, error: e.message });
     }
   }
-  return { rows, enhancedRows, advertiserIds, unmapped, perFeed, legacyScannedById };
+  return { rows, enhancedRows, advertiserIds, unmapped, perFeed, legacyScannedById, feedMeta };
 }
 
 /**
@@ -501,6 +527,139 @@ async function recordFeedBytes(bytes, meta) {
     console.log(`[awin] recorded feed-size metric: ${(bytes / (1024 * 1024)).toFixed(1)} MB compressed`);
   } catch (e) {
     console.warn('[awin] failed to record feed-size metric:', e.message);
+  }
+}
+
+// Cleared by fetchExistingPrices when the duplicate_of column is absent, so a
+// pre-migration deploy degrades to the old behaviour instead of 400ing.
+let canonicalisationEnabled = true;
+
+/**
+ * Render untrusted text (an HTTP error body, a feed value) as ONE log-safe line.
+ *
+ * A PostgREST error body is remote-controlled. Pasted verbatim it can embed
+ * newlines and forge whole log lines — and this script's log is the rollout
+ * gate a human reads to decide whether to run again with --upsert, so a forged
+ * "[awin] url-canonicalisation: ran, found no duplicate product pages" is a
+ * real (if unlikely) way to mislead that decision. Control characters go, and
+ * the result is length-capped. [jssecurity:S5145]
+ */
+function logSafe(text, max = 300) {
+  const s = String(text ?? '').replace(/[\u0000-\u001F\u007F]+/g, ' ').trim();
+  return s.length > max ? `${s.slice(0, max)}…` : s;
+}
+
+/**
+ * Report what URL-level canonicalisation decided, and — crucially — the
+ * EVIDENCE it decided on. This is the rollout gate: the winner is chosen from
+ * feed provenance, and the mapping from feed ID to "the price the shop
+ * actually charges" was inferred from row ordering, never read from AWIN. A
+ * dry run prints the competing feeds, their real `Last Imported` stamps and
+ * both prices, so that inference can be confirmed or refuted before any write.
+ */
+function reportCanonicalisation(canon, all, feedMeta, { detail, enabled, pricesAreStored }) {
+  const s = canon.stats;
+  // "Never ran" and "ran, found nothing" must NEVER print the same thing. The
+  // rule is disabled whenever `duplicate_of` is unmigrated, so the all-clear
+  // wording would otherwise be an affirmative false claim about the very bug
+  // this run exists to check.
+  if (!enabled) {
+    console.log('[awin] url-canonicalisation: NOT RUN (duplicate_of column missing — run pnpm db:migrate).'
+      + ' This is NOT an all-clear: duplicate product pages were never looked for.');
+    return;
+  }
+  if (!s.collapsed && !s.restored && !s.refusedCollisions && !s.deadGroups) {
+    console.log('[awin] url-canonicalisation: ran, found no duplicate product pages');
+    return;
+  }
+  const verb = DO_UPSERT ? 'hidden' : 'would be hidden';
+  const pages = s.pages === undefined ? s.groups : s.pages;
+  const skuNote = s.groups === pages ? '' : ` (${s.groups} sku-groups)`;
+  console.log(`[awin] url-canonicalisation: ${s.collapsed} duplicate rows ${verb} across ${pages} product pages${skuNote}`
+    + `; ${s.restored} restored; ${s.deadGroups} pages left alone (nothing publishable)`
+    + `; ${s.refusedCollisions} url collisions NOT collapsed (unproven sameness)`);
+  if (!canon.losers.length) return;
+
+  const byId = new Map(all.map((r) => [r.product_id, r]));
+  const fm = (id) => feedMeta.get(id) || {};
+  const groups = new Map();
+  for (const l of canon.losers) {
+    if (!groups.has(l.duplicateOf)) groups.set(l.duplicateOf, []);
+    groups.get(l.duplicateOf).push(l.row);
+  }
+  logFeedProvenance(groups, fm);
+  logPriceObservation(groups, byId, pricesAreStored);
+  logPageDetail(groups, byId, fm, detail ? 25 : 3);
+}
+
+/**
+ * Which feed won, which lost, and how old each one's data is — the evidence
+ * that confirms or refutes the inference that one specific feed carries the
+ * price the shop actually charges.
+ */
+function logFeedProvenance(groups, fm) {
+  const won = new Map(), lost = new Map(), stamps = new Map();
+  const bump = (m, k) => m.set(k, (m.get(k) || 0) + 1);
+  const note = (m, id) => {
+    const f = fm(id).feedId || '(no feed)';
+    bump(m, f);
+    if (fm(id).lastImported) stamps.set(f, fm(id).lastImported);
+  };
+  for (const [winnerId, losersOf] of groups) {
+    note(won, winnerId);
+    for (const l of losersOf) note(lost, l.product_id);
+  }
+  const fmt = (m) => [...m.entries()].sort((a, b) => b[1] - a[1]).map(([f, n]) => `${f}×${n}`).join(', ');
+  console.log(`[awin]   pages won per feed:   ${fmt(won)}`);
+  console.log(`[awin]   rows hidden per feed: ${fmt(lost)}`);
+  for (const [f, t] of stamps) {
+    const age = feedAgeDays(t, new Date());
+    const ageNote = age === null ? '' : ` (${age} days ago)`;
+    console.log(`[awin]   feed ${f} last imported ${logSafe(t, 40)}${ageNote}`);
+  }
+}
+
+/**
+ * The honesty check. The rule is deliberately blind to price, so this is an
+ * OBSERVATION, not a criterion — but if the elected row is systematically the
+ * pricier one, the feed-provenance inference is backwards and the run must not
+ * be repeated with --upsert.
+ */
+function logPriceObservation(groups, byId, pricesAreStored) {
+  let cheaper = 0, pricier = 0, same = 0;
+  for (const [winnerId, losersOf] of groups) {
+    const a = Number(byId.get(winnerId)?.sale_price);
+    for (const l of losersOf) {
+      const b = Number(l.sale_price);
+      if (a < b) cheaper++;
+      else if (a > b) pricier++;
+      else same++;
+    }
+  }
+  const basis = pricesAreStored
+    ? 'stored prices — the values a real run elects between'
+    : 'RAW FEED prices — NOT what a real run compares';
+  console.log(`[awin]   elected row vs the row it hides: cheaper in ${cheaper}, pricier in ${pricier}, equal in ${same}  [${basis}]`);
+}
+
+/** Per-page KEEP/HIDE detail, keyed by PAGE so one URL prints once. */
+function logPageDetail(groups, byId, fm, cap) {
+  const byPage = new Map();
+  for (const [winnerId, losersOf] of groups) {
+    const url = byId.get(winnerId)?.merchant_url || '(unknown url)';
+    if (!byPage.has(url)) byPage.set(url, []);
+    byPage.get(url).push([winnerId, losersOf]);
+  }
+  const px = (r) => (r ? `${r.sale_price} ${r.currency} (was ${r.original_price}, -${r.discount_percent}%)` : '(row not in payload)');
+  const line = (tag, id, r) => `[awin]     ${tag} ${id} feed ${fm(id).feedId || '?'} sku ${logSafe(r?.merchant_sku || '?', 40)} — ${px(r)}`;
+  let i = 0;
+  for (const [url, entries] of byPage) {
+    if (i++ >= cap) { console.log(`[awin]   … and ${byPage.size - cap} more pages`); break; }
+    console.log(`[awin]   ${logSafe(url, 200)}`);
+    for (const [winnerId, losersOf] of entries) {
+      console.log(line('KEEP', winnerId, byId.get(winnerId)));
+      for (const l of losersOf) console.log(line('HIDE', l.product_id, l));
+    }
   }
 }
 
@@ -550,12 +709,29 @@ async function upsertBatch(rows) {
  */
 async function fetchExistingPrices() {
   const out = new Map();
+  const base = 'product_id,sale_price,original_price,discount_percent,gallery';
+  // hidden/duplicate_of/last_verify_outcome drive URL-level canonicalisation.
+  // If `duplicate_of` has not been migrated yet the select 400s, so degrade to
+  // the base columns once and disable canonicalisation for the run rather than
+  // failing the whole ingest — same posture as the verifier's column sets.
+  let select = `${base},hidden,duplicate_of,last_verify_outcome`;
   for (let from = 0; ; from += 1000) {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/deals?source=eq.awin&select=product_id,sale_price,original_price,discount_percent,gallery`,
+    let res = await fetch(`${SUPABASE_URL}/rest/v1/deals?source=eq.awin&select=${select}`,
       { headers: supaHeaders({ Range: `${from}-${from + 999}` }) });
+    if (!res.ok && res.status === 400 && from === 0 && select !== base) {
+      console.error('[awin] duplicate_of column missing — URL-level canonicalisation DISABLED this run (run pnpm db:migrate)');
+      canonicalisationEnabled = false;
+      select = base;
+      res = await fetch(`${SUPABASE_URL}/rest/v1/deals?source=eq.awin&select=${select}`,
+        { headers: supaHeaders({ Range: `${from}-${from + 999}` }) });
+    }
     if (!res.ok) throw new Error(`read existing failed: HTTP ${res.status} ${await res.text()}`);
     const rows = await res.json();
-    for (const r of rows) out.set(r.product_id, { sale_price: Number(r.sale_price), original_price: Number(r.original_price), discount_percent: Number(r.discount_percent), gallery: Array.isArray(r.gallery) ? r.gallery : null });
+    for (const r of rows) out.set(r.product_id, {
+      sale_price: Number(r.sale_price), original_price: Number(r.original_price),
+      discount_percent: Number(r.discount_percent), gallery: Array.isArray(r.gallery) ? r.gallery : null,
+      hidden: r.hidden === true, duplicate_of: r.duplicate_of ?? null, last_verify_outcome: r.last_verify_outcome ?? null,
+    });
     if (rows.length < 1000) break;
   }
   return out;
@@ -652,49 +828,98 @@ async function fetchExistingPrices() {
   }
   const enhancedRows = feedListPass ? feedListPass.enhancedRows : [];
 
+  // Dedupe by product_id — duplicate keys in one PostgREST payload 400.
+  const all = [...new Map(
+    [...legacyRows, ...(feedListPass ? feedListPass.rows : []), ...enhancedRows]
+      .map((r) => [r.product_id, r]),
+  ).values()];
+
+  // Everything from here to the canonicalisation report runs in BOTH modes.
+  // A --no-upsert run exists to answer "what would this write?", and the
+  // duplicate collapse is the riskiest part of that answer — gating it behind
+  // DO_UPSERT (as an earlier revision did) made the dry run silent on the one
+  // thing it is run to check. Only the WRITES stay gated.
+  // A write run cannot get here without credentials (guarded at startup), so
+  // this branch is dry-run only.
+  const canRead = !!(SUPABASE_URL && KEY);
+  let existingRead = canRead;
+  if (!canRead) {
+    console.log('[awin] dry run without SUPABASE_URL/KEY — stored prices are NOT loaded, so the plan below'
+      + ' reflects RAW FEED prices, not the prices a real run would elect between');
+  }
+  // Preserve verified prices for products we already have; the feed price is
+  // only used for brand-new products (until the verifier first checks them).
+  let existing = new Map();
+  if (canRead) {
+    try {
+      existing = await fetchExistingPrices();
+    } catch (e) {
+      // A real run MUST NOT continue: upserting without the stored prices would
+      // clobber verifier-owned values. A dry run has already paid for the whole
+      // feed download, so losing its category/merchant/sample output to a
+      // transient 5xx is a worse outcome than reporting a degraded plan.
+      if (DO_UPSERT) throw e;
+      existingRead = false;
+      console.warn(`[awin] existing-rows read FAILED (${logSafe(e.message)}) — dry-run plan below is degraded:`
+        + ' prices are raw feed values and restore counts are not representative');
+    }
+  }
+  let preserved = 0, galleriesKept = 0;
+  for (const d of all) {
+    const e = existing.get(d.product_id);
+    if (!e) continue;
+    if (Number.isFinite(e.sale_price)) {
+      d.sale_price = e.sale_price; d.original_price = e.original_price; d.discount_percent = e.discount_percent;
+      preserved++;
+    }
+    // Keep the enriched gallery when it holds MORE images than the feed's.
+    if (e.gallery && e.gallery.length > (d.gallery?.length ?? 0)) {
+      d.gallery = e.gallery;
+      galleriesKept++;
+    }
+  }
+  // URL-level canonicalisation (issue #27): product_id dedupe alone cannot
+  // collapse an advertiser that lists one catalogue in two feeds — each feed
+  // gives the SAME merchant_deep_link a different aw_product_id, so both rows
+  // published at different prices and at most one could match the page the
+  // click lands on. Losers are HIDDEN rather than dropped from the payload:
+  // dropping one leaves the wrong-priced row visible until the 3-day
+  // stale-hide fires, which is three more days of publishing a wrong price.
+  const canonFeedMeta = feedListPass ? feedListPass.feedMeta : new Map();
+  const canon = canonicalisationEnabled
+    ? planUrlCanonicalisation(all, { feedMeta: canonFeedMeta, existing, now: new Date() })
+    : { winners: all, losers: [], restores: [], stats: { groups: 0, pages: 0, collapsed: 0, restored: 0, deadGroups: 0, refusedCollisions: 0 } };
+  reportCanonicalisation(canon, all, canonFeedMeta, {
+    detail: !DO_UPSERT || EXPLAIN_DUPES,
+    enabled: canonicalisationEnabled,
+    pricesAreStored: existingRead,
+  });
+
   // Upsert in batches AFTER parsing (the parser callback is synchronous).
   if (DO_UPSERT) {
-    // Dedupe by product_id: advertisers sometimes list the SAME feed twice
-    // (Lyra Pet: 102589+104303) — duplicate keys in one PostgREST payload 400.
-    const all = [...new Map(
-      [...legacyRows, ...(feedListPass ? feedListPass.rows : []), ...enhancedRows]
-        .map((r) => [r.product_id, r]),
-    ).values()];
-    // Preserve verified prices for products we already have; the feed price is
-    // only used for brand-new products (until the verifier first checks them).
-    const existing = await fetchExistingPrices();
-    let preserved = 0, galleriesKept = 0;
-    for (const d of all) {
-      const e = existing.get(d.product_id);
-      if (!e) continue;
-      if (Number.isFinite(e.sale_price)) {
-        d.sale_price = e.sale_price; d.original_price = e.original_price; d.discount_percent = e.discount_percent;
-        preserved++;
-      }
-      // Keep the enriched gallery when it holds MORE images than the feed's.
-      if (e.gallery && e.gallery.length > (d.gallery?.length ?? 0)) {
-        d.gallery = e.gallery;
-        galleriesKept++;
-      }
-    }
     // Hidden-split (ingest-v2): brand-new enhanced rows with no provable
     // discount land HIDDEN — populated, price-tracked, verifier-visited, but
     // not published until the live-shop verifier finds a genuine compare-at
-    // discount (it un-hides + sets prices itself). Existing rows never get a
-    // `hidden` key here, so promotion/demotion stays verifier-owned.
+    // discount (it un-hides + sets prices itself). Apart from duplicate losers
+    // above, existing rows never get a `hidden` key here, so promotion/demotion
+    // stays verifier-owned.
     // Separate flushes: PostgREST needs uniform keys per request.
     const enhancedIds = new Set(enhancedRows.map((r) => r.product_id));
     const updates = [];
     const hiddenNew = [];
-    for (const d of all) {
+    for (const d of canon.winners) {
       if (enhancedIds.has(d.product_id) && !existing.has(d.product_id) && d.discount_percent <= 0) {
-        hiddenNew.push({ ...d, hidden: true });
+        hiddenNew.push(canonicalisationEnabled ? { ...d, hidden: true, duplicate_of: null } : { ...d, hidden: true });
       } else {
-        updates.push(d);
+        updates.push(canonicalisationEnabled ? { ...d, duplicate_of: null } : d);
       }
     }
-    const total = updates.length + hiddenNew.length;
-    for (const group of [updates, hiddenNew]) {
+    // Demoted duplicates, and rows this rule hid earlier that have won their
+    // page back (the rival feed dropped them) — each a uniform payload shape.
+    const dupLosers = canon.losers.map(({ row: d, duplicateOf }) => ({ ...d, hidden: true, duplicate_of: duplicateOf }));
+    const dupRestores = canon.restores.map((d) => ({ ...d, hidden: false, duplicate_of: null }));
+    const total = updates.length + hiddenNew.length + dupLosers.length + dupRestores.length;
+    for (const group of [updates, hiddenNew, dupLosers, dupRestores]) {
       for (let i = 0; i < group.length; i += BATCH) {
         batch = group.slice(i, i + BATCH);
         await flush();
@@ -724,6 +949,7 @@ async function fetchExistingPrices() {
             ranAt: new Date().toISOString(),
             scanned, kept, upserted, excludedLegacy,
             hiddenNew: hiddenNew.length,
+            urlCanonicalisation: canonicalisationEnabled ? canon.stats : null,
             feeds: feedListPass ? feedListPass.perFeed : null,
             enhancedUnmapped: feedListPass ? Object.fromEntries(feedListPass.unmapped) : null,
             legacyScannedById: Object.fromEntries(legacyScannedById),
