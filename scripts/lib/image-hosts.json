@@ -1,11 +1,16 @@
 {
-  "_doc": "Merchant/CDN image hosts allowed through next/image [FR-2.2 tripwire class]. next.config.mjs builds remotePatterns from this list; SmartImage falls back to a plain <img> for any host NOT listed, so an unlisted host degrades optimization instead of crashing the PDP. The coverage watchdog alerts when deal rows carry a host missing here.",
+  "_doc": "Merchant/CDN image hosts allowed through next/image [FR-2.2 tripwire class]. next.config.mjs builds remotePatterns from this list; SmartImage falls back to a plain <img> for any host NOT listed, so an unlisted host degrades optimization instead of crashing the PDP. The coverage watchdog alerts when deal rows carry a host missing here. Every '**.' wildcarded network also gets an exact apex entry: Next's own wildcard matcher requires a subdomain segment and does NOT match the bare apex (isAllowedImageHost/hostAllowed do treat the apex as covered, so without this a bare-apex URL would clear our gate and then hit next/image's 'hostname not configured' throw).",
   "hosts": [
     "**.awin1.com",
+    "awin1.com",
     "**.kelkoogroup.net",
+    "kelkoogroup.net",
     "**.productserve.com",
+    "productserve.com",
     "**.strackr.com",
+    "strackr.com",
     "**.tradedoubler.com",
+    "tradedoubler.com",
     "cdn.dummyjson.com",
     "cdn.shopify.com",
     "lyra-pet.de",
