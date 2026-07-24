@@ -84,7 +84,10 @@ function canonicalUrlKey(url) {
   let u;
   try { u = new URL(raw); } catch { return null; }
   if (!/^https?:$/.test(u.protocol)) return null;
-  const path = u.pathname.replace(/\/+$/, '');
+  // Trailing slashes trimmed with a loop, not /\/+$/: that pattern backtracks
+  // super-linearly on a long run of slashes, and merchant_url is feed data.
+  let path = u.pathname;
+  while (path.endsWith('/')) path = path.slice(0, -1);
   return `${u.protocol}//${u.host.toLowerCase()}${path}${u.search}`;
 }
 
@@ -176,7 +179,8 @@ function cmpRank(a, b) {
  *          row exactly once — each becomes its own PostgREST request, which
  *          needs uniform keys per batch.
  */
-function planUrlCanonicalisation(rows, { feedMeta = new Map(), existing = new Map(), now = new Date() } = {}) {
+/** Partition rows into collapsible groups + rows that must stand alone. */
+function groupRows(rows) {
   const groups = new Map();
   const solo = [];
   const urlCounts = new Map();
@@ -188,6 +192,32 @@ function planUrlCanonicalisation(rows, { feedMeta = new Map(), existing = new Ma
     if (!groups.has(k)) groups.set(k, []);
     groups.get(k).push(r);
   }
+  return { groups, solo, urlCounts };
+}
+
+/**
+ * Freshness is evidence only while a feed is actually fresh. Between two
+ * long-stale feeds, "less stale" is not a reason to trust a price, so the
+ * criterion is switched off and stable provenance decides instead.
+ */
+function groupHasFreshFeed(members, feedMeta, now) {
+  return members.some((m) => {
+    const meta = feedMeta.get(m.product_id);
+    if (!meta) return false;
+    const age = feedAgeDays(meta.lastImported, now);
+    return age !== null && age <= FRESH_WINDOW_DAYS;
+  });
+}
+
+/** Rank one group's members best-first. */
+function rankGroup(members, feedMeta, existing, now) {
+  const useFreshness = groupHasFreshFeed(members, feedMeta, now);
+  return [...members].sort((a, b) =>
+    cmpRank(rankOf(a, feedMeta, existing, useFreshness, now), rankOf(b, feedMeta, existing, useFreshness, now)));
+}
+
+function planUrlCanonicalisation(rows, { feedMeta = new Map(), existing = new Map(), now = new Date() } = {}) {
+  const { groups, solo, urlCounts } = groupRows(rows);
 
   const elected = [...solo];
   const losers = [];
@@ -204,32 +234,19 @@ function planUrlCanonicalisation(rows, { feedMeta = new Map(), existing = new Ma
   for (const members of groups.values()) {
     if (members.length === 1) { elected.push(members[0]); continue; }
 
-    // Freshness is evidence only while a feed is actually fresh. Between two
-    // long-stale feeds, "less stale" is not a reason to trust a price, so the
-    // criterion is switched off and stable provenance decides instead.
-    const useFreshness = members.some((m) => {
-      const meta = feedMeta.get(m.product_id);
-      if (!meta) return false;
-      const age = feedAgeDays(meta.lastImported, now);
-      return age !== null && age <= FRESH_WINDOW_DAYS;
-    });
-
-    const ranked = [...members].sort((a, b) =>
-      cmpRank(rankOf(a, feedMeta, existing, useFreshness, now), rankOf(b, feedMeta, existing, useFreshness, now)));
-    const [winner, ...rest] = ranked;
+    const [winner, ...rest] = rankGroup(members, feedMeta, existing, now);
+    handledUrls.add(canonicalUrlKey(winner.merchant_url));
 
     // Every candidate is already non-publishing (verifier said gone/out-of-stock,
     // or another owner hid them). There is no duplicate on display to fix, and
     // hiding a row so a dead one can "win" would darken the page for good.
     if (eligibilityOf(existing.get(winner.product_id)) === 2) {
       elected.push(...members);
-      handledUrls.add(canonicalUrlKey(winner.merchant_url));
       deadGroups++;
       continue;
     }
 
     collapsedGroups++;
-    handledUrls.add(canonicalUrlKey(winner.merchant_url));
     collapsedUrls.add(canonicalUrlKey(winner.merchant_url));
     elected.push(winner);
     for (const l of rest) losers.push({ row: l, duplicateOf: winner.product_id });
@@ -244,7 +261,7 @@ function planUrlCanonicalisation(rows, { feedMeta = new Map(), existing = new Ma
   const restores = [];
   for (const r of elected) {
     const e = existing.get(r.product_id);
-    const undoable = e && e.hidden === true && e.duplicate_of != null;
+    const undoable = e?.hidden === true && e?.duplicate_of != null;
     const verdictAllows = !e || e.last_verify_outcome == null || e.last_verify_outcome === 'ok-live';
     if (undoable && verdictAllows && Number(r.discount_percent) > 0) restores.push(r);
     else winners.push(r);

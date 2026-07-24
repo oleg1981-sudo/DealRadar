@@ -535,6 +535,21 @@ async function recordFeedBytes(bytes, meta) {
 let canonicalisationEnabled = true;
 
 /**
+ * Render untrusted text (an HTTP error body, a feed value) as ONE log-safe line.
+ *
+ * A PostgREST error body is remote-controlled. Pasted verbatim it can embed
+ * newlines and forge whole log lines — and this script's log is the rollout
+ * gate a human reads to decide whether to run again with --upsert, so a forged
+ * "[awin] url-canonicalisation: ran, found no duplicate product pages" is a
+ * real (if unlikely) way to mislead that decision. Control characters go, and
+ * the result is length-capped. [jssecurity:S5145]
+ */
+function logSafe(text, max = 300) {
+  const s = String(text ?? '').replace(/[\u0000-\u001F\u007F]+/g, ' ').trim();
+  return s.length > max ? `${s.slice(0, max)}…` : s;
+}
+
+/**
  * Report what URL-level canonicalisation decided, and — crucially — the
  * EVIDENCE it decided on. This is the rollout gate: the winner is chosen from
  * feed provenance, and the mapping from feed ID to "the price the shop
@@ -559,8 +574,8 @@ function reportCanonicalisation(canon, all, feedMeta, { detail, enabled, pricesA
   }
   const verb = DO_UPSERT ? 'hidden' : 'would be hidden';
   const pages = s.pages === undefined ? s.groups : s.pages;
-  console.log(`[awin] url-canonicalisation: ${s.collapsed} duplicate rows ${verb} across ${pages} product pages`
-    + `${s.groups !== pages ? ` (${s.groups} sku-groups)` : ''}`
+  const skuNote = s.groups === pages ? '' : ` (${s.groups} sku-groups)`;
+  console.log(`[awin] url-canonicalisation: ${s.collapsed} duplicate rows ${verb} across ${pages} product pages${skuNote}`
     + `; ${s.restored} restored; ${s.deadGroups} pages left alone (nothing publishable)`
     + `; ${s.refusedCollisions} url collisions NOT collapsed (unproven sameness)`);
   if (!canon.losers.length) return;
@@ -572,65 +587,78 @@ function reportCanonicalisation(canon, all, feedMeta, { detail, enabled, pricesA
     if (!groups.has(l.duplicateOf)) groups.set(l.duplicateOf, []);
     groups.get(l.duplicateOf).push(l.row);
   }
+  logFeedProvenance(groups, fm);
+  logPriceObservation(groups, byId, pricesAreStored);
+  logPageDetail(groups, byId, fm, detail ? 25 : 3);
+}
 
-  // Which feed won, which lost — the single most useful line for confirming
-  // the inference that one specific feed carries the shop-correct price.
+/**
+ * Which feed won, which lost, and how old each one's data is — the evidence
+ * that confirms or refutes the inference that one specific feed carries the
+ * price the shop actually charges.
+ */
+function logFeedProvenance(groups, fm) {
   const won = new Map(), lost = new Map(), stamps = new Map();
   const bump = (m, k) => m.set(k, (m.get(k) || 0) + 1);
+  const note = (m, id) => {
+    const f = fm(id).feedId || '(no feed)';
+    bump(m, f);
+    if (fm(id).lastImported) stamps.set(f, fm(id).lastImported);
+  };
   for (const [winnerId, losersOf] of groups) {
-    const wf = fm(winnerId).feedId || '(no feed)';
-    bump(won, wf);
-    if (fm(winnerId).lastImported) stamps.set(wf, fm(winnerId).lastImported);
-    for (const l of losersOf) {
-      const lf = fm(l.product_id).feedId || '(no feed)';
-      bump(lost, lf);
-      if (fm(l.product_id).lastImported) stamps.set(lf, fm(l.product_id).lastImported);
-    }
+    note(won, winnerId);
+    for (const l of losersOf) note(lost, l.product_id);
   }
   const fmt = (m) => [...m.entries()].sort((a, b) => b[1] - a[1]).map(([f, n]) => `${f}×${n}`).join(', ');
   console.log(`[awin]   pages won per feed:   ${fmt(won)}`);
   console.log(`[awin]   rows hidden per feed: ${fmt(lost)}`);
   for (const [f, t] of stamps) {
     const age = feedAgeDays(t, new Date());
-    console.log(`[awin]   feed ${f} last imported ${t}${age === null ? '' : ` (${age} days ago)`}`);
+    const ageNote = age === null ? '' : ` (${age} days ago)`;
+    console.log(`[awin]   feed ${f} last imported ${logSafe(t, 40)}${ageNote}`);
   }
+}
 
-  // The honesty check. The rule is deliberately blind to price, so this is an
-  // OBSERVATION, not a criterion — but if the elected row is systematically the
-  // pricier one, the feed-provenance inference is backwards and the run must
-  // not be repeated with --upsert.
+/**
+ * The honesty check. The rule is deliberately blind to price, so this is an
+ * OBSERVATION, not a criterion — but if the elected row is systematically the
+ * pricier one, the feed-provenance inference is backwards and the run must not
+ * be repeated with --upsert.
+ */
+function logPriceObservation(groups, byId, pricesAreStored) {
   let cheaper = 0, pricier = 0, same = 0;
   for (const [winnerId, losersOf] of groups) {
-    const w = byId.get(winnerId);
+    const a = Number(byId.get(winnerId)?.sale_price);
     for (const l of losersOf) {
-      const a = Number(w.sale_price), b = Number(l.sale_price);
-      if (a < b) cheaper++; else if (a > b) pricier++; else same++;
+      const b = Number(l.sale_price);
+      if (a < b) cheaper++;
+      else if (a > b) pricier++;
+      else same++;
     }
   }
-  console.log(`[awin]   elected row vs the row it hides: cheaper in ${cheaper}, pricier in ${pricier}, equal in ${same}`
-    + `  [${pricesAreStored ? 'stored prices — the values a real run elects between' : 'RAW FEED prices — NOT what a real run compares'}]`);
+  const basis = pricesAreStored
+    ? 'stored prices — the values a real run elects between'
+    : 'RAW FEED prices — NOT what a real run compares';
+  console.log(`[awin]   elected row vs the row it hides: cheaper in ${cheaper}, pricier in ${pricier}, equal in ${same}  [${basis}]`);
+}
 
-  // Keyed by page, not by winner id: one URL can carry several SKU-groups, and
-  // printing the same URL as several separate entries reads like a bug.
+/** Per-page KEEP/HIDE detail, keyed by PAGE so one URL prints once. */
+function logPageDetail(groups, byId, fm, cap) {
   const byPage = new Map();
   for (const [winnerId, losersOf] of groups) {
-    const w = byId.get(winnerId);
-    const url = (w && w.merchant_url) || '(unknown url)';
+    const url = byId.get(winnerId)?.merchant_url || '(unknown url)';
     if (!byPage.has(url)) byPage.set(url, []);
     byPage.get(url).push([winnerId, losersOf]);
   }
-  const cap = detail ? 25 : 3;
-  let i = 0;
   const px = (r) => (r ? `${r.sale_price} ${r.currency} (was ${r.original_price}, -${r.discount_percent}%)` : '(row not in payload)');
+  const line = (tag, id, r) => `[awin]     ${tag} ${id} feed ${fm(id).feedId || '?'} sku ${logSafe(r?.merchant_sku || '?', 40)} — ${px(r)}`;
+  let i = 0;
   for (const [url, entries] of byPage) {
     if (i++ >= cap) { console.log(`[awin]   … and ${byPage.size - cap} more pages`); break; }
-    console.log(`[awin]   ${url}`);
+    console.log(`[awin]   ${logSafe(url, 200)}`);
     for (const [winnerId, losersOf] of entries) {
-      const w = byId.get(winnerId);
-      console.log(`[awin]     KEEP ${winnerId} feed ${fm(winnerId).feedId || '?'} sku ${(w && w.merchant_sku) || '?'} — ${px(w)}`);
-      for (const l of losersOf) {
-        console.log(`[awin]     HIDE ${l.product_id} feed ${fm(l.product_id).feedId || '?'} sku ${l.merchant_sku || '?'} — ${px(l)}`);
-      }
+      console.log(line('KEEP', winnerId, byId.get(winnerId)));
+      for (const l of losersOf) console.log(line('HIDE', l.product_id, l));
     }
   }
 }
@@ -832,7 +860,7 @@ async function fetchExistingPrices() {
       // transient 5xx is a worse outcome than reporting a degraded plan.
       if (DO_UPSERT) throw e;
       existingRead = false;
-      console.warn(`[awin] existing-rows read FAILED (${e.message}) — dry-run plan below is degraded:`
+      console.warn(`[awin] existing-rows read FAILED (${logSafe(e.message)}) — dry-run plan below is degraded:`
         + ' prices are raw feed values and restore counts are not representative');
     }
   }
