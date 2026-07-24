@@ -2,8 +2,9 @@
   "_doc": "FR-2.3 [docs/specs/pdp-full-content/2026-07-16_v1] — explicit acquisition scope. Every active feed the account can download must be either ingested or excluded HERE with a reason; the coverage watchdog (FR-2.2) alerts on any feed in neither state. Change deliberately.",
   "language": "German",
   "currencies": ["EUR"],
+  "extra_languages_same_market": ["English"],
   "exclusions": [
-    { "match": { "Language": "!German" }, "reason": "non-German feed — catalog is DE-market; revisit with the multi-market milestone (v3.1 locale scope)" },
+    { "match": { "Language": "!German" }, "reason": "non-German feed from a non-DE-market advertiser — same-market (Primary Region = DE) feeds are consumable in any language since the 2026-07 quick win; other markets await multi-market activation" },
     { "match": { "currency": "!EUR" }, "reason": "non-EUR pricing — currency policy pending (Renogy-GB GBP, MISSHA USD fail the EUR gate)" }
   ]
 }

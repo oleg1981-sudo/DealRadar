@@ -50,6 +50,12 @@ const PUBLISHER_ID = (process.env.AWIN_PUBLISHER_ID || '2951525').trim();
 // Feed-list Language values are full names; only same-language feeds join the
 // market's catalog (EN/NL feeds are a deliberate non-goal for now).
 const ENHANCED_LANGUAGE = opt('--enhanced-language', 'German');
+// Same-market extra languages: English feeds are accepted when the advertiser's
+// Primary Region matches COUNTRY (DE-market English feeds quick win, 2026-07).
+// Defensive default: only exact 'DE'/'Germany' map to COUNTRY; empty/unknown
+// regions leave the feed yellow (never over-ingest). Add more languages with
+// --extra-languages if a future quick win needs them.
+const EXTRA_MARKET_LANGUAGES = new Set(opt('--extra-languages', 'English').split(',').filter(Boolean));
 // Per-feed cap for LEGACY per-fid rows (top-N by discount). 0 = uncapped —
 // the user's 2026-07-19 call: take everything (Aliva Apotheke alone ships
 // 20k+ genuine UVP discounts). The flag stays as the emergency brake if
@@ -378,7 +384,11 @@ async function runFeedListFeeds(counters) {
   if (!key) { console.log('[awin] feed-list pass: cannot derive feed api key from AWIN_FEED_URL — skipped'); return null; }
   const listUrl = `https://ui.awin.com/productdata-darwin-download/publisher/${PUBLISHER_ID}/${key}/1/feedList`;
   const feeds = parseCsvString(await fetchText(listUrl));
-  const activeLang = feeds.filter((f) => f['Membership Status'] === 'active' && f['Language'] === ENHANCED_LANGUAGE);
+  const activeLang = feeds.filter((f) =>
+    f['Membership Status'] === 'active' &&
+    (f['Language'] === ENHANCED_LANGUAGE ||
+      (EXTRA_MARKET_LANGUAGES.has(f['Language']) &&
+        (f['Primary Region'] || '').toUpperCase() === COUNTRY)));
   const googleAdv = new Set(feeds
     .filter((f) => f['Membership Status'] === 'active' && f['Datafeed Format'] === 'Google')
     .map((f) => f['Advertiser ID']));

@@ -68,7 +68,7 @@ function feedAgeDays(lastImported, now) {
  * language          feed-list Language value the market consumes (default 'German')
  * staleDays         consumed-feed age that triggers a red (default 14)
  */
-function buildCoverageReport({ feedRows, dealRows, joinedProgrammes = [], ingestSummary = null, now, language = 'German', staleDays = 14 }) {
+function buildCoverageReport({ feedRows, dealRows, joinedProgrammes = [], ingestSummary = null, now, language = 'German', staleDays = 14, extraLanguages = ['English'], marketCountry = 'DE' }) {
   const active = feedRows.filter((f) => f['Membership Status'] === 'active');
 
   // Group active feeds per advertiser; note which advertisers run any Google feed
@@ -118,10 +118,17 @@ function buildCoverageReport({ feedRows, dealRows, joinedProgrammes = [], ingest
     // market language via their listed URL; legacy feeds per-fid (no URL needed
     // — the ingest builds its own) unless the advertiser also runs a Google
     // feed (Google wins for dual-format advertisers).
-    const consumed = adv.feeds.filter((f) =>
-      f['Datafeed Format'] === 'Google'
-        ? (f['Language'] === language && f['URL'])
-        : (f['Language'] === language && !googleAdvertisers.has(adv.id)));
+    const consumed = adv.feeds.filter((f) => {
+      // A feed is language-acceptable if it matches the primary language OR if it
+      // is in an extra language AND the advertiser's Primary Region matches the
+      // market country. Defensive default: empty/missing/unrecognised Primary
+      // Region keeps the feed yellow — never over-ingest.
+      const sameMarket = (f['Primary Region'] || '').toUpperCase() === marketCountry;
+      const langOk = f['Language'] === language || (extraLanguages.includes(f['Language']) && sameMarket);
+      return f['Datafeed Format'] === 'Google'
+        ? (langOk && !!f['URL'])
+        : (langOk && !googleAdvertisers.has(adv.id));
+    });
     const c = counts.get(adv.id) || { populated: 0, live: 0 };
     const entry = { id: adv.id, name: adv.name, populated: c.populated, live: c.live, feeds: adv.feeds.length };
 
@@ -227,7 +234,7 @@ function buildCoverageReport({ feedRows, dealRows, joinedProgrammes = [], ingest
 const ICON = { red: '🔴', yellow: '🟡', green: '🟢' };
 
 /** Markdown digest section. */
-function formatCoverage(report, { language = 'German' } = {}) {
+function formatCoverage(report, { language = 'German', extraLanguages = ['English'], marketCountry = 'DE' } = {}) {
   const lines = ['## Feed coverage (watchdog)'];
   if (report.summaryMissing) {
     lines.push('🔴 **No ingest summary in ops_metrics** — the last ingest either failed before persisting results or the metric write broke. Check the ingest-awin workflow.');
@@ -242,7 +249,10 @@ function formatCoverage(report, { language = 'German' } = {}) {
   if (report.softMerchants) {
     lines.push(`- ℹ️ ${report.softRows} rows from ${report.softMerchants} merchant(s) outside feed-list actives (soft membership or pre-v2 rows) — listed for transparency.`);
   }
-  lines.push(`\n_Consumption policy: ${language}-language feeds; Google format wins for dual-format advertisers. Red = act; yellow = known policy exclusion._`);
+  const extraNote = extraLanguages.length
+    ? `; same-market (Primary Region = ${marketCountry}) feeds also accepted in [${extraLanguages.join(', ')}] since the 2026-07 quick win`
+    : '';
+  lines.push(`\n_Consumption policy: ${language}-language feeds${extraNote}; Google format wins for dual-format advertisers. Red = act; yellow = known policy exclusion._`);
   return lines.join('\n');
 }
 

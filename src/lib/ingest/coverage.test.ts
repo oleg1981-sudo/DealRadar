@@ -102,12 +102,60 @@ describe('buildCoverageReport', () => {
     expect(r.advertisers[0].detail).toContain('HTTP 500');
   });
 
-  it('yellow: language-policy exclusion (English-only Google feed) is not an alert', () => {
+  it('yellow: language-policy exclusion (English-only Google feed, non-DE Primary Region) is not an alert', () => {
+    // Hollyland fixture updated: Primary Region = 'GB' so it remains a valid
+    // yellow case under the new same-market English rule (2026-07 quick win).
     const r = buildCoverageReport({
-      feedRows: [feed({ 'Advertiser ID': '128051', 'Advertiser Name': 'Hollyland DE', Language: 'English' })],
+      feedRows: [feed({ 'Advertiser ID': '128051', 'Advertiser Name': 'Hollyland DE', Language: 'English', 'Primary Region': 'GB' })],
       dealRows: [], ingestSummary: SUMMARY, now: NOW,
     });
     expect(r.advertisers[0].status).toBe('yellow');
+    expect(r.reds).toBe(0);
+  });
+
+  it('green: English Google feed with Primary Region DE is consumable (same-market quick win)', () => {
+    // Autofull EU (#125332), Hollyland DE (#128051) etc. — English feed, DE market
+    const r = buildCoverageReport({
+      feedRows: [feed({ 'Advertiser ID': '128051', 'Advertiser Name': 'Hollyland DE', Language: 'English', 'Primary Region': 'DE' })],
+      dealRows: [{ product_id: 'awin:DE:adv128051:1', merchant_id: null, shop_name: 'Hollyland DE', hidden: true }],
+      ingestSummary: { ...SUMMARY, feeds: [{ feed: 'F2308', advertiser: 'Hollyland DE', scanned: 800, kept: 700 }] },
+      now: NOW,
+    });
+    expect(r.advertisers[0].status).toBe('green');
+    expect(r.reds).toBe(0);
+  });
+
+  it('green: English legacy (Awin-format) feed with Primary Region DE is consumable (same-market quick win)', () => {
+    // MagazinMomente DE (#110910), logo-matten DE (#58127), Liki24 DE (#114828) etc.
+    const r = buildCoverageReport({
+      feedRows: [feed({ 'Advertiser ID': '110910', 'Advertiser Name': 'MagazinMomente DE', Language: 'English', 'Primary Region': 'DE', 'Datafeed Format': 'Awin', 'Feed ID': 'F9910', URL: '' })],
+      dealRows: [],
+      ingestSummary: { ranAt: 'x', feeds: [{ feed: 'F9910', advertiser: 'MagazinMomente DE', scanned: 1200, kept: 0 }], legacyScannedById: { '110910': 1200 } },
+      now: NOW,
+    });
+    // Legacy: scanned > 0 but none currently discounted — yellow (not red, not green)
+    expect(r.advertisers[0].status).toBe('yellow');
+    expect(r.advertisers[0].detail).toContain('scanned 1200');
+    expect(r.reds).toBe(0);
+  });
+
+  it('yellow: English feed with Primary Region US stays excluded (non-DE market)', () => {
+    const r = buildCoverageReport({
+      feedRows: [feed({ 'Advertiser ID': '82371', 'Advertiser Name': 'Aeternum US', Language: 'English', 'Primary Region': 'US' })],
+      dealRows: [], ingestSummary: SUMMARY, now: NOW,
+    });
+    expect(r.advertisers[0].status).toBe('yellow');
+    expect(r.advertisers[0].detail).toContain('no consumable feed');
+    expect(r.reds).toBe(0);
+  });
+
+  it('yellow: English feed with missing Primary Region stays excluded (defensive default)', () => {
+    const r = buildCoverageReport({
+      feedRows: [feed({ 'Advertiser ID': '99000', 'Advertiser Name': 'Unknown Market Co', Language: 'English', 'Primary Region': '' })],
+      dealRows: [], ingestSummary: SUMMARY, now: NOW,
+    });
+    expect(r.advertisers[0].status).toBe('yellow');
+    expect(r.advertisers[0].detail).toContain('no consumable feed');
     expect(r.reds).toBe(0);
   });
 

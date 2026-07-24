@@ -193,8 +193,8 @@ async function coverageSection(joinedProgrammes) {
       withRetry('deal attribution', fetchDealAttribution),
       withRetry('ingest summary', fetchIngestSummary),
     ]);
-    const report = buildCoverageReport({ feedRows, dealRows, joinedProgrammes, ingestSummary, now: new Date() });
-    let section = formatCoverage(report);
+    const report = buildCoverageReport({ feedRows, dealRows, joinedProgrammes, ingestSummary, now: new Date(), extraLanguages: ['English'], marketCountry: 'DE' });
+    let section = formatCoverage(report, { extraLanguages: ['English'], marketCountry: 'DE' });
     let reds = report.reds;
     const fpExtra = [];
     const uncovered = uncoveredImageHosts(dealRows);
