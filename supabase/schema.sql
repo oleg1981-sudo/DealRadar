@@ -413,6 +413,23 @@ alter table public.deals add column if not exists rating_source      text;      
 alter table public.deals add column if not exists capture_run_id     text;         -- verify run that last wrote content (EC-1 provenance)
 alter table public.deals add column if not exists last_verify_outcome text;      -- per-row fetch outcome ('no-discount','out-of-stock','gone',…) — promotion eligibility (Q-2) + EC-21 cohorts
 
+-- URL-level canonicalisation (issue #27): one merchant product page publishes
+-- one row. An advertiser listing one catalogue in two AWIN feeds emits a
+-- different aw_product_id per feed for the same merchant_deep_link, so
+-- product_id dedupe cannot collapse them and both rows published, at two
+-- different prices. Holds the product_id of the row that won the page; null
+-- means "not a duplicate loser". Written ONLY by the ingest, and only for rows
+-- the verifier has never judged, so the paired un-hide can never overturn a
+-- verifier decision. Nullable with no default: null must stay distinguishable
+-- from "was a duplicate, then won its page back".
+alter table public.deals add column if not exists duplicate_of text;
+
+-- Shaped like the ingest's restore read: the losers are a tiny slice of the
+-- table, so this keeps both the hide and the un-hide off a full scan.
+create index if not exists deals_duplicate_of_idx
+  on public.deals (duplicate_of)
+  where duplicate_of is not null;
+
 -- Stalest-first ordering support (FR-3.2).
 create index if not exists deals_last_verified_idx
   on public.deals (last_verified asc nulls first, product_id asc);
