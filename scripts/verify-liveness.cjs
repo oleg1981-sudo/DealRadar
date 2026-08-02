@@ -22,6 +22,20 @@
 // price, so a live page alone isn't proof the discount is still valid — leave
 // resurrection to a real feed re-ingest.
 //
+// Two hard lessons from the 2026-08 Aliva incident (~16k live deals falsely
+// hidden as "gone" over 14 daily runs, with every run green):
+//   1. PROBE THE PRODUCT PAGE, NOT THE CLICK TRACKER. Aliva's merchant_url is
+//      a t23.intelliad.de redirector; from datacenter (CI) IPs the tracker
+//      answers 404 (bot blocking) even though the wrapped aliva.de page is
+//      alive. A tracker's status says nothing about the product — and GETting
+//      it also fires a fake affiliate click per check. unwrapTrackerUrl()
+//      extracts the wrapped destination URL and the probe hits that instead.
+//   2. NEVER TRUST A MASS DIE-OFF. Real catalogs lose pages a few at a time;
+//      only a broken signal kills a whole host at once. If more than
+//      MASS_GONE_RATIO of a host's checked pages come back 404 (with at least
+//      MASS_GONE_MIN hits), that host's hides are discarded and the run exits
+//      non-zero so the workflow goes red for a human to look at.
+//
 // Dependency-free (Node built-ins + Supabase REST). Runs in the daily verify
 // workflow after the Shopify pass.
 //
@@ -48,6 +62,8 @@ const MAX_MINUTES = (() => { const i = args.indexOf('--max-minutes'); if (i < 0)
 const T_START = Date.now();
 const overBudget = () => MAX_MINUTES && Date.now() - T_START > MAX_MINUTES * 60000;
 const ABANDON_AFTER = 5;                                        // consecutive blocks on a host -> skip its rest
+const MASS_GONE_MIN = 10;                                       // circuit-breaker floor: fewer 404s than this can never trip it
+const MASS_GONE_RATIO = 0.2;                                    // >20% of a host's checked pages 404 -> broken signal, not dead products
 const HEADERS = {
   'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36',
   Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
@@ -63,7 +79,8 @@ function normalizeBaseUrl(u) {
 }
 const BASE = normalizeBaseUrl(process.env.SUPABASE_URL);
 const KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-if (!BASE || !KEY) { console.error('SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required.'); process.exit(1); }
+// Only enforce env when run as the script — tests import the URL helpers without secrets.
+if (require.main === module && (!BASE || !KEY)) { console.error('SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required.'); process.exit(1); }
 const SUPA = { apikey: KEY, Authorization: `Bearer ${KEY}` };
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const hostOf = (u) => { try { return new URL(u).host; } catch { return '?'; } };
@@ -71,6 +88,23 @@ const hostOf = (u) => { try { return new URL(u).host; } catch { return '?'; } };
 // This job owns exactly the deals the Shopify verifier can't: a product URL
 // that isn't a `/products/<handle>` path.
 const isShopifyProductUrl = (u) => /\/products\/[^/?#]+/.test(u || '');
+
+/** Click trackers (t23.intelliad.de & friends) carry the real product page in
+ *  a query param. Return that destination when present, else the URL as given.
+ *  searchParams decodes one level; keep decoding (bounded) until it looks like
+ *  a URL — feeds double-encode the nested params. */
+function unwrapTrackerUrl(u) {
+  try {
+    const url = new URL(u);
+    for (const key of ['redirect', 'url', 'dest', 'destination', 'deeplink', 'ued', 'r']) {
+      let v = url.searchParams.get(key);
+      if (!v) continue;
+      for (let i = 0; i < 2 && !/^https?:\/\//i.test(v); i++) v = decodeURIComponent(v);
+      if (/^https?:\/\//i.test(v)) return v;
+    }
+  } catch { /* malformed URL — probe it as-is and let liveStatus report */ }
+  return u;
+}
 
 /** GET a URL following redirects, one gentle retry on 429. Returns the final
  *  HTTP status (0 on network error). We only need the status, not the body. */
@@ -101,6 +135,7 @@ async function fetchNonShopifyDeals() {
     if (batch.length < 1000) break;
   }
   const targets = out.filter((d) => !isShopifyProductUrl(d.merchant_url));
+  for (const d of targets) d.probe_url = unwrapTrackerUrl(d.merchant_url);
   return LIMIT ? targets.slice(0, LIMIT) : targets;
 }
 
@@ -115,34 +150,37 @@ async function hideDeal(productId) {
 
 function groupByHost(items) {
   const m = new Map();
-  for (const d of items) { const h = hostOf(d.merchant_url); if (!m.has(h)) m.set(h, []); m.get(h).push(d); }
+  // Group (and pace) by the host we actually hit — the unwrapped product host.
+  for (const d of items) { const h = hostOf(d.probe_url || d.merchant_url); if (!m.has(h)) m.set(h, []); m.get(h).push(d); }
   return m;
 }
 
-(async () => {
+async function main() {
   const t0 = Date.now();
   const deals = await fetchNonShopifyDeals();
   const byHost = groupByHost(deals);
   console.log(`[liveness] checking ${deals.length} non-Shopify deals across ${byHost.size} shops (apply=${APPLY}, ${DELAY_MS}ms/host)…`);
 
   const toHide = [];
+  const massGone = [];   // hosts whose 404 rate tripped the circuit breaker
   let alive = 0, gone = 0, skipped = 0, done = 0;
   const bySh = {};
   const samples = [];
 
   await Promise.all([...byHost.entries()].map(async ([host, list]) => {
-    let consec = 0, i = 0;
+    let consec = 0, i = 0, checked = 0;
+    const hostHides = [];
     for (; i < list.length; i++) {
       if (overBudget()) { console.log(`[liveness] --max-minutes budget reached — leaving ${host} early`); break; }
       const deal = list[i];
-      const status = await liveStatus(deal.merchant_url);
-      done++;
+      const status = await liveStatus(deal.probe_url || deal.merchant_url);
+      done++; checked++;
       if (process.stdout.isTTY && done % 25 === 0) process.stdout.write(`\r[liveness] ${done}/${deals.length}…`);
       if (status === 404 || status === 410) {
         consec = 0; gone++;
-        toHide.push(deal.product_id);
+        hostHides.push(deal.product_id);
         bySh[deal.shop_name] = (bySh[deal.shop_name] || 0) + 1;
-        if (samples.length < 8) samples.push(`${deal.shop_name}: ${deal.merchant_url}`);
+        if (samples.length < 8) samples.push(`${deal.shop_name}: ${deal.probe_url || deal.merchant_url}`);
       } else if (status === 200) {
         consec = 0; alive++;
       } else if (status === 403 || status === 429) {
@@ -155,6 +193,14 @@ function groupByHost(items) {
     }
     const left = list.length - i;
     if (left > 0) { skipped += left; console.error(`\n[liveness] ${host} is blocking — skipped ${left}`); }
+    // Circuit breaker: a host where >MASS_GONE_RATIO of checked pages 404 is a
+    // broken signal (tracker/CDN/bot-block), not a catalog dying — hide nothing.
+    if (hostHides.length >= MASS_GONE_MIN && hostHides.length / checked > MASS_GONE_RATIO) {
+      massGone.push({ host, gone: hostHides.length, checked });
+      skipped += hostHides.length;
+    } else {
+      toHide.push(...hostHides);
+    }
   }));
   if (process.stdout.isTTY) process.stdout.write('\n');
 
@@ -163,11 +209,26 @@ function groupByHost(items) {
   console.log(`  GONE (404/410) -> hide: ${gone} ${JSON.stringify(bySh)}`);
   console.log(`  skipped (blocked/transient): ${skipped}`);
   if (samples.length) { console.log('  sample dead pages:'); samples.forEach((s) => console.log(`    ${s}`)); }
+  for (const m of massGone) {
+    console.error(`[liveness] CIRCUIT BREAKER: ${m.host} — ${m.gone}/${m.checked} checked pages 404'd (> ${MASS_GONE_RATIO * 100}%). ` +
+      'That is a broken probe signal, not dead products. NOT hiding; investigate the host.');
+  }
 
-  if (!APPLY) { console.log('\n[liveness] dry-run — no writes. Re-run with --apply to commit.'); return; }
-  for (const id of toHide) await hideDeal(id);
-  console.log(`\n[liveness] applied — hid ${toHide.length} dead deals.`);
-})().catch((e) => { console.error('\n[liveness] FAILED:', e.message); process.exit(1); });
+  if (!APPLY) { console.log('\n[liveness] dry-run — no writes. Re-run with --apply to commit.'); }
+  else {
+    for (const id of toHide) await hideDeal(id);
+    console.log(`\n[liveness] applied — hid ${toHide.length} dead deals.`);
+  }
+  // Trip the workflow red AFTER writing the safe hides — a mass die-off needs
+  // human eyes even on a dry run.
+  if (massGone.length) process.exitCode = 1;
+}
+
+if (require.main === module) {
+  main().catch((e) => { console.error('\n[liveness] FAILED:', e.message); process.exit(1); });
+}
+
+module.exports = { unwrapTrackerUrl, isShopifyProductUrl };
 
 // ── tiny .env.local loader ─────────────────────────────────────────────────────
 function loadEnvLocal() {
