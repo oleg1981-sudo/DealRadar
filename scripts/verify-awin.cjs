@@ -227,18 +227,23 @@ async function liveState(deal) {
 
 /**
  * Desired state from live data. `available === null` means stock is unknown
- * (assume in stock — only .json was reachable). Sold-out or no-longer-discounted
- * → HIDE (keep the row so the ingest can't resurrect it); otherwise SHOW with the
- * live price.
+ * (assume in stock — only .json was reachable). Sold-out → HIDE (keep the row
+ * so the ingest can't resurrect it). No-longer-discounted → SHOW at the HONEST
+ * regular price (sale = orig = live price, 0%) — policy change 2026-08-02:
+ * shoppers can buy now, wait for the next drop, or set a price alert; the UI
+ * presents 0% rows as "regular price", never as a fake deal. Otherwise SHOW
+ * with the live discounted price.
  */
 function decide(deal, live) {
   if (live.available === false) return { hide: true, reason: 'out-of-stock' };
   const newSale = round2(live.price);
-  if (!(live.compareAt && live.compareAt > newSale)) return { hide: true, reason: 'no-discount' };
+  if (!(live.compareAt && live.compareAt > newSale)) {
+    return { hide: false, sale: newSale, orig: newSale, disc: 0, outcome: 'no-discount' };
+  }
   const newOrig = round2(live.compareAt);
   const newDisc = Math.round(((newOrig - newSale) / newOrig) * 100);
-  if (newDisc <= 0) return { hide: true, reason: 'no-discount' };
-  return { hide: false, sale: newSale, orig: newOrig, disc: newDisc };
+  if (newDisc <= 0) return { hide: false, sale: newSale, orig: newSale, disc: 0, outcome: 'no-discount' };
+  return { hide: false, sale: newSale, orig: newOrig, disc: newDisc, outcome: 'ok-live' };
 }
 
 /** productserve proxy → the original image its `url` param embeds (same logic
@@ -274,7 +279,7 @@ let contentCols = true;
 
 async function fetchDeals() {
   const out = [];
-  const baseCols = 'product_id,merchant_url,sale_price,original_price,discount_percent,currency,hidden';
+  const baseCols = 'product_id,merchant_url,sale_price,original_price,discount_percent,currency,hidden,first_published_at';
   const colSets = [
     `${baseCols},description_html,gallery,image_url,country,rating_source`,
     `${baseCols},description_html`,
@@ -558,33 +563,40 @@ if (IS_MAIN) (async () => {
 
         const want = decide(deal, live);
         if (want.hide) {
-          const outcome = want.reason; // 'no-discount' | 'out-of-stock'
+          const outcome = want.reason; // 'out-of-stock' (no-discount publishes since the 2026-08-02 policy)
           if (!isHidden) {
             // Visibility change = liveness; carry the captured content along.
             queuePatch(deal.product_id, { hidden: true, ...contentFields }, 'liveness', hasContent, outcome);
             hidden++;
             reasons[want.reason] = (reasons[want.reason] || 0) + 1;
           } else {
-            // Stays hidden. Price TRACKING for in-stock no-discount rows [Q-2]:
-            // the promotion baseline needs the live price recorded — a
-            // content-class write per the amendment's visibility scoping rule
-            // (a tracked price on a hidden row is NOT proof of deal-ness and
-            // must never bump last_updated / resurrect under M2).
-            const track = { ...contentFields };
-            if (want.reason === 'no-discount') {
-              const liveSale = round2(live.price);
-              if (liveSale > 0 && liveSale !== Number(deal.sale_price)) {
-                track.sale_price = liveSale;
-                if (!(Number(deal.original_price) > liveSale)) track.original_price = liveSale;
-              }
-            }
-            if (Object.keys(track).length) {
-              queuePatch(deal.product_id, track, 'content', hasContent, outcome);
+            // Stays hidden (sold out). Content-class writes only — a patch on a
+            // hidden row must never bump last_updated / resurrect under M2.
+            if (hasContent) {
+              queuePatch(deal.product_id, { ...contentFields }, 'content', hasContent, outcome);
               ok++;
             } else {
               ok++;
               queueVerifiedOnly(deal.product_id);
             }
+          }
+        } else if (want.outcome === 'no-discount' && isHidden && !deal.first_published_at) {
+          // Owner scope decision (2026-08-02, option 2): the regular-price
+          // policy covers only rows the site has PUBLISHED before. A row that
+          // never earned a first publication stays hidden-until-proven — we
+          // only track its live price (content-class: never bumps
+          // last_updated, never resurrects under M2).
+          const track = { ...contentFields };
+          if (want.sale > 0 && want.sale !== Number(deal.sale_price)) {
+            track.sale_price = want.sale;
+            if (!(Number(deal.original_price) > want.sale)) track.original_price = want.sale;
+          }
+          if (Object.keys(track).length) {
+            queuePatch(deal.product_id, track, 'content', hasContent, 'no-discount');
+            ok++;
+          } else {
+            ok++;
+            queueVerifiedOnly(deal.product_id);
           }
         } else {
           const fields = { ...contentFields };
@@ -603,8 +615,9 @@ if (IS_MAIN) (async () => {
           if (Object.keys(fields).length) {
             // Verified alive: price/visibility changes are liveness; a purely
             // content-bearing patch on a VISIBLE verified-alive row is also
-            // liveness (the fetch itself proved availability).
-            queuePatch(deal.product_id, fields, 'liveness', hasContent, 'ok-live');
+            // liveness (the fetch itself proved availability). Outcome keeps
+            // the no-discount cohort identifiable for promotion/eligibility.
+            queuePatch(deal.product_id, fields, 'liveness', hasContent, want.outcome || 'ok-live');
           } else {
             ok++;
             queueTouch(deal.product_id);

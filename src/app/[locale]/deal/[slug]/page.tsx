@@ -7,6 +7,7 @@ import type { NormalizedDeal } from '@/lib/providers/types';
 import { formatPrice, formatDiscount } from '@/lib/utils/format';
 import { decorateAffiliateUrl } from '@/lib/utils/affiliate';
 import { priceWindow, priceSeries } from '@/lib/utils/price-history';
+import { findLastDeal } from '@/lib/utils/deal-index';
 import { queryPriceHistory } from '@/lib/db/price-history.repo';
 import { SmartImage as Image } from '@/components/deals/SmartImage';
 import { PriceAlertButton } from '@/components/deals/PriceAlertButton';
@@ -67,8 +68,14 @@ export async function generateMetadata({ params }: Props) {
     routing.locales.map((l) => [l, `${BASE_URL}/${l}/deal/${params.slug}`]),
   );
   return {
-    title: `${deal.productName} · ${formatDiscount(deal.discountPercent)}`,
-    description: `${deal.productName} — ${sale} (${was}) · ${deal.shopName}`,
+    // 0% (regular-price policy, 2026-08-02): no "-0%" in the title, and the
+    // description shows only the live price (no fake "was" reference).
+    title: deal.discountPercent > 0
+      ? `${deal.productName} · ${formatDiscount(deal.discountPercent)}`
+      : deal.productName,
+    description: deal.discountPercent > 0
+      ? `${deal.productName} — ${sale} (${was}) · ${deal.shopName}`
+      : `${deal.productName} — ${sale} · ${deal.shopName}`,
     // [Q-1/EC-24, docs/specs/pdp-full-content] hidden (unproven/delisted) deals
     // stay reachable (200, M2 forbids unexpected 404s) but are not indexable.
     // A proven deal (hidden=false) must never carry noindex — indexability
@@ -100,6 +107,8 @@ export default async function DealDetailPage({ params }: Props) {
   // Best-effort — on any DB error the graph keeps its honest two-point fallback.
   const history = await queryPriceHistory(deal.productId).catch(() => []);
   const recorded = history.map((p) => p.salePrice);
+  // "Last deal" context for regular-price rows — from recorded history only.
+  const lastDeal = deal.discountPercent <= 0 ? findLastDeal(history, deal.salePrice) : null;
   const pw = priceWindow(deal, recorded);
   // [FR-4.4] Without recorded rows the series is the synthetic compare-at
   // fallback — the bar then labels itself a price RANGE, never history.
@@ -248,9 +257,17 @@ export default async function DealDetailPage({ params }: Props) {
           images={gallery}
           alt={deal.productName}
           badge={
-            <Badge variant="deal" className="absolute left-4 top-4 text-lg">
-              {formatDiscount(deal.discountPercent)}
-            </Badge>
+            deal.discountPercent > 0 ? (
+              <Badge variant="deal" className="absolute left-4 top-4 text-lg">
+                {formatDiscount(deal.discountPercent)}
+              </Badge>
+            ) : (
+              // Not discounted right now (2026-08-02 policy) — honest neutral
+              // chip instead of a "-0%" pseudo-deal.
+              <Badge variant="sponsored" className="absolute left-4 top-4 text-lg">
+                {t('regularPrice')}
+              </Badge>
+            )
           }
         />
 
@@ -272,10 +289,30 @@ export default async function DealDetailPage({ params }: Props) {
               <span className="text-3xl font-extrabold text-zinc-900">
                 {formatPrice(deal.salePrice, deal.currency, params.locale)}
               </span>
-              <span className="text-lg text-zinc-500 line-through">
-                {formatPrice(deal.originalPrice, deal.currency, params.locale)}
-              </span>
+              {deal.discountPercent > 0 && (
+                <span className="text-lg text-zinc-500 line-through">
+                  {formatPrice(deal.originalPrice, deal.currency, params.locale)}
+                </span>
+              )}
             </div>
+
+            {/* Regular-price state (2026-08-02 policy): the offer is live but
+                not discounted — say so, point at the alert as the "wait for
+                the next drop" tool, and show the last RECORDED deal price as
+                honest context when our own history saw one. */}
+            {!deal.hidden && deal.discountPercent <= 0 && (
+              <div className="mb-4 rounded-lg bg-zinc-50 px-3 py-2 text-sm text-zinc-600">
+                <p>{t('noDiscountHint')}</p>
+                {lastDeal && (
+                  <p className="mt-1 font-medium text-zinc-700">
+                    {t('lastDeal', {
+                      price: formatPrice(lastDeal.price, deal.currency, params.locale),
+                      date: new Date(`${lastDeal.day}T00:00:00Z`).toLocaleDateString(params.locale, { day: 'numeric', month: 'short' }),
+                    })}
+                  </p>
+                )}
+              </div>
+            )}
 
             {/* Proof fields (visible, not sr-only) */}
             <div className="mb-6 space-y-1 text-sm">

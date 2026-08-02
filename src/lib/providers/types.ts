@@ -75,6 +75,15 @@ export interface NormalizedDeal {
   /** Merchant's own product ID (AWIN merchant_product_id) → JSON-LD Product.sku. */
   merchantSku?: string | null;
   historicalLowPrice?: number | null;
+  /** 0–10 buy-timing score vs the last-90-days recorded prices (10 = cheapest
+   *  the window has seen). Derived per render by withDealIndexes(); decorative
+   *  and NEVER persisted — deliberately absent from toRow(). */
+  dealIndex?: number | null;
+  /** Last recorded price meaningfully below today's + its day — "last deal"
+   *  context for regular-price (0%) rows. Same derivation/lifecycle as
+   *  dealIndex: per render, never persisted. */
+  lastDealPrice?: number | null;
+  lastDealDay?: string | null;
   merchantId?: string | null;
   affiliateSubid?: string | null;
   /**

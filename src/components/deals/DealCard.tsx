@@ -8,6 +8,7 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { PriceHeatBar } from './PriceHeatBar';
 import { PriceAlertButton } from './PriceAlertButton';
+import { DealIndexBadge } from './DealIndexBadge';
 import { SponsoredBadge } from './SponsoredBadge';
 import { formatPrice, formatDiscount } from '@/lib/utils/format';
 import { priceWindow } from '@/lib/utils/price-history';
@@ -53,9 +54,18 @@ export function DealCard({ deal, priority = false, listName }: { deal: Normalize
         ) : (
           <span className="flex h-full items-center justify-center text-zinc-300">—</span>
         )}
-        <Badge variant="deal" className="absolute left-2 top-2 text-sm">
-          {formatDiscount(deal.discountPercent)}
-        </Badge>
+        {deal.discountPercent > 0 ? (
+          <Badge variant="deal" className="absolute left-2 top-2 text-sm">
+            {formatDiscount(deal.discountPercent)}
+          </Badge>
+        ) : (
+          // Not discounted right now (2026-08-02 policy: published, not hidden)
+          // — an honest neutral chip, never a "-0%" pseudo-deal.
+          <Badge variant="sponsored" className="absolute left-2 top-2 text-sm">
+            {t('regularPrice')}
+          </Badge>
+        )}
+        {deal.dealIndex != null && <DealIndexBadge score={deal.dealIndex} />}
       </Link>
 
       <div className="flex flex-1 flex-col gap-1.5 p-4">
@@ -77,10 +87,22 @@ export function DealCard({ deal, priority = false, listName }: { deal: Normalize
           <span className="text-lg font-semibold text-zinc-900">
             {formatPrice(deal.salePrice, deal.currency, locale)}
           </span>
-          <s className="text-sm text-zinc-500">
-            {formatPrice(deal.originalPrice, deal.currency, locale)}
-          </s>
+          {deal.discountPercent > 0 && (
+            <s className="text-sm text-zinc-500">
+              {formatPrice(deal.originalPrice, deal.currency, locale)}
+            </s>
+          )}
         </div>
+        {/* Regular-price rows: the last RECORDED deal price as honest context
+            ("wait for the next one?") — only when our own history saw one. */}
+        {deal.discountPercent <= 0 && deal.lastDealPrice != null && deal.lastDealDay && (
+          <p className="text-xs text-zinc-500">
+            {t('lastDeal', {
+              price: formatPrice(deal.lastDealPrice, deal.currency, locale),
+              date: new Date(`${deal.lastDealDay}T00:00:00Z`).toLocaleDateString(locale, { day: 'numeric', month: 'short' }),
+            })}
+          </p>
+        )}
 
         {/* Cards never query price_history — the bar is always in range mode
             (rangeCaptionLabel), never captioned as measured history [FR-4.4]. */}
