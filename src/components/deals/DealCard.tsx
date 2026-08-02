@@ -37,36 +37,41 @@ export function DealCard({ deal, priority = false, listName }: { deal: Normalize
 
   return (
     <Card className="group flex flex-col overflow-hidden">
-      <Link
-        href={dealPageUrl}
-        aria-label={deal.productName}
-        className="relative block aspect-[4/3] w-full bg-white text-left"
-      >
-        {deal.imageUrl ? (
-          <Image
-            src={deal.imageUrl}
-            alt={deal.productName}
-            fill
-            priority={priority}
-            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-            className="object-contain p-3"
-          />
-        ) : (
-          <span className="flex h-full items-center justify-center text-zinc-300">—</span>
-        )}
-        {deal.discountPercent > 0 ? (
-          <Badge variant="deal" className="absolute left-2 top-2 text-sm">
-            {formatDiscount(deal.discountPercent)}
-          </Badge>
-        ) : (
-          // Not discounted right now (2026-08-02 policy: published, not hidden)
-          // — an honest neutral chip, never a "-0%" pseudo-deal.
-          <Badge variant="sponsored" className="absolute left-2 top-2 text-sm">
-            {t('regularPrice')}
-          </Badge>
-        )}
+      {/* The Deal-Index button must be a SIBLING of the image link, not a
+          child: a tap on it opens the explainer instead of navigating (and
+          button-inside-anchor is invalid HTML). */}
+      <div className="relative">
+        <Link
+          href={dealPageUrl}
+          aria-label={deal.productName}
+          className="relative block aspect-[4/3] w-full bg-white text-left"
+        >
+          {deal.imageUrl ? (
+            <Image
+              src={deal.imageUrl}
+              alt={deal.productName}
+              fill
+              priority={priority}
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
+              className="object-contain p-3"
+            />
+          ) : (
+            <span className="flex h-full items-center justify-center text-zinc-300">—</span>
+          )}
+          {deal.discountPercent > 0 ? (
+            <Badge variant="deal" className="absolute left-2 top-2 text-sm">
+              {formatDiscount(deal.discountPercent)}
+            </Badge>
+          ) : (
+            // Not discounted right now (2026-08-02 policy: published, not hidden)
+            // — an honest neutral chip, never a "-0%" pseudo-deal.
+            <Badge variant="sponsored" className="absolute left-2 top-2 text-sm">
+              {t('regularPrice')}
+            </Badge>
+          )}
+        </Link>
         {deal.dealIndex != null && <DealIndexBadge score={deal.dealIndex} />}
-      </Link>
+      </div>
 
       <div className="flex flex-1 flex-col gap-1.5 p-4">
         <Link
