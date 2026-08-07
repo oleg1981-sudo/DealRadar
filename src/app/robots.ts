@@ -7,15 +7,20 @@ import { siteUrl } from '@/lib/utils/site-url';
  * dealradar.eu sitemap URL shipped for months).
  *
  * Policy (GEO/AEO thesis — organic + AI-answer visibility is the traffic
- * model, so AI crawlers are explicitly INVITED, never blocked):
+ * model, so answer/search AI crawlers are explicitly INVITED):
  *
  *  - Search/answer-index bots (drive citations + referral traffic) and
  *    user-triggered fetchers (fetch a page when a human asks an assistant)
- *    get explicit groups. A robots.txt group is exclusive — a UA obeys only
- *    its most specific match — so every named group must repeat the disallow
- *    list; it does NOT inherit from `*`.
- *  - Training crawlers are also allowed: deals/brand knowledge inside future
- *    models is upside for a price-comparison brand, not leakage.
+ *    get explicit ALLOW groups. A robots.txt group is exclusive — a UA obeys
+ *    only its most specific match — so every named group must repeat the
+ *    disallow list; it does NOT inherit from `*`.
+ *  - Model-TRAINING crawlers are DISALLOWED (2026-08-07). They send zero
+ *    referral traffic yet, on a ~31k-deal × 13-locale force-dynamic (uncached)
+ *    surface, each fetch is a billed function invocation — a full training
+ *    sweep helped exhaust the Netlify compute budget on Aug 6. Answer-engine
+ *    visibility (the actual GEO upside) is preserved by the search/user groups
+ *    below; only the no-referral training class is cut. Reversible: move a UA
+ *    back to an ALLOW group to re-invite it.
  *  - Crawl-trap hygiene (commerce faceted-nav standard): internal search
  *    results and infinite/duplicate parameter spaces are disallowed for
  *    everyone — they waste crawl budget without adding indexable value.
@@ -37,17 +42,20 @@ const DISALLOW = [
 const AI_SEARCH_BOTS = ['OAI-SearchBot', 'Claude-SearchBot', 'PerplexityBot', 'DuckAssistBot', 'Amazonbot', 'Applebot'];
 // User-triggered fetchers (act on a human's behalf inside an assistant).
 const AI_USER_FETCHERS = ['ChatGPT-User', 'Claude-User', 'Perplexity-User', 'Meta-ExternalFetcher'];
-// Model-training crawlers (deliberately allowed — GEO thesis).
+// Model-training crawlers — DISALLOWED (no referral value; billed compute on an
+// uncached surface). Re-invite one by moving it to an ALLOW group above.
 const AI_TRAINING_BOTS = ['GPTBot', 'ClaudeBot', 'Google-Extended', 'Applebot-Extended', 'CCBot', 'Meta-ExternalAgent', 'Bytespider'];
 
 export default function robots(): MetadataRoute.Robots {
-  const group = (userAgent: string) => ({ userAgent, allow: '/', disallow: DISALLOW });
+  const allow = (userAgent: string) => ({ userAgent, allow: '/', disallow: DISALLOW });
+  // Block the whole site for training crawlers (compliant ones obey `/`).
+  const block = (userAgent: string) => ({ userAgent, disallow: '/' });
   return {
     rules: [
-      group('*'),
-      ...AI_SEARCH_BOTS.map(group),
-      ...AI_USER_FETCHERS.map(group),
-      ...AI_TRAINING_BOTS.map(group),
+      allow('*'),
+      ...AI_SEARCH_BOTS.map(allow),
+      ...AI_USER_FETCHERS.map(allow),
+      ...AI_TRAINING_BOTS.map(block),
     ],
     sitemap: `${siteUrl()}/sitemap.xml`,
   };
