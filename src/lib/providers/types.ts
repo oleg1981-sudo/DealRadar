@@ -76,7 +76,7 @@ export interface NormalizedDeal {
   merchantSku?: string | null;
   historicalLowPrice?: number | null;
   /** 0–10 buy-timing score vs the last-90-days recorded prices (10 = cheapest
-   *  the window has seen). Derived per render by withDealIndexes(); decorative
+   *  the window has seen). Derived per render by enrichDealCards(); decorative
    *  and NEVER persisted — deliberately absent from toRow(). */
   dealIndex?: number | null;
   /** Last recorded price meaningfully below today's + its day — "last deal"
@@ -84,6 +84,11 @@ export interface NormalizedDeal {
    *  dealIndex: per render, never persisted. */
   lastDealPrice?: number | null;
   lastDealDay?: string | null;
+  /** Recorded daily sale prices (oldest→newest, ≤90d window) — lets a CARD draw
+   *  the same real price cardiogram as the detail page, from the batch history
+   *  already fetched for the Deal Index. Per render, never persisted (absent
+   *  from toRow). Cards fall back to the compare-at range when this is unset. */
+  priceHistory?: number[] | null;
   merchantId?: string | null;
   affiliateSubid?: string | null;
   /**

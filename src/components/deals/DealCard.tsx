@@ -11,7 +11,7 @@ import { PriceAlertButton } from './PriceAlertButton';
 import { DealIndexBadge } from './DealIndexBadge';
 import { SponsoredBadge } from './SponsoredBadge';
 import { formatPrice, formatDiscount } from '@/lib/utils/format';
-import { priceWindow } from '@/lib/utils/price-history';
+import { priceWindow, priceSeries } from '@/lib/utils/price-history';
 import { decorateAffiliateUrl } from '@/lib/utils/affiliate';
 import { displayShopName } from '@/lib/utils/shop';
 import { gaItemAttr } from '@/lib/analytics/items';
@@ -31,7 +31,11 @@ export function DealCard({ deal, priority = false, listName }: { deal: Normalize
     category: deal.category,
     productId: deal.productId,
   });
-  const pw = priceWindow(deal);
+  // Recorded series (batch-fetched in DealGrid) → the card plots the SAME real
+  // cardiogram as the detail page; empty falls back to the compare-at range.
+  const history = deal.priceHistory ?? [];
+  const pw = priceWindow(deal, history);
+  const series = priceSeries(deal, history);
   const dealSlug = deal.slug || `${slugify(deal.productName)}-${deal.productId.replace(/[^a-z0-9]/gi, '-')}`;
   const dealPageUrl = `/${locale}/deal/${dealSlug}`;
 
@@ -109,10 +113,13 @@ export function DealCard({ deal, priority = false, listName }: { deal: Normalize
           </p>
         )}
 
-        {/* Cards never query price_history — the bar is always in range mode
-            (rangeCaptionLabel), never captioned as measured history [FR-4.4]. */}
+        {/* Same cardiogram as the detail page: recorded `series` renders the
+            real curve; without ≥2 varying days PriceHeatBar self-selects range
+            mode and the rangeCaptionLabel, so a synthetic line is never
+            captioned as measured history [FR-4.4]. */}
         <PriceHeatBar
           window={pw}
+          series={series}
           currency={deal.currency}
           locale={locale}
           captionLabel={t('priceHistory')}
