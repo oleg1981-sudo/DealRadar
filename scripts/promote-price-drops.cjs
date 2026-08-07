@@ -31,6 +31,14 @@ const opt = (f, d) => { const i = args.indexOf(f); return i >= 0 && args[i + 1] 
 const APPLY = has('--apply');
 const DROP_PCT = Math.max(5, parseInt(opt('--drop', '10'), 10) || 10);      // ≥5% floor — never promote noise
 const MIN_DAYS = Math.max(3, parseInt(opt('--min-days', '7'), 10) || 7);    // baseline depth
+// Upper sanity bound: a self-tracked drop this deep is almost always a data
+// glitch (÷100 unit error, currency slip, feed typo), NOT a real unadvertised
+// clearance — promoting it publishes a "Fake-Rabatt", the one thing the brand
+// forbids. The 2026-08-07 TVI jacket incident (56.99 → 0.57 = 99%, verified
+// no-discount the same morning) is the exact vector. Merchant-declared deep
+// discounts still publish via the compare-at path; only the no-compare-at
+// promotion route is capped. Configurable for the rare legitimate case.
+const MAX_DROP_PCT = Math.min(100, parseInt(opt('--max-drop', '85'), 10) || 85);
 const CAP = Math.max(1, parseInt(opt('--cap', '500'), 10) || 500);          // promotions per run
 
 if (require.main === module) loadEnvLocal();
@@ -45,7 +53,7 @@ const SUPA = { apikey: KEY, Authorization: `Bearer ${KEY}` };
  *  Baseline = the highest price SUSTAINED on ≥ sustainDays distinct days —
  *  a single-day spike can never fake a "was" price. Threshold compares the
  *  UNROUNDED drop (spec: "drops ≥ dropPct%"). */
-function decidePromotion(currentPrice, series, { dropPct = DROP_PCT, minDays = MIN_DAYS, sustainDays = 3 } = {}) {
+function decidePromotion(currentPrice, series, { dropPct = DROP_PCT, minDays = MIN_DAYS, sustainDays = 3, maxDropPct = MAX_DROP_PCT } = {}) {
   if (!Number.isFinite(currentPrice) || currentPrice <= 0) return null;
   const byDay = new Map(); // day → price (last snapshot of the day wins)
   for (const s of series) {
@@ -59,8 +67,12 @@ function decidePromotion(currentPrice, series, { dropPct = DROP_PCT, minDays = M
   const sustained = [...dayCounts.entries()].filter(([, n]) => n >= sustainDays).map(([v]) => v);
   if (!sustained.length) return null;
   const baseline = Math.max(...sustained);
-  if (((baseline - currentPrice) / baseline) * 100 < dropPct) return null;
-  const discount = Math.round(((baseline - currentPrice) / baseline) * 100);
+  const dropFraction = (baseline - currentPrice) / baseline;
+  if (dropFraction * 100 < dropPct) return null;
+  // A drop past the sanity ceiling is treated as a data glitch, not a deal —
+  // leave the row hidden for a human/verify to reconcile [2026-08-07 incident].
+  if (dropFraction * 100 > maxDropPct) return null;
+  const discount = Math.round(dropFraction * 100);
   return { original: Math.round(baseline * 100) / 100, discount };
 }
 

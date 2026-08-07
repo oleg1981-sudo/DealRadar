@@ -38,6 +38,17 @@ describe('decidePromotion', () => {
     expect(decidePromotion(90.5, series([100, 100, 100, 100, 100, 100, 100]))).toBeNull();
   });
 
+  it('rejects an implausibly deep drop as a data glitch, never a deal', () => {
+    // The 2026-08-07 TVI jacket incident: a ÷100 feed glitch (56.99 → 0.57)
+    // is a 99% "drop" against a sustained 56.99 baseline. Promoting it would
+    // publish a fake -99% deal — the exact thing the brand forbids.
+    expect(decidePromotion(0.57, series([56.99, 56.99, 56.99, 56.99, 56.99, 56.99, 56.99]))).toBeNull();
+    // Just under the 85% ceiling still promotes (a genuine deep clearance).
+    expect(decidePromotion(16, series([100, 100, 100, 100, 100, 100, 100]))).toEqual({ original: 100, discount: 84 });
+    // Just over the ceiling is rejected.
+    expect(decidePromotion(14, series([100, 100, 100, 100, 100, 100, 100]))).toBeNull();
+  });
+
   it('rejects non-finite / non-positive current prices', () => {
     expect(decidePromotion(NaN, series([100, 100, 100, 100, 100, 100, 100]))).toBeNull();
     expect(decidePromotion(0, series([100, 100, 100, 100, 100, 100, 100]))).toBeNull();
