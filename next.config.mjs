@@ -35,10 +35,23 @@ const SECURITY_HEADERS = [
 
 import { readFileSync } from 'node:fs';
 
+// Deal pages are ~99% of the crawl surface and vary ONLY by path (locale +
+// slug) — no cookie, no query. Let Netlify's CDN serve them from its Durable
+// Cache and revalidate hourly instead of invoking a function + Supabase query
+// on every crawl. This is the fix for the Aug 6 compute + Aug 8 DB-saturation
+// incident; category/home stay dynamic (they read the location cookie).
+// stale-while-revalidate keeps serving cached HTML while a background refresh
+// runs, so a slow origin never blocks a response.
+const DEAL_CDN_CACHE = 'public, durable, s-maxage=3600, stale-while-revalidate=86400';
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   async headers() {
-    return [{ source: '/:path*', headers: SECURITY_HEADERS }];
+    return [
+      { source: '/:path*', headers: SECURITY_HEADERS },
+      { source: '/:locale/deal/:slug', headers: [{ key: 'Netlify-CDN-Cache-Control', value: DEAL_CDN_CACHE }] },
+      { source: '/:locale/deal/:slug/md', headers: [{ key: 'Netlify-CDN-Cache-Control', value: DEAL_CDN_CACHE }] },
+    ];
   },
   images: {
     // Provider CDNs vary per network; tighten this list once live feeds are on.

@@ -1,4 +1,5 @@
 import { cache } from 'react';
+import { unstable_cache } from 'next/cache';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
@@ -29,10 +30,17 @@ import { matchSubCategory } from '@/lib/categories';
 import { categoryTerm } from '@/lib/categories-i18n';
 import { HealthDisclaimer } from '@/components/legal/HealthDisclaimer';
 
-// Always render from live data — like the category/search pages. Without this
-// Next caches the Supabase fetches, so the daily price verifier's updates (and
-// gallery enrichment) would not appear until the next deploy: stale prices.
-export const dynamic = 'force-dynamic';
+// ISR, not force-dynamic (2026-08-08 incident): deal pages are ~99% of the
+// crawlable surface (~31k deals × 13 locales). force-dynamic made EVERY crawl a
+// serverless function + live Supabase query with Cache-Control:no-store, so an
+// uncached crawl storm saturated Netlify compute (Aug 6 credits) and then the
+// Postgres instance (Aug 8 outage: trivial queries took ~48s). Serving each
+// page from the CDN and revalidating hourly collapses that to one render per
+// URL per hour. The old fear (prices stale "until the next deploy") was the
+// default static behavior; an explicit revalidate refreshes prices/gallery/
+// hidden-state within the window — the verify job only moves them ~daily, so
+// ≤1h staleness is invisible. Background revalidation keeps them current.
+export const revalidate = 3600;
 
 interface Props {
   readonly params: { readonly locale: string; readonly slug: string };
@@ -40,8 +48,14 @@ interface Props {
 
 const BASE_URL = siteUrl();
 
-// Deduplicate the lookup across generateMetadata + the page render (one request).
-const getDeal = cache((slug: string) => getDealBySlug(slug));
+// unstable_cache so the Supabase reads join Next's data cache — otherwise the
+// raw supabase-js fetches keep the route dynamic (ƒ) and every crawl re-runs a
+// function + live query (the Aug 6/8 incident). Cached per-arg, revalidated
+// hourly, so Netlify serves the page from its CDN. React cache() then dedupes
+// the deal lookup across generateMetadata + render within one request.
+const getDealCached = unstable_cache((slug: string) => getDealBySlug(slug), ['deal-by-slug'], { revalidate: 3600 });
+const getDeal = cache((slug: string) => getDealCached(slug));
+const getHistory = unstable_cache((productId: string) => queryPriceHistory(productId), ['deal-price-history'], { revalidate: 3600 });
 
 /** [FR-SEO-2] JSON-LD `availability` must derive from deal state, never a
  *  constant: hidden (gone/sold-out per the daily live-shop verifier) reports
@@ -105,7 +119,7 @@ export default async function DealDetailPage({ params }: Props) {
   // Recorded daily prices widen the window: low = recorded minimum, so the
   // today-dot sits at its true position instead of pinned at the green end.
   // Best-effort — on any DB error the graph keeps its honest two-point fallback.
-  const history = await queryPriceHistory(deal.productId).catch(() => []);
+  const history = await getHistory(deal.productId).catch(() => []);
   const recorded = history.map((p) => p.salePrice);
   // "Last deal" context for regular-price rows — from recorded history only.
   const lastDeal = deal.discountPercent <= 0 ? findLastDeal(history, deal.salePrice) : null;
