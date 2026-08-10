@@ -360,8 +360,14 @@ export async function getDealBySlug(slug: string, country?: CountryCode): Promis
   if (country) q = q.eq('country', country);
   const { data, error } = await q.maybeSingle();
   if (error) {
+    // THROW, don't return null: a DB error (e.g. statement timeout under load)
+    // must surface as a 500, never masquerade as "not found". Returning null
+    // here 404s a live product — and with deal pages now CDN-cached, that false
+    // 404 gets frozen for the cache TTL (2026-08-08 incident). A 500 is not
+    // cached by Netlify and retries to a 200 once the DB recovers. Only a
+    // genuinely absent row (data == null, no error) is a real, cacheable 404.
     console.error(`[deals.repo] getDealBySlug failed for ${slug}:`, error.message);
-    return null;
+    throw new Error(`getDealBySlug(${slug}): ${error.message}`);
   }
   return data ? fromRow(data) : null;
 }

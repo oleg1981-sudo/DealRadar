@@ -41,8 +41,10 @@ import { readFileSync } from 'node:fs';
 // on every crawl. This is the fix for the Aug 6 compute + Aug 8 DB-saturation
 // incident; category/home stay dynamic (they read the location cookie).
 // stale-while-revalidate keeps serving cached HTML while a background refresh
-// runs, so a slow origin never blocks a response.
-const DEAL_CDN_CACHE = 'public, durable, s-maxage=3600, stale-while-revalidate=86400';
+// runs, so a slow origin never blocks a response. NOT `durable`: a deploy then
+// purges the edge cache, giving us a one-click "clear a bad entry" lever (a
+// durable false-404 from the Aug 8 DB outage otherwise survives deploys).
+const DEAL_CDN_CACHE = 'public, s-maxage=3600, stale-while-revalidate=86400';
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
