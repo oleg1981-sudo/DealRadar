@@ -45,14 +45,27 @@ import { readFileSync } from 'node:fs';
 // purges the edge cache, giving us a one-click "clear a bad entry" lever (a
 // durable false-404 from the Aug 8 DB outage otherwise survives deploys).
 const DEAL_CDN_CACHE = 'public, s-maxage=3600, stale-while-revalidate=86400';
+// Emit BOTH the Netlify-specific and the vendor-neutral CDN header, so the same
+// build caches on Netlify today AND on Cloudflare (in front of the Hetzner
+// origin) after the migration. The origin Next server ignores these; the CDN
+// honours them. On Cloudflare a Cache Rule must mark these paths cache-eligible
+// and "respect origin" TTL (see docs/migration/hetzner-cloudflare-coolify.md).
+const CDN_CACHE_HEADERS = [
+  { key: 'Netlify-CDN-Cache-Control', value: DEAL_CDN_CACHE },
+  { key: 'CDN-Cache-Control', value: DEAL_CDN_CACHE },
+];
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // `standalone` produces the self-contained server the Docker image runs, but
+  // ONLY when building that image (BUILD_STANDALONE=1). Unset on Netlify → the
+  // default output, so the current host is completely unaffected by this.
+  output: process.env.BUILD_STANDALONE ? 'standalone' : undefined,
   async headers() {
     return [
       { source: '/:path*', headers: SECURITY_HEADERS },
-      { source: '/:locale/deal/:slug', headers: [{ key: 'Netlify-CDN-Cache-Control', value: DEAL_CDN_CACHE }] },
-      { source: '/:locale/deal/:slug/md', headers: [{ key: 'Netlify-CDN-Cache-Control', value: DEAL_CDN_CACHE }] },
+      { source: '/:locale/deal/:slug', headers: CDN_CACHE_HEADERS },
+      { source: '/:locale/deal/:slug/md', headers: CDN_CACHE_HEADERS },
     ];
   },
   images: {

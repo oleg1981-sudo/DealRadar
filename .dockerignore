@@ -1,0 +1,12 @@
+# Keep the build context small and secret-free. node_modules and .next are
+# rebuilt inside the image; .env* never enters the image (Coolify injects env).
+node_modules
+.next
+.git
+.env
+.env.*
+!.env.example
+*.log
+.vscode
+.idea
+coverage
