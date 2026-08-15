@@ -63,7 +63,7 @@ That's it — fall-through, dedup, caching, and persistence are handled by the r
 
 ## Known gaps / TODO before production
 
-- **Translations:** only `en` and `de` are real. `fr`, `es`, `it`, `pl`, `nl`, `pt`, `sv`, `ro` are English stubs that need translation.
+- **Translations:** all 13 locales are fully translated — every locale carries all 174 keys of `en.json`. The few strings still identical to English are deliberate (`EAN`, `Min`/`Max`, `Cookies`, and cognates like `Model`/`Contact`). Remaining nit: `pl` and `pt` interpolate a country name straight after a preposition, which needs a case/contraction those templates can't express (`w Niemczech`, `na Alemanha`) — fix is a copy change in `pl.json`/`pt.json`, e.g. drop the preposition as `fi` already does.
 - **AWIN secrets:** the ingestion script and its scheduled Action (`.github/workflows/ingest-awin.yml`) are built and verified; they go live once the `AWIN_FEED_URL`, `SUPABASE_URL`, and `SUPABASE_SERVICE_ROLE_KEY` repo secrets are set. Until then, `src/lib/providers/awin.ts` serves mock data when `AWIN_FEED_URL` is unset locally.
 - **Kelkoo response shape:** the offer-mapping interfaces were written from public docs; verify against a live response in requestbuilder.kelkoogroup.com once you have a token.
 - **Image domains:** `next.config.mjs` `remotePatterns` are permissive for the affiliate CDNs; tighten for production.
