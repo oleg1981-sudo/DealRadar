@@ -3,8 +3,8 @@
   "configurations": [
     {
       "name": "dealradar",
-      "runtimeExecutable": "C:\\Users\\Anymal\\.lmstudio\\.internal\\utils\\node.exe",
-      "runtimeArgs": ["node_modules/next/dist/bin/next", "dev"],
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["next", "dev"],
       "port": 3000
     }
   ]
