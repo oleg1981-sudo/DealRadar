@@ -3,7 +3,7 @@ import type { CountryCode } from '../providers/types';
 
 export interface CountryInfo {
   code: CountryCode;
-  name: string;       // English name; UI translates via messages where needed
+  name: string;       // English name; render via countryName() to localise it
   locale: string;     // default UI locale for this country
   currency: string;   // ISO 4217
 }
@@ -43,4 +43,28 @@ export function isSupportedCountry(code: string): code is CountryCode {
 
 export function countryInfo(code: CountryCode): CountryInfo {
   return COUNTRIES.find((c) => c.code === code)!;
+}
+
+/** Cached per locale — the dropdown renders all 16 countries on every open. */
+const displayNamesByLocale = new Map<string, Intl.DisplayNames | null>();
+
+/**
+ * Country name in the reader's language ("Deutschland" for `DE` under `de`).
+ *
+ * `CountryInfo.name` stays the English source of truth; `Intl.DisplayNames`
+ * supplies every other locale, so adding a country or a locale needs no
+ * translation table. Falls back to the English name whenever the runtime has no
+ * data for the pair — `.of()` returns the raw code in that case.
+ */
+export function countryName(code: CountryCode, locale: string): string {
+  const fallback = countryInfo(code).name;
+  if (!displayNamesByLocale.has(locale)) {
+    try {
+      displayNamesByLocale.set(locale, new Intl.DisplayNames([locale], { type: 'region' }));
+    } catch {
+      displayNamesByLocale.set(locale, null); // invalid/unsupported locale tag
+    }
+  }
+  const localized = displayNamesByLocale.get(locale)?.of(code);
+  return localized && localized !== code ? localized : fallback;
 }

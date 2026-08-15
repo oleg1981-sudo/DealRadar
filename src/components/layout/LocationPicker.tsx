@@ -5,7 +5,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useTranslations, useLocale } from 'next-intl';
 import { usePathname } from '@/i18n/routing';
 import { MapPin, ChevronDown } from 'lucide-react';
-import { COUNTRIES, countryInfo } from '@/lib/geo/countries';
+import { COUNTRIES, countryInfo, countryName } from '@/lib/geo/countries';
 import { useLocation } from './LocationContext';
 import { persistLocation } from '@/lib/geo/resolve';
 import { Input } from '@/components/ui/input';
@@ -67,7 +67,7 @@ export function LocationPicker() {
             className="mt-1 h-10 w-full rounded-lg border border-zinc-200 bg-white px-2 text-sm"
           >
             {COUNTRIES.map((c) => (
-              <option key={c.code} value={c.code}>{c.name}</option>
+              <option key={c.code} value={c.code}>{countryName(c.code, locale)}</option>
             ))}
           </select>
 

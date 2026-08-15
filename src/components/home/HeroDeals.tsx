@@ -1,8 +1,8 @@
-import { getTranslations } from 'next-intl/server';
+import { getTranslations, getLocale } from 'next-intl/server';
 import { Link } from '@/i18n/routing';
 import { DealGrid } from '@/components/deals/DealGrid';
 import { queryDeals } from '@/lib/db/deals.repo';
-import { countryInfo } from '@/lib/geo/countries';
+import { countryName } from '@/lib/geo/countries';
 import { randomInt } from '@/lib/utils/rng';
 import type { CountryCode, NormalizedDeal } from '@/lib/providers/types';
 
@@ -51,6 +51,7 @@ function diversifyByShop(deals: NormalizedDeal[], limit: number): NormalizedDeal
 /** Hero: top deals in the user's country, mixed across stores (server-rendered). */
 export async function HeroDeals({ country, city }: { country: CountryCode; city: string | null }) {
   const t = await getTranslations('home');
+  const locale = await getLocale();
   const pool = await queryDeals({ country, city: city ?? undefined, limit: HERO_POOL, sort: 'discount', excludeHomepageHidden: true });
   const candidates = diversifyByShop(pool, HERO_CANDIDATES);
   const deals = shuffle(candidates).slice(0, HERO_COUNT);
@@ -59,7 +60,7 @@ export async function HeroDeals({ country, city }: { country: CountryCode; city:
     <section aria-labelledby="hero-heading">
       <div className="mb-6 flex items-baseline justify-between">
         <h1 id="hero-heading" className="text-2xl font-semibold tracking-tight">
-          {t('topDeals', { country: countryInfo(country).name })}
+          {t('topDeals', { country: countryName(country, locale) })}
         </h1>
       </div>
       {deals.length > 0 ? (
