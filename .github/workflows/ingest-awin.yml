@@ -35,7 +35,13 @@ jobs:
   ingest:
     if: github.repository_owner == 'oleg1981-sudo'
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # 15 min killed ~half the runs (2026-08-08/11/12/15 all died at 918-920s,
+    # i.e. the ceiling itself) while healthy runs finish in ~660s. A kill here
+    # is not just a red badge: the job dies mid-upsert AND never reaches the
+    # snapshot-prices step below, so the catalog refresh is partial that day.
+    # Same growth that took verify-awin 30 -> 150. 45 keeps ~4x headroom over a
+    # healthy run while still bounding a runaway one.
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
 
