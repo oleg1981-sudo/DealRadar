@@ -56,11 +56,24 @@ create index if not exists deals_country_category_brand_idx
 create index if not exists deals_last_updated_idx
   on public.deals (last_updated desc);
 
--- Fuzzy search on names and brands (used by /api/search).
-create index if not exists deals_name_trgm_idx
-  on public.deals using gin (product_name gin_trgm_ops);
-create index if not exists deals_brand_trgm_idx
-  on public.deals using gin (brand gin_trgm_ops) where brand is not null;
+-- Fuzzy search on names and brands: REMOVED 2026-08-19. Search does
+-- `product_name ilike '%tok%' OR brand ilike '%tok%'`, which pg_trgm exists to
+-- accelerate — but the planner never chose these. Zero scans since the project
+-- was created on 2026-06-15 (pg_stat_user_indexes, stats never reset), because
+-- the country/hidden filters narrow first and a filter beats a BitmapOr across
+-- two GIN indexes at this row count.
+--
+-- They were not free: 36 MB of GIN maintained on all ~45k daily `deals`
+-- updates. GIN is the most write-expensive index type, and this ran during the
+-- exact window the Micro instance exhausted its CPU credits and stalled the
+-- site (2026-08-18).
+--
+-- Re-add if search ever slows: the catalog is ~43k rows, where a scan is
+-- cheap; at several hundred thousand this calculus flips.
+--   create index deals_name_trgm_idx on public.deals using gin (product_name gin_trgm_ops);
+--   create index deals_brand_trgm_idx on public.deals using gin (brand gin_trgm_ops) where brand is not null;
+drop index if exists deals_name_trgm_idx;
+drop index if exists deals_brand_trgm_idx;
 
 -- Distinct brands per country/category (burger-menu filters).
 create or replace function public.distinct_brands(p_country char(2), p_category text default null)
