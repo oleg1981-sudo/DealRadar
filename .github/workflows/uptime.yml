@@ -1,0 +1,54 @@
+# External uptime check — the piece that was missing on 2026-08-18, when the
+# database stalled for ~3 days and nothing noticed: every page timed out while
+# the container health check kept returning 200, so the platform reported
+# "healthy" the entire time.
+#
+# Hits /api/health/deep, which actually reads from Supabase. A failure here
+# means the site cannot serve, and GitHub emails the repo owner on failure —
+# that notification IS the alert.
+#
+# Deliberately does NOT restart anything. Restarting the web app cannot fix a
+# database problem; a human needs to look.
+#
+# Required repository secret:
+#   APP_URL  the deployed app base URL (e.g. https://dealradar.me)
+name: Uptime check
+
+on:
+  schedule:
+    - cron: '*/15 * * * *' # every 15 minutes
+  workflow_dispatch:
+
+# Never let a slow check pile up behind a previous one.
+concurrency:
+  group: uptime
+  cancel-in-progress: false
+
+jobs:
+  probe:
+    if: github.repository_owner == 'oleg1981-sudo'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Probe /api/health/deep
+        env:
+          APP_URL: ${{ secrets.APP_URL }}
+        run: |
+          if [ -z "$APP_URL" ]; then
+            echo "::error::APP_URL secret is not set — cannot probe."
+            exit 1
+          fi
+
+          # --max-time bounds the whole request: a hang must fail, not wait.
+          # -w captures the status even when curl exits non-zero on 5xx.
+          body=$(curl -sS --max-time 30 -w '\n%{http_code}' "$APP_URL/api/health/deep" || true)
+          code=$(printf '%s' "$body" | tail -n1)
+          payload=$(printf '%s' "$body" | sed '$d')
+
+          echo "HTTP $code"
+          echo "$payload"
+
+          if [ "$code" != "200" ]; then
+            echo "::error::Site is NOT serving — /api/health/deep returned ${code:-no response}. The app is up but cannot reach its database, or is unreachable entirely. Check Supabase first: a stalled instance presents exactly this way."
+            exit 1
+          fi
