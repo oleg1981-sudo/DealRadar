@@ -13,6 +13,7 @@ import { useTranslations, useLocale } from 'next-intl';
 import { Link } from '@/i18n/routing';
 import { CATEGORIES } from '@/lib/categories';
 import { categoryTerm } from '@/lib/categories-i18n';
+import { TravelDealMenu } from './TravelDealMenu';
 import {
   ChevronLeft, ChevronRight, MonitorSmartphone, Shirt, Sofa, Bike, Sparkles,
   ShoppingBasket, Blocks, Car, BookOpen, Plane, PawPrint, HeartPulse, type LucideIcon,
@@ -31,7 +32,12 @@ const termHref = (slug: string, name: string) =>
 const deptHref = (slug: string, name: string) =>
   `/search?category=${slug}&dept=${encodeURIComponent(name)}`;
 
-export function CategoryMenu() {
+/**
+ * `showTravelDeal` is decided on the SERVER (see lib/features.ts) and passed in,
+ * because this is a client component and a NEXT_PUBLIC_* flag would have to be
+ * baked in at build time. As a prop it stays a runtime switch.
+ */
+export function CategoryMenu({ showTravelDeal = false }: { showTravelDeal?: boolean }) {
   const t = useTranslations('categories');
   const locale = useLocale();
   const [openSlug, setOpenSlug] = useState<string | null>(null);
@@ -102,7 +108,13 @@ export function CategoryMenu() {
       onMouseEnter={cancelClose}
       onMouseLeave={scheduleClose}
     >
-      <div className="relative">
+      {/* TravelDeal is pinned OUTSIDE the scroller: the retail bar scrolls
+          horizontally, so anything inside it slides out of view. As a flex
+          sibling it holds first position no matter how far the bar is moved. */}
+      <div className="flex items-start gap-2">
+        {showTravelDeal && <TravelDealMenu />}
+
+        <div className="relative min-w-0 flex-1">
         {canLeft && (
           <button
             type="button"
@@ -154,6 +166,7 @@ export function CategoryMenu() {
             <ChevronRight className="h-4 w-4" aria-hidden />
           </button>
         )}
+        </div>
       </div>
 
       {/* Cascading mega-menu panel */}
