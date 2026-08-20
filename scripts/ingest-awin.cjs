@@ -137,6 +137,15 @@ const NAME_CATEGORY_OVERRIDES = [
   // and fell through to the `electronics` default (Profichemie, 2026-07-19).
   // Placed LAST so the pharma/pet/solar rules above still win a shared word.
   [/reiniger|reinigungs|putzmittel|spülmittel|waschmittel|entkalker|enteiser|entfeuchter|scheibenklar|allzweckreiniger/i, 'home-garden'],
+  // Bedding & sleepwear (Zizzz.de) — the SAME failure as Profichemie above, on
+  // 2026-08-20: a German catalogue matched no English feed-taxonomy rule and
+  // fell through to `electronics`, so a child's pyjama was filed under
+  // Elektronik. Third occurrence of this class; see the fallback tracker below,
+  // which now makes it impossible for the next one to pass unnoticed.
+  [/bettdecke|kissenbezug|bettwäsche|spannbettlaken|bettlaken|schafwolldecke|steppdecke/i, 'home-garden'],
+  // `schlafsack` is qualified: a bare match would steal camping sleeping bags
+  // (Outdoor & Camping) from a future outdoor merchant.
+  [/schlafanzug|pyjama|nachthemd|strampler|(baby|sommer|winter)schlafsack/i, 'fashion'],
 ];
 function nameOverrideCategory(productName) {
   for (const [re, slug] of NAME_CATEGORY_OVERRIDES) if (re.test(productName || '')) return slug;
@@ -176,11 +185,67 @@ function isPrescriptionOnly(name, description) {
   // "nur auf/gegen Rezept", or "verschreibungspflichtigeS Arzneimittel".
   return /\brezeptpflichtig\b|\bist\s+verschreibungspflichtig\b|\bnur\s+(auf|gegen)\s+rezept\b|verschreibungspflichtiges\s+arzneimittel/.test(hay);
 }
-function mapCategory(categoryName, merchantCategory) {
-  if (CATEGORY_EXACT[categoryName]) return CATEGORY_EXACT[categoryName];
+// ── uncategorised tracker ────────────────────────────────────────────────────
+// The `electronics` default has now mis-filed three separate merchants
+// (Profichemie 2026-07-19; Zizzz.de 2026-08-20 — a child's pyjama under
+// Elektronik), and every time it was found by a human noticing a wrong page,
+// never by the pipeline. The default itself is fine; SILENCE is the bug.
+//
+// So every fall-through is recorded per advertiser and reported at the end of
+// the run. A merchant whose rows are MOSTLY defaulted is not "mostly
+// electronics" — it is a merchant nobody has mapped, and the run fails.
+const fallbackByAdvertiser = new Map(); // advertiser -> { count, samples: [] }
+const mappedByAdvertiser = new Map();   // advertiser -> count of confidently mapped rows
+
+function noteMapped(advertiser) {
+  const a = advertiser || '(unknown)';
+  mappedByAdvertiser.set(a, (mappedByAdvertiser.get(a) || 0) + 1);
+}
+function noteFallback(advertiser, productName, categoryName) {
+  const a = advertiser || '(unknown)';
+  const e = fallbackByAdvertiser.get(a) || { count: 0, samples: [] };
+  e.count += 1;
+  if (e.samples.length < 3) e.samples.push(`${productName || '?'} [category_name="${categoryName || ''}"]`);
+  fallbackByAdvertiser.set(a, e);
+}
+
+function mapCategory(categoryName, merchantCategory, advertiserName, productName) {
+  if (CATEGORY_EXACT[categoryName]) { noteMapped(advertiserName); return CATEGORY_EXACT[categoryName]; }
   const hay = `${categoryName} ${merchantCategory}`;
-  for (const [re, slug] of CATEGORY_RULES) if (re.test(hay)) return slug;
-  return 'electronics'; // least-bad default
+  for (const [re, slug] of CATEGORY_RULES) if (re.test(hay)) { noteMapped(advertiserName); return slug; }
+  noteFallback(advertiserName, productName, categoryName);
+  return 'electronics'; // least-bad default — REPORTED, never silent (see below)
+}
+
+/**
+ * Report fall-throughs. Returns true when the run should be considered failed.
+ *
+ * Threshold is per ADVERTISER, not global: one odd product slipping through is
+ * noise, but a merchant with most of its catalogue defaulted is exactly the
+ * Zizzz/Profichemie signature — a new advertiser nobody wrote rules for.
+ */
+function reportUncategorised({ failRatio = 0.5, minRows = 3 } = {}) {
+  if (fallbackByAdvertiser.size === 0) {
+    console.log('\nuncategorised: none — every row matched a category rule');
+    return false;
+  }
+  console.log('\nuncategorised (fell through to the `electronics` default):');
+  let failed = false;
+  for (const [advertiser, e] of [...fallbackByAdvertiser.entries()].sort((a, b) => b[1].count - a[1].count)) {
+    const mapped = mappedByAdvertiser.get(advertiser) || 0;
+    const total = mapped + e.count;
+    const ratio = total > 0 ? e.count / total : 1;
+    console.log(`  ${String(e.count).padStart(5)}/${total}  (${Math.round(ratio * 100)}%)  ${advertiser}`);
+    for (const s of e.samples) console.log(`         e.g. ${s}`);
+    if (e.count >= minRows && ratio >= failRatio) {
+      failed = true;
+      console.log(
+        `::error::${advertiser}: ${e.count} of ${total} rows have no category rule and were defaulted to "electronics". ` +
+        'This is how a pyjama ended up under Elektronik. Add an ADVERTISER_CATEGORY or NAME_CATEGORY_OVERRIDES rule before these publish.',
+      );
+    }
+  }
+  return failed;
 }
 
 // ── normalise one CSV row → a `deals` table row (snake_case), or null to skip ──
@@ -226,7 +291,9 @@ function normalizeRow(g, collectAttrs) {
     sale_price: sale,
     discount_percent: discountPercent,
     currency,
-    category: advertiserCategory(g('merchant_name')) ?? nameOverrideCategory(g('product_name')) ?? mapCategory(g('category_name').trim(), g('merchant_category').trim()),
+    // mapCategory now takes the advertiser and product name too — only so it can
+    // ATTRIBUTE a fall-through when it happens. They do not affect the mapping.
+    category: advertiserCategory(g('merchant_name')) ?? nameOverrideCategory(g('product_name')) ?? mapCategory(g('category_name').trim(), g('merchant_category').trim(), g('merchant_name').trim(), g('product_name').trim()),
     brand: normalizeBrand(g('brand_name').trim()) || null, // census-seeded alias → canonical (FR-4.3)
     image_url: g('aw_image_url').trim() || g('merchant_image_url').trim() || null, // productserve proxy first
     gallery: gallery.length ? gallery : null,
@@ -792,6 +859,16 @@ async function fetchExistingPrices() {
   [...byMerchant.entries()].sort((a, b) => b[1] - a[1]).forEach(([k, v]) => console.log(`  ${String(v).padStart(5)}  ${k}`));
   console.log('\nsamples:');
   samples.forEach((s) => console.log(`  -${s.pct}%  ${s.price} ${s.cur} (was ${s.was})  [${s.cat}]  ${s.shop} — ${s.name}`));
+
+  // Category fall-through report. Runs on dry-run too — the whole point is to
+  // catch a new merchant BEFORE its rows publish, and a dry run is exactly when
+  // you would look. Sets the exit code rather than throwing, so the summary
+  // above still prints and the upserted data is not rolled back: the rows are
+  // already live, and a red run is what gets someone to add the rule.
+  if (reportUncategorised()) {
+    process.exitCode = 1;
+    console.error('\n[awin] FAILED: a merchant published with no category rules — see ::error:: above.');
+  }
 
   // Only record the metric on a real (non-dry-run) pass — dry-run's whole
   // point is "preview without writing", and this is a write (to ops_metrics).
