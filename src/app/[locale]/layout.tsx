@@ -7,6 +7,7 @@ import { getMessages, setRequestLocale } from 'next-intl/server';
 import { routing, type Locale } from '@/i18n/routing';
 import { Header } from '@/components/layout/Header';
 import { CategoryMenu } from '@/components/layout/CategoryMenu';
+import { travelDealEnabled } from '@/lib/features';
 import { HeroBanner } from '@/components/home/HeroBanner';
 import { HomeOnly } from '@/components/home/HomeOnly';
 import { Footer } from '@/components/layout/Footer';
@@ -81,7 +82,9 @@ export default async function LocaleLayout({
               <HeroBanner />
             </HomeOnly>
             <main className="mx-auto min-h-[60vh] max-w-7xl px-4 py-8">
-              <CategoryMenu />
+              {/* Flag read on the server so TRAVELDEAL_ENABLED stays a runtime
+                  switch — see lib/features.ts for why it is not NEXT_PUBLIC_. */}
+              <CategoryMenu showTravelDeal={travelDealEnabled()} />
               {children}
             </main>
             <Footer />
