@@ -29,6 +29,9 @@
     "pets": "Pets",
     "health": "Health"
   },
+  "travelDeal": {
+    "heading": "Cruises & Travel Packages"
+  },
   "deal": {
     "goToDeal": "View at <chip>{shop}</chip>",
     "goToShop": "Go to {shop}",

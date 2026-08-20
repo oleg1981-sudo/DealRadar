@@ -29,6 +29,9 @@
     "pets": "Haustiere",
     "health": "Gesundheit"
   },
+  "travelDeal": {
+    "heading": "Kreuzfahrten & Pauschalreisen"
+  },
   "deal": {
     "goToDeal": "Bei <chip>{shop}</chip> ansehen",
     "otherStores": "In anderen Shops ansehen",

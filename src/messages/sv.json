@@ -29,6 +29,9 @@
     "pets": "Husdjur",
     "health": "Hälsa"
   },
+  "travelDeal": {
+    "heading": "Kryssningar & paketresor"
+  },
   "deal": {
     "goToDeal": "Se hos <chip>{shop}</chip>",
     "otherStores": "Visa i andra butiker",

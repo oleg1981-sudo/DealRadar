@@ -29,6 +29,9 @@
     "pets": "Animali",
     "health": "Salute"
   },
+  "travelDeal": {
+    "heading": "Crociere e vacanze pacchetto"
+  },
   "deal": {
     "goToDeal": "Vedi su <chip>{shop}</chip>",
     "otherStores": "Vedi in altri negozi",

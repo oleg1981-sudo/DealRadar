@@ -29,6 +29,9 @@
     "pets": "Kæledyr",
     "health": "Sundhed"
   },
+  "travelDeal": {
+    "heading": "Krydstogter & pakkerejser"
+  },
   "deal": {
     "goToDeal": "Se hos <chip>{shop}</chip>",
     "otherStores": "Se i andre butikker",

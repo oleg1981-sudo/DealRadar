@@ -29,6 +29,9 @@
     "pets": "Lemmikit",
     "health": "Terveys"
   },
+  "travelDeal": {
+    "heading": "Risteilyt & pakettimatkat"
+  },
   "deal": {
     "goToDeal": "Katso kaupassa <chip>{shop}</chip>",
     "otherStores": "Katso muissa kaupoissa",

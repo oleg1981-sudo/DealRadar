@@ -29,6 +29,9 @@
     "pets": "Zwierzęta",
     "health": "Zdrowie"
   },
+  "travelDeal": {
+    "heading": "Rejsy i wczasy zorganizowane"
+  },
   "deal": {
     "goToDeal": "Zobacz w <chip>{shop}</chip>",
     "otherStores": "Zobacz w innych sklepach",

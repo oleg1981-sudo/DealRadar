@@ -29,6 +29,9 @@
     "pets": "Animaux",
     "health": "Santé"
   },
+  "travelDeal": {
+    "heading": "Croisières et séjours organisés"
+  },
   "deal": {
     "goToDeal": "Voir sur <chip>{shop}</chip>",
     "otherStores": "Voir dans d'autres magasins",

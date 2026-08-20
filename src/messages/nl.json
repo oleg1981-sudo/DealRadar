@@ -29,6 +29,9 @@
     "pets": "Huisdieren",
     "health": "Gezondheid"
   },
+  "travelDeal": {
+    "heading": "Cruises & pakketreizen"
+  },
   "deal": {
     "goToDeal": "Bekijk bij <chip>{shop}</chip>",
     "otherStores": "Bekijk in andere winkels",

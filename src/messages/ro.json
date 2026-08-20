@@ -29,6 +29,9 @@
     "pets": "Animale de companie",
     "health": "Sănătate"
   },
+  "travelDeal": {
+    "heading": "Croaziere și vacanțe la pachet"
+  },
   "deal": {
     "goToDeal": "Vezi pe <chip>{shop}</chip>",
     "otherStores": "Vezi în alte magazine",

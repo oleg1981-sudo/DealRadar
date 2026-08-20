@@ -341,6 +341,30 @@ const TERMS: Record<string, T> = {
   'Day Trips': { de: 'Tagesausflüge', es: 'Excursiones de un día', fr: 'Excursions à la journée', it: 'Gite di un giorno', nl: 'Dagtochten', pl: 'Wycieczki jednodniowe', pt: 'Passeios de um dia', sv: 'Dagsutflykter', ro: 'Excursii de o zi' },
   'Activities': { de: 'Aktivitäten', es: 'Actividades', fr: 'Activités', it: 'Attività', nl: 'Activiteiten', pl: 'Aktywności', pt: 'Atividades', sv: 'Aktiviteter', ro: 'Activități' },
   'Spa & Wellness': { de: 'Spa & Wellness', es: 'Spa y bienestar', fr: 'Spa et bien-être', it: 'Spa e benessere', nl: 'Spa & wellness', pl: 'Spa i wellness', pt: 'Spa e bem-estar', sv: 'Spa & wellness', ro: 'Spa și wellness' },
+
+  // ── TravelDeal (cruises & packages) ──────────────────────────
+  // 'City Breaks' and 'Beach Holidays' are NOT repeated here — they already
+  // exist above under Travel > Holidays and are reused by the TravelDeal menu.
+  // 'Mein Schiff' is a brand (TUI Cruises) and is deliberately never translated.
+  'Cruises': { de: 'Kreuzfahrten', es: 'Cruceros', fr: 'Croisières', it: 'Crociere', nl: 'Cruises', pl: 'Rejsy wycieczkowe', pt: 'Cruzeiros', sv: 'Kryssningar', ro: 'Croaziere' },
+  'River & Expedition': { de: 'Fluss & Expedition', es: 'Fluviales y expedición', fr: 'Fluvial et expédition', it: 'Fiume e spedizione', nl: 'Rivier & expeditie', pl: 'Rzeczne i ekspedycyjne', pt: 'Fluviais e expedição', sv: 'Flod & expedition', ro: 'Fluviale și expediție' },
+  'Tours & Safaris': { de: 'Touren & Safaris', es: 'Tours y safaris', fr: 'Circuits et safaris', it: 'Tour e safari', nl: "Tours & safari's", pl: 'Wycieczki i safari', pt: 'Circuitos e safáris', sv: 'Turer & safari', ro: 'Tururi și safari' },
+  'Package Holidays': { de: 'Pauschalreisen', es: 'Vacaciones organizadas', fr: 'Séjours tout compris', it: 'Vacanze pacchetto', nl: 'Pakketreizen', pl: 'Wczasy zorganizowane', pt: 'Férias organizadas', sv: 'Paketresor', ro: 'Vacanțe la pachet' },
+  'Ocean Cruises': { de: 'Hochseekreuzfahrten', es: 'Cruceros marítimos', fr: 'Croisières maritimes', it: 'Crociere oceaniche', nl: 'Zeecruises', pl: 'Rejsy morskie', pt: 'Cruzeiros marítimos', sv: 'Havskryssningar', ro: 'Croaziere maritime' },
+  'Mediterranean': { de: 'Mittelmeer', es: 'Mediterráneo', fr: 'Méditerranée', it: 'Mediterraneo', nl: 'Middellandse Zee', pl: 'Morze Śródziemne', pt: 'Mediterrâneo', sv: 'Medelhavet', ro: 'Mediterana' },
+  'Northern Europe': { de: 'Nordeuropa', es: 'Norte de Europa', fr: 'Europe du Nord', it: 'Nord Europa', nl: 'Noord-Europa', pl: 'Europa Północna', pt: 'Norte da Europa', sv: 'Nordeuropa', ro: 'Europa de Nord' },
+  'Canary Islands': { de: 'Kanarische Inseln', es: 'Islas Canarias', fr: 'Îles Canaries', it: 'Isole Canarie', nl: 'Canarische Eilanden', pl: 'Wyspy Kanaryjskie', pt: 'Ilhas Canárias', sv: 'Kanarieöarna', ro: 'Insulele Canare' },
+  'River Cruises': { de: 'Flusskreuzfahrten', es: 'Cruceros fluviales', fr: 'Croisières fluviales', it: 'Crociere fluviali', nl: 'Riviercruises', pl: 'Rejsy rzeczne', pt: 'Cruzeiros fluviais', sv: 'Flodkryssningar', ro: 'Croaziere fluviale' },
+  'Expedition Cruises': { de: 'Expeditionskreuzfahrten', es: 'Cruceros de expedición', fr: "Croisières d'expédition", it: 'Crociere di spedizione', nl: 'Expeditiecruises', pl: 'Rejsy ekspedycyjne', pt: 'Cruzeiros de expedição', sv: 'Expeditionskryssningar', ro: 'Croaziere de expediție' },
+  'Nile Cruises': { de: 'Nilkreuzfahrten', es: 'Cruceros por el Nilo', fr: 'Croisières sur le Nil', it: 'Crociere sul Nilo', nl: 'Nijlcruises', pl: 'Rejsy po Nilu', pt: 'Cruzeiros no Nilo', sv: 'Nilkryssningar', ro: 'Croaziere pe Nil' },
+  'Danube & Rhine': { de: 'Donau & Rhein', es: 'Danubio y Rin', fr: 'Danube et Rhin', it: 'Danubio e Reno', nl: 'Donau & Rijn', pl: 'Dunaj i Ren', pt: 'Danúbio e Reno', sv: 'Donau & Rhen', ro: 'Dunăre și Rin' },
+  'Guided Tours': { de: 'Geführte Touren', es: 'Tours guiados', fr: 'Circuits guidés', it: 'Tour guidati', nl: 'Begeleide reizen', pl: 'Wycieczki z przewodnikiem', pt: 'Circuitos guiados', sv: 'Guidade turer', ro: 'Tururi ghidate' },
+  'Safaris': { de: 'Safaris', es: 'Safaris', fr: 'Safaris', it: 'Safari', nl: "Safari's", pl: 'Safari', pt: 'Safáris', sv: 'Safari', ro: 'Safari' },
+  'Trekking & Hiking': { de: 'Trekking & Wandern', es: 'Trekking y senderismo', fr: 'Trekking et randonnée', it: 'Trekking ed escursioni', nl: 'Trekking & wandelen', pl: 'Trekking i wędrówki', pt: 'Trekking e caminhadas', sv: 'Trekking & vandring', ro: 'Trekking și drumeții' },
+  'Cultural Tours': { de: 'Kulturreisen', es: 'Tours culturales', fr: 'Circuits culturels', it: 'Tour culturali', nl: 'Cultuurreizen', pl: 'Wycieczki kulturalne', pt: 'Circuitos culturais', sv: 'Kulturresor', ro: 'Tururi culturale' },
+  'Small Group': { de: 'Kleine Gruppen', es: 'Grupos reducidos', fr: 'Petits groupes', it: 'Piccoli gruppi', nl: 'Kleine groepen', pl: 'Małe grupy', pt: 'Grupos pequenos', sv: 'Små grupper', ro: 'Grupuri mici' },
+  'All-Inclusive': { de: 'All-Inclusive', es: 'Todo incluido', fr: 'Tout compris', it: 'All inclusive', nl: 'All-inclusive', pl: 'All inclusive', pt: 'Tudo incluído', sv: 'All inclusive', ro: 'All inclusive' },
+  'Family Holidays': { de: 'Familienurlaub', es: 'Vacaciones en familia', fr: 'Vacances en famille', it: 'Vacanze per famiglie', nl: 'Gezinsvakanties', pl: 'Wakacje rodzinne', pt: 'Férias em família', sv: 'Familjesemester', ro: 'Vacanțe în familie' },
 };
 
 /** Danish / Finnish / Norwegian labels (the base TERMS map covers the other 9). */
@@ -651,6 +675,27 @@ const NORDIC: Record<string, { da: string; fi: string; no: string }> = {
   'Day Trips': { da: 'Dagsture', fi: 'Päiväretket', no: 'Dagsturer' },
   'Activities': { da: 'Aktiviteter', fi: 'Aktiviteetit', no: 'Aktiviteter' },
   'Spa & Wellness': { da: 'Spa & wellness', fi: 'Spa ja hyvinvointi', no: 'Spa og velvære' },
+
+  // ── TravelDeal (cruises & packages) ──────────────────────────
+  'Cruises': { da: 'Krydstogter', fi: 'Risteilyt', no: 'Cruise' },
+  'River & Expedition': { da: 'Flod & ekspedition', fi: 'Joki & tutkimusmatkat', no: 'Elv & ekspedisjon' },
+  'Tours & Safaris': { da: 'Ture & safarier', fi: 'Kiertomatkat & safarit', no: 'Turer & safarier' },
+  'Package Holidays': { da: 'Pakkerejser', fi: 'Pakettimatkat', no: 'Pakkereiser' },
+  'Ocean Cruises': { da: 'Havkrydstogter', fi: 'Meriristeilyt', no: 'Havcruise' },
+  'Mediterranean': { da: 'Middelhavet', fi: 'Välimeri', no: 'Middelhavet' },
+  'Northern Europe': { da: 'Nordeuropa', fi: 'Pohjois-Eurooppa', no: 'Nord-Europa' },
+  'Canary Islands': { da: 'De Kanariske Øer', fi: 'Kanariansaaret', no: 'Kanariøyene' },
+  'River Cruises': { da: 'Flodkrydstogter', fi: 'Jokiristeilyt', no: 'Elvecruise' },
+  'Expedition Cruises': { da: 'Ekspeditionskrydstogter', fi: 'Tutkimusristeilyt', no: 'Ekspedisjonscruise' },
+  'Nile Cruises': { da: 'Nilkrydstogter', fi: 'Niilin risteilyt', no: 'Nilcruise' },
+  'Danube & Rhine': { da: 'Donau & Rhinen', fi: 'Tonava & Rein', no: 'Donau & Rhinen' },
+  'Guided Tours': { da: 'Guidede ture', fi: 'Opastetut kiertomatkat', no: 'Guidede turer' },
+  'Safaris': { da: 'Safarier', fi: 'Safarit', no: 'Safarier' },
+  'Trekking & Hiking': { da: 'Trekking & vandring', fi: 'Trekking & vaellus', no: 'Trekking & fotturer' },
+  'Cultural Tours': { da: 'Kulturrejser', fi: 'Kulttuurimatkat', no: 'Kulturreiser' },
+  'Small Group': { da: 'Små grupper', fi: 'Pienryhmät', no: 'Små grupper' },
+  'All-Inclusive': { da: 'All inclusive', fi: 'All inclusive', no: 'All inclusive' },
+  'Family Holidays': { da: 'Familieferie', fi: 'Perhelomat', no: 'Familieferie' },
 };
 
 /** Localized display label for a subcategory term; falls back to English. */
