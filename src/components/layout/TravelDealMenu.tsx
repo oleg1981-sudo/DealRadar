@@ -16,7 +16,7 @@ import { useTranslations, useLocale } from 'next-intl';
 import { Link } from '@/i18n/routing';
 import { Ship, ChevronDown } from 'lucide-react';
 import { categoryTerm } from '@/lib/categories-i18n';
-import { TRAVEL_GROUPS, SOURCE_LABEL } from '@/lib/travel-categories';
+import { TRAVEL_GROUPS } from '@/lib/travel-categories';
 
 /** Until a travel feed exists, leaves point at the existing search. */
 const leafHref = (q: string) => `/search?q=${encodeURIComponent(q)}`;
@@ -100,14 +100,17 @@ export function TravelDealMenu() {
           <div className="grid gap-x-6 gap-y-5 p-4 sm:grid-cols-2">
             {TRAVEL_GROUPS.map((group) => (
               <div key={group.name}>
-                <div className="mb-2 flex items-center gap-2">
+                {/* No supplier badge here. `group.source` records which
+                    integration feeds each group and stays useful to US, but
+                    "AWIN" means nothing to a shopper, and naming the network
+                    exposes the commercial supply chain for no reader benefit.
+                    Affiliate disclosure is already handled properly by the
+                    Affiliate-Link badge and the redirect notice. If a supplier
+                    signal is ever wanted, it should be the MERCHANT ("TUI
+                    Cruises") on the deal card, not the network on a menu. */}
+                <div className="mb-2">
                   <span className="text-sm font-semibold text-zinc-900">
                     {categoryTerm(group.name, locale)}
-                  </span>
-                  {/* Which supplier this group would be fed by — the two are not
-                      interchangeable, so it is worth showing while we decide. */}
-                  <span className="rounded px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-blue-700 ring-1 ring-blue-200">
-                    {SOURCE_LABEL[group.source]}
                   </span>
                 </div>
                 <ul className="space-y-1">

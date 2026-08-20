@@ -83,7 +83,13 @@ export const TRAVEL_GROUPS: TravelGroup[] = [
   },
 ];
 
-/** Label shown on the source badge in the dropdown. */
+/**
+ * Human label for a source. NOT rendered to visitors — the supplier badge was
+ * removed from the menu on 2026-08-20 because "AWIN" is internal plumbing that
+ * means nothing to a shopper and needlessly exposes the supply chain. Kept for
+ * operational use: run reports, admin views, deciding which integration to
+ * build next.
+ */
 export const SOURCE_LABEL: Record<TravelSource, string> = {
   awin: 'AWIN',
   tourradar: 'TourRadar',
