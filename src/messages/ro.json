@@ -30,7 +30,10 @@
     "health": "Sănătate"
   },
   "travelDeal": {
-    "heading": "Croaziere și vacanțe la pachet"
+    "heading": "Croaziere și vacanțe la pachet",
+    "comingSoon": "În curând",
+    "comingSoonBody": "Pregătim oferte de croaziere și vacanțe la pachet pentru această secțiune. Nu este încă activă — revino în curând.",
+    "browseDeals": "Vezi ofertele actuale"
   },
   "deal": {
     "goToDeal": "Vezi pe <chip>{shop}</chip>",

@@ -30,7 +30,10 @@
     "health": "Health"
   },
   "travelDeal": {
-    "heading": "Cruises & Travel Packages"
+    "heading": "Cruises & Travel Packages",
+    "comingSoon": "Coming soon",
+    "comingSoonBody": "We are putting together cruise and travel package deals for this section. It is not live yet — check back shortly.",
+    "browseDeals": "Browse current deals"
   },
   "deal": {
     "goToDeal": "View at <chip>{shop}</chip>",

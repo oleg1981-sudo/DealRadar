@@ -30,7 +30,10 @@
     "health": "Gezondheid"
   },
   "travelDeal": {
-    "heading": "Cruises & pakketreizen"
+    "heading": "Cruises & pakketreizen",
+    "comingSoon": "Binnenkort beschikbaar",
+    "comingSoonBody": "We stellen cruise- en pakketreisaanbiedingen samen voor deze sectie. Nog niet live — kom binnenkort terug.",
+    "browseDeals": "Bekijk actuele aanbiedingen"
   },
   "deal": {
     "goToDeal": "Bekijk bij <chip>{shop}</chip>",

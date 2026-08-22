@@ -30,7 +30,10 @@
     "health": "Terveys"
   },
   "travelDeal": {
-    "heading": "Risteilyt & pakettimatkat"
+    "heading": "Risteilyt & pakettimatkat",
+    "comingSoon": "Tulossa pian",
+    "comingSoonBody": "Kokoamme tähän osioon risteily- ja pakettimatkatarjouksia. Ei ole vielä käytössä — käy pian uudelleen.",
+    "browseDeals": "Katso nykyiset tarjoukset"
   },
   "deal": {
     "goToDeal": "Katso kaupassa <chip>{shop}</chip>",

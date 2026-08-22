@@ -30,7 +30,10 @@
     "health": "Zdrowie"
   },
   "travelDeal": {
-    "heading": "Rejsy i wczasy zorganizowane"
+    "heading": "Rejsy i wczasy zorganizowane",
+    "comingSoon": "Wkrótce",
+    "comingSoonBody": "Przygotowujemy oferty rejsów i wczasów zorganizowanych dla tej sekcji. Jeszcze nie działa — zajrzyj wkrótce.",
+    "browseDeals": "Zobacz aktualne okazje"
   },
   "deal": {
     "goToDeal": "Zobacz w <chip>{shop}</chip>",

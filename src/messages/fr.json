@@ -30,7 +30,10 @@
     "health": "Santé"
   },
   "travelDeal": {
-    "heading": "Croisières et séjours organisés"
+    "heading": "Croisières et séjours organisés",
+    "comingSoon": "Bientôt disponible",
+    "comingSoonBody": "Nous préparons des offres de croisières et de séjours pour cette section. Ce n’est pas encore en ligne — revenez bientôt.",
+    "browseDeals": "Voir les offres actuelles"
   },
   "deal": {
     "goToDeal": "Voir sur <chip>{shop}</chip>",

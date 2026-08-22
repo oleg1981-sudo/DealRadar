@@ -30,7 +30,10 @@
     "health": "Gesundheit"
   },
   "travelDeal": {
-    "heading": "Kreuzfahrten & Pauschalreisen"
+    "heading": "Kreuzfahrten & Pauschalreisen",
+    "comingSoon": "Demnächst verfügbar",
+    "comingSoonBody": "Wir stellen für diesen Bereich Kreuzfahrt- und Pauschalreise-Angebote zusammen. Noch nicht verfügbar — schau bald wieder vorbei.",
+    "browseDeals": "Aktuelle Angebote ansehen"
   },
   "deal": {
     "goToDeal": "Bei <chip>{shop}</chip> ansehen",

@@ -84,6 +84,42 @@ export const TRAVEL_GROUPS: TravelGroup[] = [
 ];
 
 /**
+ * URL slug for a group or leaf, DERIVED from the English name rather than
+ * stored. A stored slug is one more thing to keep in sync, and the English name
+ * is already the canonical key (it is what categoryTerm translates from).
+ */
+export function travelSlug(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/&/g, 'and')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+export interface TravelMatch {
+  /** English name — feed into categoryTerm() for the reader's language. */
+  name: string;
+  /** The group it belongs to; equals `name` when the slug IS a group. */
+  groupName: string;
+  isGroup: boolean;
+}
+
+/** Resolve a URL slug back to a group or leaf, or null if it matches neither. */
+export function findTravelBySlug(slug: string): TravelMatch | null {
+  for (const group of TRAVEL_GROUPS) {
+    if (travelSlug(group.name) === slug) {
+      return { name: group.name, groupName: group.name, isGroup: true };
+    }
+    for (const leaf of group.children) {
+      if (travelSlug(leaf.name) === slug) {
+        return { name: leaf.name, groupName: group.name, isGroup: false };
+      }
+    }
+  }
+  return null;
+}
+
+/**
  * Human label for a source. NOT rendered to visitors — the supplier badge was
  * removed from the menu on 2026-08-20 because "AWIN" is internal plumbing that
  * means nothing to a shopper and needlessly exposes the supply chain. Kept for

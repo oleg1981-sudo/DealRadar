@@ -30,7 +30,10 @@
     "health": "Salute"
   },
   "travelDeal": {
-    "heading": "Crociere e vacanze pacchetto"
+    "heading": "Crociere e vacanze pacchetto",
+    "comingSoon": "Prossimamente",
+    "comingSoonBody": "Stiamo preparando offerte di crociere e vacanze pacchetto per questa sezione. Non è ancora online — torna presto.",
+    "browseDeals": "Vedi le offerte attuali"
   },
   "deal": {
     "goToDeal": "Vedi su <chip>{shop}</chip>",

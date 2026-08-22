@@ -30,7 +30,10 @@
     "health": "Sundhed"
   },
   "travelDeal": {
-    "heading": "Krydstogter & pakkerejser"
+    "heading": "Krydstogter & pakkerejser",
+    "comingSoon": "Kommer snart",
+    "comingSoonBody": "Vi samler krydstogt- og pakkerejsetilbud til denne sektion. Den er ikke live endnu — kig forbi snart.",
+    "browseDeals": "Se aktuelle tilbud"
   },
   "deal": {
     "goToDeal": "Se hos <chip>{shop}</chip>",

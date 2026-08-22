@@ -30,7 +30,10 @@
     "health": "Helse"
   },
   "travelDeal": {
-    "heading": "Cruise & pakkereiser"
+    "heading": "Cruise & pakkereiser",
+    "comingSoon": "Kommer snart",
+    "comingSoonBody": "Vi samler cruise- og pakkereisetilbud til denne delen. Den er ikke i drift ennå — stikk innom snart.",
+    "browseDeals": "Se aktuelle tilbud"
   },
   "deal": {
     "goToDeal": "Se hos <chip>{shop}</chip>",

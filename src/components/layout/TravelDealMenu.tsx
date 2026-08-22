@@ -16,10 +16,15 @@ import { useTranslations, useLocale } from 'next-intl';
 import { Link } from '@/i18n/routing';
 import { Ship, ChevronDown } from 'lucide-react';
 import { categoryTerm } from '@/lib/categories-i18n';
-import { TRAVEL_GROUPS } from '@/lib/travel-categories';
+import { TRAVEL_GROUPS, travelSlug } from '@/lib/travel-categories';
 
-/** Until a travel feed exists, leaves point at the existing search. */
-const leafHref = (q: string) => `/search?q=${encodeURIComponent(q)}`;
+/**
+ * Points at the TravelDeal landing page, which says "coming soon" until a feed
+ * exists. Previously these went to /search, which returned an empty result page
+ * — accurate, but it reads as a broken site rather than an unreleased section.
+ * The URLs do not change when real listings replace the placeholder.
+ */
+const leafHref = (name: string) => `/traveldeal/${travelSlug(name)}`;
 
 export function TravelDealMenu() {
   const t = useTranslations('travelDeal');
@@ -123,7 +128,7 @@ export function TravelDealMenu() {
                   {group.children.map((leaf) => (
                     <li key={leaf.name}>
                       <Link
-                        href={leafHref(leaf.q)}
+                        href={leafHref(leaf.name)}
                         onClick={() => setOpen(false)}
                         className="block rounded px-1 py-1 text-sm text-zinc-600 transition-colors hover:text-blue-700"
                       >

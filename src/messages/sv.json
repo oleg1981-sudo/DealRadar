@@ -30,7 +30,10 @@
     "health": "Hälsa"
   },
   "travelDeal": {
-    "heading": "Kryssningar & paketresor"
+    "heading": "Kryssningar & paketresor",
+    "comingSoon": "Kommer snart",
+    "comingSoonBody": "Vi samlar ihop kryssnings- och paketreseerbjudanden till den här delen. Inte igång ännu — titta in snart igen.",
+    "browseDeals": "Se aktuella erbjudanden"
   },
   "deal": {
     "goToDeal": "Se hos <chip>{shop}</chip>",

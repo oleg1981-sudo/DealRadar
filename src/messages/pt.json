@@ -30,7 +30,10 @@
     "health": "Saúde"
   },
   "travelDeal": {
-    "heading": "Cruzeiros e férias organizadas"
+    "heading": "Cruzeiros e férias organizadas",
+    "comingSoon": "Brevemente",
+    "comingSoonBody": "Estamos a reunir ofertas de cruzeiros e férias organizadas para esta secção. Ainda não está disponível — volte em breve.",
+    "browseDeals": "Ver ofertas atuais"
   },
   "deal": {
     "goToDeal": "Ver em <chip>{shop}</chip>",
