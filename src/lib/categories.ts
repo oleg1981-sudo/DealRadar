@@ -39,6 +39,25 @@ export const CATEGORIES: Category[] = [
     ],
   },
   {
+    // Second in the row by product decision, not by catalogue size — Lyra Pet is
+    // a small slice of the catalogue but a deliberately promoted one. Array
+    // order IS the menu order; nothing else depends on it (matchSubCategory
+    // looks up by slug).
+    //
+    // Leaf terms are the search `q` and — because the pet catalogue is
+    // German (Lyra Pet) — are the German words that actually occur in the
+    // product names, so the subcategory filters return real results.
+    slug: 'pets',
+    icon: 'PawPrint',
+    children: [
+      { name: 'Dogs', children: ['Hundefutter', 'Entenhälse'] },
+      { name: 'Cats', children: ['Katzenfutter', 'Katzenstreu'] },
+      { name: 'Horses', children: ['Mineralfutter', 'Lyra Horse'] },
+      { name: 'Wet Food', children: ['Fleischmahlzeit'] },
+      { name: 'Pet Care', children: ['Flohspray', 'Wespenspray'] },
+    ],
+  },
+  {
     slug: 'fashion',
     icon: 'Shirt',
     children: [
@@ -143,20 +162,6 @@ export const CATEGORIES: Category[] = [
       { name: 'Outdoor & Camping', children: ['Tents', 'Sleeping Bags', 'Camping Gear', 'Cool Boxes'] },
       { name: 'Holidays', children: ['City Breaks', 'Beach Holidays', 'Package Deals', 'Flights'] },
       { name: 'Experiences', children: ['Day Trips', 'Activities', 'Spa & Wellness'] },
-    ],
-  },
-  {
-    // Leaf terms are the search `q` and — because the pet catalogue is
-    // German (Lyra Pet) — are the German words that actually occur in the
-    // product names, so the subcategory filters return real results.
-    slug: 'pets',
-    icon: 'PawPrint',
-    children: [
-      { name: 'Dogs', children: ['Hundefutter', 'Entenhälse'] },
-      { name: 'Cats', children: ['Katzenfutter', 'Katzenstreu'] },
-      { name: 'Horses', children: ['Mineralfutter', 'Lyra Horse'] },
-      { name: 'Wet Food', children: ['Fleischmahlzeit'] },
-      { name: 'Pet Care', children: ['Flohspray', 'Wespenspray'] },
     ],
   },
   {
