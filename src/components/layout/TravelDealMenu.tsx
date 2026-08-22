@@ -64,7 +64,13 @@ export function TravelDealMenu() {
     <div
       ref={wrapRef}
       className="relative shrink-0"
-      onMouseEnter={openNow}
+      // cancelClose, NOT openNow — matching CategoryMenu. Touch browsers
+      // synthesise `mouseenter` on the first tap, so opening here meant tap 1
+      // opened the panel and the click that followed immediately toggled it
+      // shut: the menu only worked on the SECOND tap on mobile. Opening is
+      // owned by the button's pointerType-guarded handler (mouse only) and by
+      // the click, which behaves correctly on both.
+      onMouseEnter={cancelClose}
       onMouseLeave={scheduleClose}
     >
       <button
