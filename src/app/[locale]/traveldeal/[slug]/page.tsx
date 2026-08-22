@@ -9,10 +9,11 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
+import Image from 'next/image';
 import { Link } from '@/i18n/routing';
-import { Ship } from 'lucide-react';
 import { categoryTerm } from '@/lib/categories-i18n';
 import { findTravelBySlug, TRAVEL_GROUPS, travelSlug } from '@/lib/travel-categories';
+import { TravelNotifyForm } from '@/components/travel/TravelNotifyForm';
 
 /** Static: the content depends only on the slug and the locale. */
 export const dynamic = 'force-static';
@@ -59,10 +60,18 @@ export default async function TravelDealComingSoon({
   const name = categoryTerm(match.name, locale);
 
   return (
-    <section className="mx-auto max-w-2xl py-16 text-center">
-      <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50">
-        <Ship className="h-7 w-7 text-blue-700" aria-hidden />
-      </div>
+    <section className="mx-auto max-w-2xl py-14 text-center">
+      {/* Decorative only: the heading below already names the section, so alt=""
+          keeps a screen reader from announcing a redundant "cruise ship".
+          `priority` because it is the largest element above the fold here. */}
+      <Image
+        src="/travel/cruise-ship.png"
+        alt=""
+        width={1001}
+        height={180}
+        priority
+        className="mx-auto mb-8 h-auto w-full max-w-lg"
+      />
 
       <h1 className="text-2xl font-semibold tracking-tight text-zinc-900">{name}</h1>
 
@@ -72,9 +81,11 @@ export default async function TravelDealComingSoon({
 
       <p className="mx-auto mt-5 max-w-md text-zinc-600">{t('comingSoonBody')}</p>
 
+      <TravelNotifyForm sourceSlug={slug} />
+
       <Link
         href="/"
-        className="mt-8 inline-flex h-11 items-center rounded-lg bg-accent px-5 text-sm font-medium text-white transition-colors hover:bg-accent-hover"
+        className="mt-8 inline-flex h-11 items-center rounded-lg border border-zinc-200 px-5 text-sm font-medium text-zinc-700 transition-colors hover:border-accent/40 hover:text-accent"
       >
         {t('browseDeals')}
       </Link>

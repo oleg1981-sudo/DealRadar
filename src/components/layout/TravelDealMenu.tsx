@@ -86,8 +86,8 @@ export function TravelDealMenu() {
         onClick={() => setOpen((v) => !v)}
         className={`flex h-12 shrink-0 items-center gap-2 rounded-xl border px-4 text-sm font-semibold text-white transition-colors ${
           open
-            ? 'border-blue-700 bg-blue-700'
-            : 'border-blue-600 bg-blue-600 hover:bg-blue-700 hover:border-blue-700'
+            ? 'border-accent-hover bg-accent-hover'
+            : 'border-accent bg-accent hover:bg-accent-hover hover:border-accent-hover'
         }`}
       >
         <Ship className="h-5 w-5" aria-hidden />
