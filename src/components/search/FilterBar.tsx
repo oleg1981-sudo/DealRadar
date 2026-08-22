@@ -15,11 +15,12 @@ import { SlidersHorizontal, ChevronDown } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
+import { displayShopName } from '@/lib/utils/shop';
 
 const SELECT_CLS = 'h-10 w-full rounded-lg border border-zinc-200 bg-white px-2 text-sm';
 const LABEL_CLS = 'mb-1 block text-xs font-medium uppercase tracking-wide text-zinc-400';
 
-export function FilterBar({ brands }: { brands: string[] }) {
+export function FilterBar({ brands, shops = [] }: { brands: string[]; shops?: string[] }) {
   const t = useTranslations();
   const router = useRouter();
   const pathname = usePathname();
@@ -47,6 +48,7 @@ export function FilterBar({ brands }: { brands: string[] }) {
   const activeCount =
     (params.get('sort') && params.get('sort') !== 'discount' ? 1 : 0) +
     (params.get('brand') ? 1 : 0) +
+    (params.get('shop') ? 1 : 0) +
     (Number(params.get('minDiscount')) > 0 ? 1 : 0) +
     (params.get('minPrice') || params.get('maxPrice') ? 1 : 0);
 
@@ -98,6 +100,26 @@ export function FilterBar({ brands }: { brands: string[] }) {
               >
                 <option value="">{t('filters.allBrands')}</option>
                 {brands.map((b) => <option key={b} value={b}>{b}</option>)}
+              </select>
+            </div>
+          )}
+
+          {shops.length > 0 && (
+            <div className="w-40">
+              <label htmlFor="f-shop" className={LABEL_CLS}>{t('filters.shop')}</label>
+              <select
+                id="f-shop"
+                value={params.get('shop') ?? ''}
+                onChange={(e) => setParam('shop', e.target.value)}
+                className={SELECT_CLS}
+              >
+                <option value="">{t('filters.allShops')}</option>
+                {/* Value is the STORED shop_name (what the filter matches on);
+                    only the label is tidied, so "Aliva Apotheke DE Online Shop"
+                    reads as "Aliva Apotheke DE" without breaking the query. */}
+                {shops.map((s) => (
+                  <option key={s} value={s}>{displayShopName(s)}</option>
+                ))}
               </select>
             </div>
           )}

@@ -89,6 +89,8 @@ export async function upsertDeals(deals: NormalizedDeal[]): Promise<number> {
 
 export interface DealFilters extends DealQuery {
   brand?: string;
+  /** Exact shop_name — the store filter. */
+  shop?: string;
   minPrice?: number;
   maxPrice?: number;
   sort?: 'discount' | 'price-asc' | 'price-desc' | 'newest' | 'random';
@@ -138,6 +140,9 @@ function applyDealFilters(q: any, filters: DealFilters): any {
   if (city) q = q.or(`city.eq."${city}",city.is.null`);
   if (filters.category) q = q.eq('category', filters.category);
   if (filters.brand) q = q.eq('brand', filters.brand);
+  // Exact match on the stored name, so no sanitising is needed the way the
+  // interpolated city/token filters require — .eq() is parameterised.
+  if (filters.shop) q = q.eq('shop_name', filters.shop);
   // Token-AND match: each term must appear in the product name or brand, so
   // menu terms like "OLED TVs" match "LG 4K OLED TV 55\"". Tokens are stripped
   // to letters/digits only by queryTokens (no PostgREST specials, no LIKE
@@ -172,6 +177,9 @@ async function runQuery(filters: DealFilters, withTotal: boolean): Promise<Paged
     // Mock-data dev path: country-scoped, filtered in memory.
     let deals = await fetchDealsAcrossProviders({ ...filters, limit: 500 });
     if (filters.brand) deals = deals.filter((d) => d.brand === filters.brand);
+    // Must mirror applyDealFilters: this branch is the whole app in dev, so a
+    // filter implemented only against Supabase silently does nothing locally.
+    if (filters.shop) deals = deals.filter((d) => d.shopName === filters.shop);
     if (filters.minPrice !== undefined) deals = deals.filter((d) => d.salePrice >= filters.minPrice!);
     if (filters.maxPrice !== undefined) deals = deals.filter((d) => d.salePrice <= filters.maxPrice!);
     const sorted = filters.sort === 'random'
@@ -321,6 +329,31 @@ export async function distinctBrands(country: CountryCode, category?: CategorySl
     return [];
   }
   return ((data ?? []) as { brand: string }[]).map((r) => r.brand);
+}
+
+/**
+ * Shops carrying deals in this country/category — the store filter's options.
+ *
+ * Unlike distinctBrands this is NOT time-boxed. A market has ~15 shops against
+ * thousands of brands, and `deals_country_shop_idx` makes it an index-only
+ * scan, so the 3s bail-out that filter needs would only add a race here. An
+ * error still degrades to an empty list rather than taking the page down: the
+ * filter is a refinement, not the content.
+ */
+export async function distinctShops(country: CountryCode, category?: CategorySlug): Promise<string[]> {
+  if (!supabaseConfigured()) {
+    const deals = await fetchDealsAcrossProviders({ country, category, limit: 500 });
+    return [...new Set(deals.map((d) => d.shopName).filter(Boolean))].sort();
+  }
+  const { data, error } = await supabase().rpc('distinct_shops', {
+    p_country: country,
+    p_category: category ?? null,
+  });
+  if (error) {
+    console.error('[deals.repo] distinct_shops failed (store filter disabled):', error.message);
+    return [];
+  }
+  return ((data ?? []) as { shop_name: string }[]).map((r) => r.shop_name);
 }
 
 /**

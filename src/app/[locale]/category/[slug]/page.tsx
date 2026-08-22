@@ -5,7 +5,7 @@ import { DealGrid } from '@/components/deals/DealGrid';
 import { FilterBar } from '@/components/search/FilterBar';
 import { Pagination } from '@/components/search/Pagination';
 import { HealthDisclaimer } from '@/components/legal/HealthDisclaimer';
-import { queryDealsPaged, distinctBrands, type DealFilters } from '@/lib/db/deals.repo';
+import { queryDealsPaged, distinctBrands, distinctShops, type DealFilters } from '@/lib/db/deals.repo';
 import { randomSeed } from '@/lib/utils/rng';
 import { parseLocationCookie, LOCATION_COOKIE } from '@/lib/geo/resolve';
 import { DEFAULT_COUNTRY } from '@/lib/geo/countries';
@@ -50,6 +50,7 @@ export default async function CategoryPage({
     city: loc?.city ?? undefined,
     category,
     brand: one(sp.brand) || undefined,
+    shop: one(sp.shop) || undefined,
     minDiscountPercent: toNum(one(sp.minDiscount)),
     minPrice: toNum(one(sp.minPrice)),
     maxPrice: toNum(one(sp.maxPrice)),
@@ -59,9 +60,10 @@ export default async function CategoryPage({
     offset: (requestedPage - 1) * PAGE_SIZE,
   };
 
-  const [{ deals, total }, brands] = await Promise.all([
+  const [{ deals, total }, brands, shops] = await Promise.all([
     queryDealsPaged(filters),
     distinctBrands(country, category),
+    distinctShops(country, category),
   ]);
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
@@ -78,7 +80,7 @@ export default async function CategoryPage({
   return (
     <div>
       {category === 'health' && <HealthDisclaimer />}
-      <FilterBar brands={brands} />
+      <FilterBar brands={brands} shops={shops} />
       <section aria-live="polite">
         <h1 className="mb-6 text-xl font-semibold tracking-tight">
           {t(category)}
