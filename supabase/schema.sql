@@ -76,6 +76,30 @@ drop index if exists deals_name_trgm_idx;
 drop index if exists deals_brand_trgm_idx;
 
 -- Distinct brands per country/category (burger-menu filters).
+-- Distinct shops per country/category, for the store filter. Mirrors
+-- distinct_brands, but is far cheaper: a market has ~15 shops against thousands
+-- of brands, which is why this one does not need the 3s bail-out the brand
+-- filter carries.
+create or replace function public.distinct_shops(p_country char(2), p_category text default null)
+returns table (shop_name text)
+language sql stable
+set search_path = public
+as $$
+  select distinct d.shop_name
+  from public.deals d
+  where d.country = p_country
+    and d.shop_name is not null
+    and d.hidden = false
+    and (p_category is null or d.category = p_category)
+  order by d.shop_name;
+$$;
+
+-- Serves both the DISTINCT above and `?shop=` filtering. Partial on
+-- hidden = false because every read path excludes hidden rows.
+create index if not exists deals_country_shop_idx
+  on public.deals (country, shop_name)
+  where hidden = false;
+
 create or replace function public.distinct_brands(p_country char(2), p_category text default null)
 returns table (brand text)
 language sql stable
@@ -121,6 +145,30 @@ create index if not exists price_alerts_pending_idx
   on public.price_alerts (product_id) where notified = false;
 
 alter table public.price_alerts enable row level security;
+
+-- TravelDeal launch notifications. Distinct from price_alerts: that subscribes
+-- to ONE product's price drop, this is a one-shot "tell me when the cruise &
+-- package section exists". Sharing the table would mean inventing fake
+-- product_id/target_price values for every row.
+--
+-- `source_slug` records which category the person signed up from, which is the
+-- only demand signal available before any inventory exists — it says which
+-- integration to build first.
+--
+-- PRIVACY: email is personal data under the same NFR-PRIV-1 obligation as
+-- price_alerts. purge-alerts.yml does NOT yet sweep this table; that must be
+-- extended (and the privacy policy updated) before real collection begins.
+create table if not exists public.travel_signups (
+  id          uuid        primary key default gen_random_uuid(),
+  email       text        not null,
+  locale      text,
+  source_slug text,
+  notified    boolean     not null default false,
+  created_at  timestamptz not null default now(),
+  unique (email)
+);
+
+alter table public.travel_signups enable row level security;
 
 -- Migration Additions: Product Metadata & History Extensions
 alter table public.deals
