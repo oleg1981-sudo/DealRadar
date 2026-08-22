@@ -33,7 +33,13 @@
     "heading": "Kryssningar & paketresor",
     "comingSoon": "Kommer snart",
     "comingSoonBody": "Vi samlar ihop kryssnings- och paketreseerbjudanden till den här delen. Inte igång ännu — titta in snart igen.",
-    "browseDeals": "Se aktuella erbjudanden"
+    "browseDeals": "Se aktuella erbjudanden",
+    "getNotified": "Meddela mig",
+    "emailLabel": "E-postadress",
+    "emailPlaceholder": "din@email.se",
+    "notifySuccess": "Tack — vi mejlar dig när den här delen lanseras.",
+    "notifyError": "Något gick fel. Försök igen.",
+    "notifyPrivacy": "Ett mejl vid lansering. Ingen spam, avsluta när du vill."
   },
   "deal": {
     "goToDeal": "Se hos <chip>{shop}</chip>",
@@ -110,7 +116,10 @@
     "minDiscount": "Minsta rabatt",
     "apply": "Tillämpa filter",
     "minPrice": "Lägsta pris",
-    "maxPrice": "Högsta pris"
+    "maxPrice": "Högsta pris",
+    "shop": "Butik",
+    "allShops": "Alla butiker",
+    "sortRandom": "Slumpmässigt"
   },
   "geo": {
     "promptTitle": "Visa erbjudanden nära dig?",

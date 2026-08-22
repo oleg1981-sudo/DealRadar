@@ -33,7 +33,13 @@
     "heading": "Kreuzfahrten & Pauschalreisen",
     "comingSoon": "Demnächst verfügbar",
     "comingSoonBody": "Wir stellen für diesen Bereich Kreuzfahrt- und Pauschalreise-Angebote zusammen. Noch nicht verfügbar — schau bald wieder vorbei.",
-    "browseDeals": "Aktuelle Angebote ansehen"
+    "browseDeals": "Aktuelle Angebote ansehen",
+    "getNotified": "Benachrichtigen",
+    "emailLabel": "E-Mail-Adresse",
+    "emailPlaceholder": "deine@email.de",
+    "notifySuccess": "Danke — wir melden uns per E-Mail, sobald dieser Bereich startet.",
+    "notifyError": "Etwas ist schiefgelaufen. Bitte versuche es erneut.",
+    "notifyPrivacy": "Eine E-Mail zum Start. Kein Spam, jederzeit abbestellbar."
   },
   "deal": {
     "goToDeal": "Bei <chip>{shop}</chip> ansehen",
@@ -110,7 +116,10 @@
     "minDiscount": "Mindestrabatt",
     "apply": "Filter anwenden",
     "minPrice": "Mindestpreis",
-    "maxPrice": "Höchstpreis"
+    "maxPrice": "Höchstpreis",
+    "shop": "Shop",
+    "allShops": "Alle Shops",
+    "sortRandom": "Zufällig"
   },
   "geo": {
     "promptTitle": "Angebote in deiner Nähe anzeigen?",

@@ -33,7 +33,13 @@
     "heading": "Croaziere și vacanțe la pachet",
     "comingSoon": "În curând",
     "comingSoonBody": "Pregătim oferte de croaziere și vacanțe la pachet pentru această secțiune. Nu este încă activă — revino în curând.",
-    "browseDeals": "Vezi ofertele actuale"
+    "browseDeals": "Vezi ofertele actuale",
+    "getNotified": "Anunță-mă",
+    "emailLabel": "Adresă de e-mail",
+    "emailPlaceholder": "emailul@tau.ro",
+    "notifySuccess": "Mulțumim — îți scriem pe e-mail când această secțiune se lansează.",
+    "notifyError": "Ceva n-a mers bine. Încearcă din nou.",
+    "notifyPrivacy": "Un e-mail la lansare. Fără spam, te poți dezabona oricând."
   },
   "deal": {
     "goToDeal": "Vezi pe <chip>{shop}</chip>",
@@ -110,7 +116,10 @@
     "minDiscount": "Reducere minimă",
     "apply": "Aplică filtrele",
     "minPrice": "Preț minim",
-    "maxPrice": "Preț maxim"
+    "maxPrice": "Preț maxim",
+    "shop": "Magazin",
+    "allShops": "Toate magazinele",
+    "sortRandom": "Aleatoriu"
   },
   "geo": {
     "promptTitle": "Arătăm oferte din apropiere?",

@@ -33,7 +33,13 @@
     "heading": "Crociere e vacanze pacchetto",
     "comingSoon": "Prossimamente",
     "comingSoonBody": "Stiamo preparando offerte di crociere e vacanze pacchetto per questa sezione. Non è ancora online — torna presto.",
-    "browseDeals": "Vedi le offerte attuali"
+    "browseDeals": "Vedi le offerte attuali",
+    "getNotified": "Avvisami",
+    "emailLabel": "Indirizzo email",
+    "emailPlaceholder": "tua@email.it",
+    "notifySuccess": "Grazie — ti avviseremo via email al lancio di questa sezione.",
+    "notifyError": "Qualcosa è andato storto. Riprova.",
+    "notifyPrivacy": "Una email al lancio. Niente spam, disiscrizione in qualsiasi momento."
   },
   "deal": {
     "goToDeal": "Vedi su <chip>{shop}</chip>",
@@ -110,7 +116,10 @@
     "minDiscount": "Sconto minimo",
     "apply": "Applica filtri",
     "minPrice": "Prezzo minimo",
-    "maxPrice": "Prezzo massimo"
+    "maxPrice": "Prezzo massimo",
+    "shop": "Negozio",
+    "allShops": "Tutti i negozi",
+    "sortRandom": "Casuale"
   },
   "geo": {
     "promptTitle": "Mostrare offerte vicino a te?",

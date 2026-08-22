@@ -33,7 +33,13 @@
     "heading": "Cruises & Travel Packages",
     "comingSoon": "Coming soon",
     "comingSoonBody": "We are putting together cruise and travel package deals for this section. It is not live yet — check back shortly.",
-    "browseDeals": "Browse current deals"
+    "browseDeals": "Browse current deals",
+    "getNotified": "Get Notified",
+    "emailLabel": "Email address",
+    "emailPlaceholder": "your@email.com",
+    "notifySuccess": "Thanks — we will email you when this section launches.",
+    "notifyError": "Something went wrong. Please try again.",
+    "notifyPrivacy": "One email when this launches. No spam, unsubscribe any time."
   },
   "deal": {
     "goToDeal": "View at <chip>{shop}</chip>",
@@ -110,7 +116,10 @@
     "minDiscount": "Minimum discount",
     "apply": "Apply filters",
     "minPrice": "Minimum price",
-    "maxPrice": "Maximum price"
+    "maxPrice": "Maximum price",
+    "shop": "Store",
+    "allShops": "All stores",
+    "sortRandom": "Random"
   },
   "geo": {
     "promptTitle": "Show deals near you?",

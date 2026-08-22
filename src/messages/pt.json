@@ -33,7 +33,13 @@
     "heading": "Cruzeiros e férias organizadas",
     "comingSoon": "Brevemente",
     "comingSoonBody": "Estamos a reunir ofertas de cruzeiros e férias organizadas para esta secção. Ainda não está disponível — volte em breve.",
-    "browseDeals": "Ver ofertas atuais"
+    "browseDeals": "Ver ofertas atuais",
+    "getNotified": "Avisar-me",
+    "emailLabel": "Endereço de e-mail",
+    "emailPlaceholder": "o.seu@email.pt",
+    "notifySuccess": "Obrigado — avisamos por e-mail quando esta secção arrancar.",
+    "notifyError": "Algo correu mal. Tente novamente.",
+    "notifyPrivacy": "Um e-mail no lançamento. Sem spam, pode cancelar quando quiser."
   },
   "deal": {
     "goToDeal": "Ver em <chip>{shop}</chip>",
@@ -110,7 +116,10 @@
     "minDiscount": "Desconto mínimo",
     "apply": "Aplicar filtros",
     "minPrice": "Preço mínimo",
-    "maxPrice": "Preço máximo"
+    "maxPrice": "Preço máximo",
+    "shop": "Loja",
+    "allShops": "Todas as lojas",
+    "sortRandom": "Aleatório"
   },
   "geo": {
     "promptTitle": "Mostrar ofertas perto de si?",

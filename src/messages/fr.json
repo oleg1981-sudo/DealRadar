@@ -33,7 +33,13 @@
     "heading": "Croisières et séjours organisés",
     "comingSoon": "Bientôt disponible",
     "comingSoonBody": "Nous préparons des offres de croisières et de séjours pour cette section. Ce n’est pas encore en ligne — revenez bientôt.",
-    "browseDeals": "Voir les offres actuelles"
+    "browseDeals": "Voir les offres actuelles",
+    "getNotified": "Me prévenir",
+    "emailLabel": "Adresse e-mail",
+    "emailPlaceholder": "votre@email.fr",
+    "notifySuccess": "Merci — nous vous préviendrons par e-mail au lancement.",
+    "notifyError": "Une erreur est survenue. Veuillez réessayer.",
+    "notifyPrivacy": "Un seul e-mail au lancement. Pas de spam, désinscription à tout moment."
   },
   "deal": {
     "goToDeal": "Voir sur <chip>{shop}</chip>",
@@ -110,7 +116,10 @@
     "minDiscount": "Remise minimale",
     "apply": "Appliquer les filtres",
     "minPrice": "Prix minimum",
-    "maxPrice": "Prix maximum"
+    "maxPrice": "Prix maximum",
+    "shop": "Boutique",
+    "allShops": "Toutes les boutiques",
+    "sortRandom": "Aléatoire"
   },
   "geo": {
     "promptTitle": "Afficher les offres près de chez vous ?",

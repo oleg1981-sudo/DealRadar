@@ -33,7 +33,13 @@
     "heading": "Rejsy i wczasy zorganizowane",
     "comingSoon": "Wkrótce",
     "comingSoonBody": "Przygotowujemy oferty rejsów i wczasów zorganizowanych dla tej sekcji. Jeszcze nie działa — zajrzyj wkrótce.",
-    "browseDeals": "Zobacz aktualne okazje"
+    "browseDeals": "Zobacz aktualne okazje",
+    "getNotified": "Powiadom mnie",
+    "emailLabel": "Adres e-mail",
+    "emailPlaceholder": "twoj@email.pl",
+    "notifySuccess": "Dziękujemy — wyślemy e-mail, gdy ta sekcja wystartuje.",
+    "notifyError": "Coś poszło nie tak. Spróbuj ponownie.",
+    "notifyPrivacy": "Jeden e-mail przy starcie. Bez spamu, rezygnacja w każdej chwili."
   },
   "deal": {
     "goToDeal": "Zobacz w <chip>{shop}</chip>",
@@ -110,7 +116,10 @@
     "minDiscount": "Minimalny rabat",
     "apply": "Zastosuj filtry",
     "minPrice": "Cena minimalna",
-    "maxPrice": "Cena maksymalna"
+    "maxPrice": "Cena maksymalna",
+    "shop": "Sklep",
+    "allShops": "Wszystkie sklepy",
+    "sortRandom": "Losowo"
   },
   "geo": {
     "promptTitle": "Pokazać okazje w pobliżu?",

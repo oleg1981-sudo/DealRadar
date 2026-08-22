@@ -33,7 +33,13 @@
     "heading": "Cruceros y viajes organizados",
     "comingSoon": "Próximamente",
     "comingSoonBody": "Estamos preparando ofertas de cruceros y viajes organizados para esta sección. Todavía no está disponible: vuelve pronto.",
-    "browseDeals": "Ver ofertas actuales"
+    "browseDeals": "Ver ofertas actuales",
+    "getNotified": "Avísame",
+    "emailLabel": "Correo electrónico",
+    "emailPlaceholder": "tu@email.es",
+    "notifySuccess": "Gracias — te avisaremos por correo cuando se lance esta sección.",
+    "notifyError": "Algo ha salido mal. Inténtalo de nuevo.",
+    "notifyPrivacy": "Un correo al lanzamiento. Sin spam, puedes darte de baja cuando quieras."
   },
   "deal": {
     "goToDeal": "Ver en <chip>{shop}</chip>",
@@ -110,7 +116,10 @@
     "minDiscount": "Descuento mínimo",
     "apply": "Aplicar filtros",
     "minPrice": "Precio mínimo",
-    "maxPrice": "Precio máximo"
+    "maxPrice": "Precio máximo",
+    "shop": "Tienda",
+    "allShops": "Todas las tiendas",
+    "sortRandom": "Aleatorio"
   },
   "geo": {
     "promptTitle": "¿Mostrar ofertas cerca de ti?",

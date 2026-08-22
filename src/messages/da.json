@@ -33,7 +33,13 @@
     "heading": "Krydstogter & pakkerejser",
     "comingSoon": "Kommer snart",
     "comingSoonBody": "Vi samler krydstogt- og pakkerejsetilbud til denne sektion. Den er ikke live endnu — kig forbi snart.",
-    "browseDeals": "Se aktuelle tilbud"
+    "browseDeals": "Se aktuelle tilbud",
+    "getNotified": "Giv mig besked",
+    "emailLabel": "E-mailadresse",
+    "emailPlaceholder": "din@email.dk",
+    "notifySuccess": "Tak — vi sender dig en mail, når denne del går i luften.",
+    "notifyError": "Noget gik galt. Prøv igen.",
+    "notifyPrivacy": "Én mail ved lancering. Ingen spam, afmeld når som helst."
   },
   "deal": {
     "goToDeal": "Se hos <chip>{shop}</chip>",
@@ -110,7 +116,10 @@
     "minDiscount": "Minimumsrabat",
     "apply": "Anvend filtre",
     "minPrice": "Minimumspris",
-    "maxPrice": "Maksimumspris"
+    "maxPrice": "Maksimumspris",
+    "shop": "Butik",
+    "allShops": "Alle butikker",
+    "sortRandom": "Tilfældig"
   },
   "geo": {
     "promptTitle": "Vis tilbud i nærheden?",

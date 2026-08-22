@@ -33,7 +33,13 @@
     "heading": "Risteilyt & pakettimatkat",
     "comingSoon": "Tulossa pian",
     "comingSoonBody": "Kokoamme tähän osioon risteily- ja pakettimatkatarjouksia. Ei ole vielä käytössä — käy pian uudelleen.",
-    "browseDeals": "Katso nykyiset tarjoukset"
+    "browseDeals": "Katso nykyiset tarjoukset",
+    "getNotified": "Ilmoita minulle",
+    "emailLabel": "Sähköpostiosoite",
+    "emailPlaceholder": "sinun@email.fi",
+    "notifySuccess": "Kiitos — lähetämme sähköpostia, kun tämä osio avautuu.",
+    "notifyError": "Jokin meni pieleen. Yritä uudelleen.",
+    "notifyPrivacy": "Yksi sähköposti julkaisusta. Ei roskapostia, voit perua milloin vain."
   },
   "deal": {
     "goToDeal": "Katso kaupassa <chip>{shop}</chip>",
@@ -110,7 +116,10 @@
     "minDiscount": "Vähimmäisalennus",
     "apply": "Käytä suodattimia",
     "minPrice": "Vähimmäishinta",
-    "maxPrice": "Enimmäishinta"
+    "maxPrice": "Enimmäishinta",
+    "shop": "Kauppa",
+    "allShops": "Kaikki kaupat",
+    "sortRandom": "Satunnainen"
   },
   "geo": {
     "promptTitle": "Näytetäänkö tarjoukset lähelläsi?",

@@ -33,7 +33,13 @@
     "heading": "Cruise & pakkereiser",
     "comingSoon": "Kommer snart",
     "comingSoonBody": "Vi samler cruise- og pakkereisetilbud til denne delen. Den er ikke i drift ennå — stikk innom snart.",
-    "browseDeals": "Se aktuelle tilbud"
+    "browseDeals": "Se aktuelle tilbud",
+    "getNotified": "Varsle meg",
+    "emailLabel": "E-postadresse",
+    "emailPlaceholder": "din@email.no",
+    "notifySuccess": "Takk — vi sender deg en e-post når denne delen lanseres.",
+    "notifyError": "Noe gikk galt. Prøv igjen.",
+    "notifyPrivacy": "Én e-post ved lansering. Ingen spam, meld deg av når som helst."
   },
   "deal": {
     "goToDeal": "Se hos <chip>{shop}</chip>",
@@ -110,7 +116,10 @@
     "minDiscount": "Minimumsrabatt",
     "apply": "Bruk filtre",
     "minPrice": "Minimumspris",
-    "maxPrice": "Maksimumspris"
+    "maxPrice": "Maksimumspris",
+    "shop": "Butikk",
+    "allShops": "Alle butikker",
+    "sortRandom": "Tilfeldig"
   },
   "geo": {
     "promptTitle": "Vise tilbud i nærheten?",

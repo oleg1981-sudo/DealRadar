@@ -33,7 +33,13 @@
     "heading": "Cruises & pakketreizen",
     "comingSoon": "Binnenkort beschikbaar",
     "comingSoonBody": "We stellen cruise- en pakketreisaanbiedingen samen voor deze sectie. Nog niet live — kom binnenkort terug.",
-    "browseDeals": "Bekijk actuele aanbiedingen"
+    "browseDeals": "Bekijk actuele aanbiedingen",
+    "getNotified": "Houd mij op de hoogte",
+    "emailLabel": "E-mailadres",
+    "emailPlaceholder": "jouw@email.nl",
+    "notifySuccess": "Bedankt — we mailen je zodra dit onderdeel live gaat.",
+    "notifyError": "Er ging iets mis. Probeer het opnieuw.",
+    "notifyPrivacy": "Eén e-mail bij de lancering. Geen spam, altijd uitschrijfbaar."
   },
   "deal": {
     "goToDeal": "Bekijk bij <chip>{shop}</chip>",
@@ -110,7 +116,10 @@
     "minDiscount": "Minimale korting",
     "apply": "Filters toepassen",
     "minPrice": "Minimumprijs",
-    "maxPrice": "Maximumprijs"
+    "maxPrice": "Maximumprijs",
+    "shop": "Winkel",
+    "allShops": "Alle winkels",
+    "sortRandom": "Willekeurig"
   },
   "geo": {
     "promptTitle": "Deals bij jou in de buurt tonen?",
