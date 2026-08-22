@@ -43,11 +43,11 @@ jobs:
     # healthy run while still bounding a runaway one.
     timeout-minutes: 45
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
-          node-version: '20'
+          node-version: '22'
 
       # The script is dependency-free (Node built-ins + Supabase REST), so no install step.
       - name: Run AWIN ingestion

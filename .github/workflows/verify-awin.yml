@@ -42,10 +42,10 @@ jobs:
     # Patches flush incrementally (every 50), so a budget stop loses nothing.
     timeout-minutes: 150
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
-          node-version: '20'
+          node-version: '22'
       - name: Verify deals against live shops
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
