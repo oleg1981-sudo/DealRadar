@@ -7,3 +7,7 @@ node_modules
 
 # Browser-automation session artifacts (Playwright MCP)
 .playwright-mcp/
+
+# Written by scripts/ingest-awin.cjs when a merchant has no category rule;
+# the ingest workflow reads it in a final step. Runtime artifact, never committed.
+.uncategorised-merchants

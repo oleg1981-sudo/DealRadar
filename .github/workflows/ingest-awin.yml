@@ -100,3 +100,17 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
         run: node scripts/indexnow-submit.cjs --since 3
+
+      # Category guard, deliberately LAST and `always()`. The ingest writes a
+      # marker instead of exiting non-zero, because failing that step makes
+      # GitHub skip everything after it — the price_history snapshot and
+      # IndexNow ping both stopped for two days (2026-08-21/22) when it did.
+      # The data pipeline completes; the job still goes red until a rule exists.
+      - name: Fail if a merchant published with no category rules
+        if: always()
+        run: |
+          if [ -f .uncategorised-merchants ]; then
+            echo "::error::A merchant's rows were defaulted to \"electronics\" because no category rule matched. See the ingestion step's log for the merchant name and sample products, then add an ADVERTISER_CATEGORY or NAME_CATEGORY_OVERRIDES rule in scripts/ingest-awin.cjs. Do NOT widen a regex until the error stops — read the product names (see CLAUDE.md)."
+            exit 1
+          fi
+          echo "every merchant matched a category rule"

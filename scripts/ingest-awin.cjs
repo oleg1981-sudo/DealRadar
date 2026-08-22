@@ -160,6 +160,12 @@ const ADVERTISER_CATEGORY = [
   [/\bapotheke\b|\baliva\b/i, 'health'],
   [/\bbinu\b|korean\s+cosmetics/i, 'beauty'],
   [/profichemie/i, 'home-garden'],   // household cleaning chemicals
+  // GSMnet is a phone/watch spare-parts retailer — genuinely 100% electronics.
+  // It was ALREADY landing there, but via the default rather than a decision,
+  // so the new tracker (correctly) could not tell it apart from an unreviewed
+  // merchant and failed every run. Stating it explicitly is the fix: the guard
+  // asks "has a human decided?", not "is it electronics?".
+  [/gsmnet/i, 'electronics'],
 ];
 function advertiserCategory(advertiserName) {
   for (const [re, slug] of ADVERTISER_CATEGORY) if (re.test(advertiserName || '')) return slug;
@@ -194,6 +200,11 @@ function isPrescriptionOnly(name, description) {
 // So every fall-through is recorded per advertiser and reported at the end of
 // the run. A merchant whose rows are MOSTLY defaulted is not "mostly
 // electronics" — it is a merchant nobody has mapped, and the run fails.
+// Written when a merchant published with no category rules. A LATER workflow
+// step fails the job on it, so the ingest step itself can exit 0 and let the
+// snapshot/IndexNow steps run. Overridable for tests and local runs.
+const UNCATEGORISED_MARKER = process.env.UNCATEGORISED_MARKER || '.uncategorised-merchants';
+
 const fallbackByAdvertiser = new Map(); // advertiser -> { count, samples: [] }
 const mappedByAdvertiser = new Map();   // advertiser -> count of confidently mapped rows
 
@@ -865,9 +876,23 @@ async function fetchExistingPrices() {
   // you would look. Sets the exit code rather than throwing, so the summary
   // above still prints and the upserted data is not rolled back: the rows are
   // already live, and a red run is what gets someone to add the rule.
+  // Do NOT exit non-zero here. Failing this step makes GitHub SKIP every step
+  // after it — the homepage-hidden sync, the price_history snapshot and the
+  // IndexNow ping all stopped for two days (2026-08-21/22) because of exactly
+  // that. A category-mapping problem must never halt the data pipeline.
+  //
+  // Instead drop a marker; a final workflow step reads it and fails the JOB, so
+  // the run still goes red and someone still has to add the rule.
   if (reportUncategorised()) {
-    process.exitCode = 1;
-    console.error('\n[awin] FAILED: a merchant published with no category rules — see ::error:: above.');
+    try {
+      require('node:fs').writeFileSync(UNCATEGORISED_MARKER, 'see the ::error:: annotations above\n');
+      console.error(`\n[awin] category rules missing — wrote ${UNCATEGORISED_MARKER}; the job will be failed after the remaining steps run.`);
+    } catch (e) {
+      // If even the marker cannot be written, fall back to failing loudly here
+      // rather than letting the problem pass unnoticed.
+      console.error(`[awin] could not write ${UNCATEGORISED_MARKER}: ${e.message}`);
+      process.exitCode = 1;
+    }
   }
 
   // Only record the metric on a real (non-dry-run) pass — dry-run's whole
