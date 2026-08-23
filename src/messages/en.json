@@ -41,6 +41,14 @@
     "notifyError": "Something went wrong. Please try again.",
     "notifyPrivacy": "One email when this launches. No spam, unsubscribe any time."
   },
+  "travelLaunchEmail": {
+    "subject": "Cruises and travel packages are now live on DealRadar",
+    "heading": "The travel section is open",
+    "body": "You asked us to let you know when our cruise and travel-package deals went live. They are ready — take a look.",
+    "cta": "Browse travel deals",
+    "footerReason": "You are receiving this because you asked to be told when DealRadar's travel section launched. This is the only email we will send you about it.",
+    "unsubscribeLabel": "Unsubscribe and delete my details"
+  },
   "deal": {
     "goToDeal": "View at <chip>{shop}</chip>",
     "goToShop": "Go to {shop}",
@@ -182,7 +190,7 @@
     "s1Title": "1. Controller",
     "s1Body": "The controller responsible for data processing on this website is the operator named in our Imprint. Contact us at the email address listed there for any data-protection request.",
     "s2Title": "2. Data we process",
-    "s2Body": "Price-alert subscriptions: your email address and the target product, used solely to send price-drop notifications. Approximate location: your country is estimated from network headers (and, only with your consent, your browser location) to show local deals; precise coordinates are processed transiently and never stored. Cookie preferences: your consent choice is stored to honour it on future visits.",
+    "s2Body": "Price-alert subscriptions: your email address and the target product, used solely to send price-drop notifications. Launch notifications: if you ask to be told when our cruise and travel-package section opens, your email address, your language and the category you signed up from are stored, used solely to send that one announcement. Approximate location: your country is estimated from network headers (and, only with your consent, your browser location) to show local deals; precise coordinates are processed transiently and never stored. Cookie preferences: your consent choice is stored to honour it on future visits.",
     "s3Title": "3. Third-party processors",
     "s3Body": "We use the following processors under data-processing agreements: Supabase (database hosting), Upstash (Redis caching and rate limiting), Resend (transactional email), Microsoft Ireland Operations Ltd. (Microsoft Clarity — usage analytics, see section 7), Google Ireland Limited (Google Analytics 4 — usage statistics, see section 7), and our affiliate networks (Awin, Kelkoo, Tradedoubler, Strackr) which receive an anonymised tracking identifier when you click an outbound deal link. Our edge host processes server log data (including IP) to operate the service securely (Art. 6(1)(f) GDPR).",
     "s4Title": "4. Cookies",
@@ -190,7 +198,7 @@
     "s5Title": "5. Your rights under the GDPR",
     "s5Body": "You have the right to access, rectify, erase (Art. 17), restrict and port your personal data, and to object to or withdraw consent at any time without affecting prior lawful processing. To exercise these rights, contact the address in our Imprint. You may also lodge a complaint with a supervisory authority.",
     "s6Title": "6. Automated unsubscribe and erasure",
-    "s6Body": "Every price-alert email contains a one-click unsubscribe link secured by an HMAC token. Following it deletes your subscription immediately and without further verification, satisfying the right to withdraw consent and to erasure. Subscriptions are also deleted automatically after a defined retention period.",
+    "s6Body": "Every price-alert email contains a one-click unsubscribe link secured by an HMAC token. Following it deletes your subscription immediately and without further verification, satisfying the right to withdraw consent and to erasure. Subscriptions and launch-notification signups are also deleted automatically after a defined retention period.",
     "s7Title": "7. Usage analytics (Microsoft Clarity and Google Analytics)",
     "s7Body": "With your consent (Art. 6(1)(a) GDPR), we use Microsoft Clarity and Google Analytics 4 to understand how visitors use DealRadar: Clarity provides heatmaps, session replays and aggregated interaction metrics, and Google Analytics provides aggregated usage statistics such as page views, traffic sources and clicks on “Go to deal” buttons and price-alert sign-ups. Clarity masks text you type by default — form input such as email addresses is masked in the browser and never reaches Microsoft's servers. Google Analytics is configured with Google Consent Mode (nothing is loaded and no data is sent before you consent), without Google-advertising features, and Google Analytics 4 does not log or store full IP addresses. Data is processed by Microsoft Ireland Operations Ltd. and Google Ireland Limited and may be transferred to Microsoft Corporation and Google LLC in the United States under the EU–U.S. Data Privacy Framework and EU Standard Contractual Clauses. Microsoft retains Clarity session data for up to 30 days (aggregated statistics up to 13 months); our Google Analytics retention is set to 14 months. You can withdraw consent at any time via “Cookie settings” in the footer. Google Search Console and Bing Webmaster Tools, which we use to monitor how search engines index this site, receive no personal data from the website and set no cookies on it."
   },
@@ -212,7 +220,12 @@
     "errorBody": "We could not verify the security token. The link may be incomplete or expired.",
     "confirmTitle": "Confirm Unsubscribe",
     "confirmBody": "Click the button below to confirm that you want to unsubscribe from price-drop alerts for this deal.",
-    "confirmButton": "Confirm Unsubscribe"
+    "confirmButton": "Confirm Unsubscribe",
+    "travelConfirmTitle": "Confirm removal",
+    "travelConfirmBody": "Click the button below to remove your email address from the DealRadar travel launch list.",
+    "travelConfirmButton": "Remove my details",
+    "travelSuccessTitle": "Removed",
+    "travelSuccessBody": "Your email address has been deleted from the travel launch list."
   },
   "error": {
     "title": "Something went wrong",

@@ -15,6 +15,7 @@ import { formatPrice } from '../utils/format';
 import { generateUnsubscribeToken } from '../utils/crypto';
 import { decorateAffiliateUrl } from '../utils/affiliate';
 import { siteUrl } from '../utils/site-url';
+import { escapeHtml } from '../utils/escape-html';
 import type { NormalizedDeal } from '../providers/types';
 
 const TABLE = 'price_alerts';
@@ -186,10 +187,4 @@ function priceDropEmail(
   <p style="margin:0 0 20px"><a href="${escapeHtml(ctaUrl)}" rel="noopener noreferrer nofollow sponsored" style="display:inline-block;background:#EA580C;color:#fff;padding:10px 18px;border-radius:8px;text-decoration:none;font-weight:500">View the deal</a></p>
   <p style="color:#71717a;font-size:12px;margin:0">You're receiving this because you set a price alert on DealRadar.${unsubFooter}</p>
 </div>`;
-}
-
-function escapeHtml(s: string): string {
-  return s.replace(/[&<>"']/g, (c) =>
-    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!,
-  );
 }

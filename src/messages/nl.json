@@ -41,6 +41,14 @@
     "notifyError": "Er ging iets mis. Probeer het opnieuw.",
     "notifyPrivacy": "Eén e-mail bij de lancering. Geen spam, altijd uitschrijfbaar."
   },
+  "travelLaunchEmail": {
+    "subject": "Cruises en pakketreizen staan nu live op DealRadar",
+    "heading": "Het reisonderdeel is open",
+    "body": "U wilde bericht ontvangen zodra onze cruise- en pakketreisaanbiedingen live gingen. Ze staan klaar — neem een kijkje.",
+    "cta": "Bekijk reisaanbiedingen",
+    "footerReason": "U ontvangt dit bericht omdat u op de hoogte wilde worden gebracht van de lancering van het reisonderdeel van DealRadar. Dit is de enige e-mail die wij u hierover sturen.",
+    "unsubscribeLabel": "Uitschrijven en mijn gegevens verwijderen"
+  },
   "deal": {
     "goToDeal": "Bekijk bij <chip>{shop}</chip>",
     "otherStores": "Bekijk in andere winkels",
@@ -182,7 +190,7 @@
     "s1Title": "1. Verwerkingsverantwoordelijke",
     "s1Body": "De verwerkingsverantwoordelijke voor de gegevensverwerking op deze website is de exploitant die in ons colofon wordt genoemd. Neem voor elk verzoek inzake gegevensbescherming contact met ons op via het daar vermelde e-mailadres.",
     "s2Title": "2. Gegevens die wij verwerken",
-    "s2Body": "Prijsmeldingsabonnementen: uw e-mailadres en het beoogde product, uitsluitend gebruikt om meldingen over prijsdalingen te versturen. Bij benadering bepaalde locatie: uw land wordt geschat op basis van netwerkheaders (en, uitsluitend met uw toestemming, uw browserlocatie) om lokale deals te tonen; nauwkeurige coördinaten worden tijdelijk verwerkt en nooit opgeslagen. Cookievoorkeuren: uw toestemmingskeuze wordt opgeslagen om deze bij toekomstige bezoeken te respecteren.",
+    "s2Body": "Prijsmeldingsabonnementen: uw e-mailadres en het beoogde product, uitsluitend gebruikt om meldingen over prijsdalingen te versturen. Lanceringsmeldingen: als u wilt worden geïnformeerd zodra ons onderdeel met cruises en pakketreizen opengaat, worden uw e-mailadres, uw taal en de categorie waarvoor u zich hebt aangemeld opgeslagen en uitsluitend gebruikt om die ene aankondiging te versturen. Bij benadering bepaalde locatie: uw land wordt geschat op basis van netwerkheaders (en, uitsluitend met uw toestemming, uw browserlocatie) om lokale deals te tonen; nauwkeurige coördinaten worden tijdelijk verwerkt en nooit opgeslagen. Cookievoorkeuren: uw toestemmingskeuze wordt opgeslagen om deze bij toekomstige bezoeken te respecteren.",
     "s3Title": "3. Externe verwerkers",
     "s3Body": "Wij maken gebruik van de volgende verwerkers op basis van verwerkersovereenkomsten: Supabase (databasehosting), Upstash (Redis-caching en rate limiting), Resend (transactionele e-mail), Microsoft Ireland Operations Ltd. (Microsoft Clarity — gebruiksanalyse, zie sectie 7), Google Ireland Limited (Google Analytics 4 — gebruiksstatistieken, zie sectie 7), en onze affiliatenetwerken (Awin, Kelkoo, Tradedoubler, Strackr), die een geanonimiseerde trackingidentificatie ontvangen wanneer u op een uitgaande deallink klikt. Onze edge-host verwerkt serverlogboekgegevens (waaronder IP) om de dienst veilig te exploiteren (art. 6, lid 1, onder f, GDPR).",
     "s4Title": "4. Cookies",
@@ -190,7 +198,7 @@
     "s5Title": "5. Uw rechten op grond van de GDPR",
     "s5Body": "U heeft het recht op inzage, rectificatie, wissing (art. 17), beperking en overdraagbaarheid van uw persoonsgegevens, alsmede het recht om bezwaar te maken of uw toestemming op elk moment in te trekken, zonder dat dit afbreuk doet aan de rechtmatigheid van de eerdere verwerking. Om deze rechten uit te oefenen, neemt u contact op via het adres in ons colofon. U kunt ook een klacht indienen bij een toezichthoudende autoriteit.",
     "s6Title": "6. Geautomatiseerde afmelding en wissing",
-    "s6Body": "Elke prijsmeldings-e-mail bevat een afmeldlink met één klik, beveiligd met een HMAC-token. Door deze te volgen wordt uw abonnement onmiddellijk en zonder verdere verificatie verwijderd, waarmee wordt voldaan aan het recht om toestemming in te trekken en het recht op wissing. Abonnementen worden ook automatisch verwijderd na een vastgestelde bewaartermijn.",
+    "s6Body": "Elke prijsmeldings-e-mail bevat een afmeldlink met één klik, beveiligd met een HMAC-token. Door deze te volgen wordt uw abonnement onmiddellijk en zonder verdere verificatie verwijderd, waarmee wordt voldaan aan het recht om toestemming in te trekken en het recht op wissing. Abonnementen en aanmeldingen voor lanceringsmeldingen worden ook automatisch verwijderd na een vastgestelde bewaartermijn.",
     "s7Title": "7. Gebruiksanalyse (Microsoft Clarity en Google Analytics)",
     "s7Body": "Met uw toestemming (art. 6, lid 1, onder a, GDPR) gebruiken wij Microsoft Clarity en Google Analytics 4 om te begrijpen hoe bezoekers DealRadar gebruiken: Clarity biedt heatmaps, sessieopnames en geaggregeerde interactiestatistieken, en Google Analytics levert geaggregeerde gebruiksstatistieken zoals paginaweergaven, verkeersbronnen en kliks op “Bekijk bij”-knoppen en aanmeldingen voor prijsmeldingen. Clarity maskeert standaard de tekst die u typt — formulierinvoer zoals e-mailadressen wordt in de browser gemaskeerd en bereikt de servers van Microsoft nooit. Google Analytics is geconfigureerd met Google Consent Mode (er wordt niets geladen en er worden geen gegevens verzonden voordat u toestemming geeft), zonder advertentiefuncties van Google, en Google Analytics 4 registreert of bewaart geen volledige IP-adressen. De gegevens worden verwerkt door Microsoft Ireland Operations Ltd. en Google Ireland Limited en kunnen worden doorgegeven aan Microsoft Corporation en Google LLC in de Verenigde Staten op grond van het EU-VS-kader voor gegevensbescherming (EU–U.S. Data Privacy Framework) en de standaardcontractbepalingen van de EU. Microsoft bewaart Clarity-sessiegegevens maximaal 30 dagen (geaggregeerde statistieken maximaal 13 maanden); onze bewaartermijn voor Google Analytics is ingesteld op 14 maanden. U kunt uw toestemming op elk moment intrekken via “Cookie-instellingen” in de voettekst. Google Search Console en Bing Webmaster Tools, die wij gebruiken om te controleren hoe zoekmachines deze site indexeren, ontvangen geen persoonsgegevens van de website en plaatsen er geen cookies."
   },
@@ -212,7 +220,12 @@
     "errorBody": "Wij konden het beveiligingstoken niet verifiëren. De link is mogelijk onvolledig of verlopen.",
     "confirmTitle": "Uitschrijven bevestigen",
     "confirmBody": "Klik op de onderstaande knop om te bevestigen dat u zich wilt uitschrijven voor prijsdaling-waarschuwingen voor deze aanbieding.",
-    "confirmButton": "Uitschrijven bevestigen"
+    "confirmButton": "Uitschrijven bevestigen",
+    "travelConfirmTitle": "Verwijdering bevestigen",
+    "travelConfirmBody": "Klik op de onderstaande knop om uw e-mailadres te verwijderen uit de lanceringslijst voor reizen van DealRadar.",
+    "travelConfirmButton": "Mijn gegevens verwijderen",
+    "travelSuccessTitle": "Verwijderd",
+    "travelSuccessBody": "Uw e-mailadres is verwijderd uit de lanceringslijst voor reizen."
   },
   "error": {
     "title": "Er ging iets mis",

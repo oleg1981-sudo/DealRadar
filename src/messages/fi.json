@@ -41,6 +41,14 @@
     "notifyError": "Jokin meni pieleen. Yritä uudelleen.",
     "notifyPrivacy": "Yksi sähköposti julkaisusta. Ei roskapostia, voit perua milloin vain."
   },
+  "travelLaunchEmail": {
+    "subject": "Risteilyt ja pakettimatkat ovat nyt saatavilla DealRadarissa",
+    "heading": "Matkaosio on avattu",
+    "body": "Pyysit ilmoitusta, kun risteily- ja pakettimatkatarjouksemme julkaistaan. Ne ovat nyt valmiina — käy katsomassa.",
+    "cta": "Selaa matkatarjouksia",
+    "footerReason": "Saat tämän viestin, koska pyysit ilmoitusta DealRadarin matkaosion avautumisesta. Tämä on ainoa aiheesta lähettämämme sähköposti.",
+    "unsubscribeLabel": "Peruuta tilaus ja poista tietoni"
+  },
   "deal": {
     "goToDeal": "Katso kaupassa <chip>{shop}</chip>",
     "otherStores": "Katso muissa kaupoissa",
@@ -182,7 +190,7 @@
     "s1Title": "1. Rekisterinpitäjä",
     "s1Body": "Tämän verkkosivuston tietojen käsittelystä vastaava rekisterinpitäjä on oikeudellisissa tiedoissamme (Impressum) mainittu ylläpitäjä. Ota meihin yhteyttä siellä mainittuun sähköpostiosoitteeseen kaikissa tietosuojaa koskevissa pyynnöissä.",
     "s2Title": "2. Käsittelemämme tiedot",
-    "s2Body": "Hintahälytysten tilaukset: sähköpostiosoitettasi ja kohdetuotetta käytetään ainoastaan hinnanlaskuilmoitusten lähettämiseen. Likimääräinen sijainti: maasi arvioidaan verkko-otsakkeista (ja vain suostumuksellasi selaimesi sijainnista) paikallisten tarjousten näyttämiseksi; tarkat koordinaatit käsitellään väliaikaisesti eikä niitä koskaan tallenneta. Evästeasetukset: suostumusvalintasi tallennetaan, jotta sitä voidaan noudattaa tulevilla käynneillä.",
+    "s2Body": "Hintahälytysten tilaukset: sähköpostiosoitettasi ja kohdetuotetta käytetään ainoastaan hinnanlaskuilmoitusten lähettämiseen. Julkaisuilmoitukset: jos pyydät ilmoitusta siitä, kun risteilyjen ja pakettimatkojen osio avautuu, tallennamme sähköpostiosoitteesi, kielesi ja osion, josta ilmoittauduit, ja käytämme niitä ainoastaan tämän yhden ilmoituksen lähettämiseen. Likimääräinen sijainti: maasi arvioidaan verkko-otsakkeista (ja vain suostumuksellasi selaimesi sijainnista) paikallisten tarjousten näyttämiseksi; tarkat koordinaatit käsitellään väliaikaisesti eikä niitä koskaan tallenneta. Evästeasetukset: suostumusvalintasi tallennetaan, jotta sitä voidaan noudattaa tulevilla käynneillä.",
     "s3Title": "3. Kolmannen osapuolen käsittelijät",
     "s3Body": "Käytämme seuraavia käsittelijöitä tietojenkäsittelysopimusten nojalla: Supabase (tietokannan isännöinti), Upstash (Redis-välimuisti ja pyyntörajoitus), Resend (transaktiosähköpostit), Microsoft Ireland Operations Ltd. (Microsoft Clarity — käyttöanalytiikka, ks. kohta 7), Google Ireland Limited (Google Analytics 4 — käyttötilastot, ks. kohta 7) sekä kumppaniverkostomme (Awin, Kelkoo, Tradedoubler, Strackr), jotka saavat anonymisoidun seurantatunnisteen, kun napsautat ulospäin vievää tarjouslinkkiä. Edge-palveluntarjoajamme käsittelee palvelimen lokitietoja (mukaan lukien IP-osoite) palvelun turvallisen toiminnan varmistamiseksi (GDPR 6 artiklan 1 kohdan f alakohta).",
     "s4Title": "4. Evästeet",
@@ -190,7 +198,7 @@
     "s5Title": "5. Oikeutesi GDPR:n mukaan",
     "s5Body": "Sinulla on oikeus saada pääsy henkilötietoihisi, oikaista ja poistaa ne (17 artikla), rajoittaa ja siirtää niitä sekä vastustaa käsittelyä tai peruuttaa suostumuksesi milloin tahansa vaikuttamatta aiemman käsittelyn lainmukaisuuteen. Käyttääksesi näitä oikeuksia ota yhteyttä oikeudellisissa tiedoissamme (Impressum) mainittuun osoitteeseen. Voit myös tehdä valituksen valvontaviranomaiselle.",
     "s6Title": "6. Automaattinen tilauksen peruutus ja poisto",
-    "s6Body": "Jokainen hintahälytyssähköposti sisältää yhdellä napsautuksella toimivan tilauksen peruutuslinkin, joka on suojattu HMAC-tunnisteella. Sen seuraaminen poistaa tilauksesi välittömästi ilman lisävarmennusta, mikä täyttää oikeuden peruuttaa suostumus ja oikeuden tietojen poistamiseen. Tilaukset poistetaan myös automaattisesti määritellyn säilytysajan jälkeen.",
+    "s6Body": "Jokainen hintahälytyssähköposti sisältää yhdellä napsautuksella toimivan tilauksen peruutuslinkin, joka on suojattu HMAC-tunnisteella. Sen seuraaminen poistaa tilauksesi välittömästi ilman lisävarmennusta, mikä täyttää oikeuden peruuttaa suostumus ja oikeuden tietojen poistamiseen. Tilaukset ja julkaisuilmoitusten ilmoittautumiset poistetaan myös automaattisesti määritellyn säilytysajan jälkeen.",
     "s7Title": "7. Käyttöanalytiikka (Microsoft Clarity ja Google Analytics)",
     "s7Body": "Suostumuksellasi (GDPR 6 artiklan 1 kohdan a alakohta) käytämme Microsoft Clarity- ja Google Analytics 4 -palveluita ymmärtääksemme, miten kävijät käyttävät DealRadaria: Clarity tarjoaa lämpökarttoja, istuntotallenteita ja koostettuja vuorovaikutustilastoja, ja Google Analytics tarjoaa koostettuja käyttötilastoja, kuten sivunäytöt, liikenteen lähteet sekä ”Katso kaupassa” -painikkeiden napsautukset ja hintahälytysten tilaukset. Clarity peittää kirjoittamasi tekstin oletusarvoisesti — lomakkeisiin syötetyt tiedot, kuten sähköpostiosoitteet, peitetään jo selaimessa, eivätkä ne koskaan päädy Microsoftin palvelimille. Google Analytics on määritetty käyttämään Google Consent Mode -tilaa (mitään ei ladata eikä tietoja lähetetä ennen suostumustasi) ilman Googlen mainontaominaisuuksia, eikä Google Analytics 4 kirjaa tai tallenna täydellisiä IP-osoitteita. Tietoja käsittelevät Microsoft Ireland Operations Ltd. ja Google Ireland Limited, ja niitä voidaan siirtää Microsoft Corporationille ja Google LLC:lle Yhdysvaltoihin EU:n ja Yhdysvaltojen välisen tietosuojakehyksen (EU–U.S. Data Privacy Framework) sekä EU:n vakiosopimuslausekkeiden nojalla. Microsoft säilyttää Clarityn istuntotietoja enintään 30 päivää (koostettuja tilastoja enintään 13 kuukautta); Google Analytics -tietojen säilytysajaksi on asetettu 14 kuukautta. Voit peruuttaa suostumuksesi milloin tahansa alatunnisteen kohdasta ”Evästeasetukset”. Google Search Console ja Bing Webmaster Tools, joilla seuraamme, miten hakukoneet indeksoivat tätä sivustoa, eivät saa verkkosivustolta henkilötietoja eivätkä aseta sille evästeitä."
   },
@@ -212,7 +220,12 @@
     "errorBody": "Emme voineet vahvistaa suojaustunnistetta. Linkki saattaa olla puutteellinen tai vanhentunut.",
     "confirmTitle": "Vahvista peruutus",
     "confirmBody": "Napsauta alla olevaa painiketta vahvistaaksesi, että haluat peruuttaa tämän tarjouksen hintalaskuvaroitukset.",
-    "confirmButton": "Vahvista peruutus"
+    "confirmButton": "Vahvista peruutus",
+    "travelConfirmTitle": "Vahvista poisto",
+    "travelConfirmBody": "Napsauta alla olevaa painiketta poistaaksesi sähköpostiosoitteesi DealRadarin matkaosion julkaisulistalta.",
+    "travelConfirmButton": "Poista tietoni",
+    "travelSuccessTitle": "Poistettu",
+    "travelSuccessBody": "Sähköpostiosoitteesi on poistettu matkaosion julkaisulistalta."
   },
   "error": {
     "title": "Jokin meni vikaan",

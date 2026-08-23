@@ -156,14 +156,18 @@ alter table public.price_alerts enable row level security;
 -- integration to build first.
 --
 -- PRIVACY: email is personal data under the same NFR-PRIV-1 obligation as
--- price_alerts. purge-alerts.yml does NOT yet sweep this table; that must be
--- extended (and the privacy policy updated) before real collection begins.
+-- price_alerts, and is swept on the same schedule — purge-alerts.yml calls
+-- purge_stale_travel_signups() alongside purge_stale_price_alerts(). The
+-- privacy policy names this collection in section 2 (all 13 locales).
 create table if not exists public.travel_signups (
   id          uuid        primary key default gen_random_uuid(),
   email       text        not null,
   locale      text,
   source_slug text,
   notified    boolean     not null default false,
+  -- Mirrors price_alerts: without it "notified more than N days ago" is not
+  -- expressible and a served row would sit until the full 365-day cap.
+  notified_at timestamptz,
   created_at  timestamptz not null default now(),
   unique (email)
 );
@@ -380,6 +384,27 @@ $$;
 -- Optional in-DB schedule (requires pg_cron):
 -- select cron.schedule('purge-stale-alerts', '0 5 * * *',
 --   $$select public.purge_stale_price_alerts(365, 30)$$);
+
+-- [NFR-PRIV-1] The same retention policy for TravelDeal launch notifications.
+-- A signup is a one-shot "tell me when this exists", so once the launch mail
+-- has gone out the row has served its purpose: notified rows go after the
+-- shorter window, and any row still waiting is capped at the retention window
+-- so an abandoned launch cannot retain an address indefinitely.
+create or replace function public.purge_stale_travel_signups(
+  retention_days int default 365,
+  notified_days  int default 30)
+returns integer language plpgsql
+set search_path = public
+as $$
+declare deleted integer;
+begin
+  delete from public.travel_signups
+   where created_at < now() - make_interval(days => retention_days)
+      or (notified = true and notified_at < now() - make_interval(days => notified_days));
+  get diagnostics deleted = row_count;
+  return deleted;
+end;
+$$;
 
 -- ── Affiliate programme state machine (AWIN advertiser discovery) ───────────
 -- Written daily by .github/workflows/awin-programmes-sync.yml via

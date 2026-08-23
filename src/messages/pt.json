@@ -41,6 +41,14 @@
     "notifyError": "Algo correu mal. Tente novamente.",
     "notifyPrivacy": "Um e-mail no lançamento. Sem spam, pode cancelar quando quiser."
   },
+  "travelLaunchEmail": {
+    "subject": "Os cruzeiros e as férias organizadas já estão disponíveis no DealRadar",
+    "heading": "A secção de viagens está aberta",
+    "body": "Pediu-nos para o avisarmos quando as nossas ofertas de cruzeiros e férias organizadas ficassem disponíveis. Já estão — venha ver.",
+    "cta": "Ver ofertas de viagens",
+    "footerReason": "Recebe esta mensagem porque pediu para ser avisado do lançamento da secção de viagens do DealRadar. Este é o único e-mail que lhe enviaremos sobre o assunto.",
+    "unsubscribeLabel": "Cancelar a subscrição e eliminar os meus dados"
+  },
   "deal": {
     "goToDeal": "Ver em <chip>{shop}</chip>",
     "otherStores": "Ver noutras lojas",
@@ -182,7 +190,7 @@
     "s1Title": "1. Responsável pelo tratamento",
     "s1Body": "O responsável pelo tratamento dos dados neste website é a entidade operadora identificada na nossa Informação legal. Contacte-nos através do endereço de e-mail aí indicado para qualquer pedido relacionado com a proteção de dados.",
     "s2Title": "2. Dados que tratamos",
-    "s2Body": "Subscrições de alertas de preço: o seu endereço de e-mail e o produto pretendido, utilizados exclusivamente para enviar notificações de descida de preço. Localização aproximada: o seu país é estimado a partir de cabeçalhos de rede (e, apenas com o seu consentimento, da localização do seu navegador) para mostrar ofertas locais; as coordenadas exatas são tratadas de forma transitória e nunca são armazenadas. Preferências de cookies: a sua escolha de consentimento é armazenada para a respeitarmos em visitas futuras.",
+    "s2Body": "Subscrições de alertas de preço: o seu endereço de e-mail e o produto pretendido, utilizados exclusivamente para enviar notificações de descida de preço. Avisos de lançamento: se solicitar que o informemos quando a nossa secção de cruzeiros e férias organizadas abrir, são armazenados o seu endereço de e-mail, o seu idioma e a categoria a partir da qual se inscreveu, utilizados exclusivamente para enviar esse único aviso. Localização aproximada: o seu país é estimado a partir de cabeçalhos de rede (e, apenas com o seu consentimento, da localização do seu navegador) para mostrar ofertas locais; as coordenadas exatas são tratadas de forma transitória e nunca são armazenadas. Preferências de cookies: a sua escolha de consentimento é armazenada para a respeitarmos em visitas futuras.",
     "s3Title": "3. Subcontratantes terceiros",
     "s3Body": "Recorremos aos seguintes subcontratantes ao abrigo de acordos de tratamento de dados: Supabase (alojamento da base de dados), Upstash (cache Redis e limitação de tráfego), Resend (e-mail transacional), Microsoft Ireland Operations Ltd. (Microsoft Clarity — análise de utilização, ver secção 7), Google Ireland Limited (Google Analytics 4 — estatísticas de utilização, ver secção 7) e as nossas redes de afiliação (Awin, Kelkoo, Tradedoubler, Strackr), que recebem um identificador de rastreio anonimizado quando clica numa ligação de oferta externa. O nosso anfitrião de edge trata dados de registo do servidor (incluindo o IP) para operar o serviço de forma segura (art. 6.º, n.º 1, al. f), do GDPR).",
     "s4Title": "4. Cookies",
@@ -190,7 +198,7 @@
     "s5Title": "5. Os seus direitos ao abrigo do GDPR",
     "s5Body": "Tem o direito de aceder, retificar, apagar (art. 17.º), limitar e portar os seus dados pessoais, bem como de se opor ao tratamento ou de retirar o consentimento a qualquer momento, sem afetar a licitude do tratamento efetuado anteriormente. Para exercer estes direitos, contacte o endereço indicado na nossa Informação legal. Pode também apresentar uma reclamação junto de uma autoridade de controlo.",
     "s6Title": "6. Cancelamento de subscrição e eliminação automáticos",
-    "s6Body": "Todos os e-mails de alerta de preço contêm uma ligação de cancelamento de subscrição com um clique, protegida por um token HMAC. Ao segui-la, a sua subscrição é eliminada de imediato e sem verificação adicional, satisfazendo o direito de retirar o consentimento e o direito à eliminação. As subscrições são igualmente eliminadas de forma automática após um período de conservação definido.",
+    "s6Body": "Todos os e-mails de alerta de preço contêm uma ligação de cancelamento de subscrição com um clique, protegida por um token HMAC. Ao segui-la, a sua subscrição é eliminada de imediato e sem verificação adicional, satisfazendo o direito de retirar o consentimento e o direito à eliminação. As subscrições e as inscrições em avisos de lançamento são igualmente eliminadas de forma automática após um período de conservação definido.",
     "s7Title": "7. Análise de utilização (Microsoft Clarity e Google Analytics)",
     "s7Body": "Com o seu consentimento (art. 6.º, n.º 1, al. a), do GDPR), utilizamos o Microsoft Clarity e o Google Analytics 4 para compreender como os visitantes utilizam a DealRadar: o Clarity fornece mapas de calor, reproduções de sessão e métricas de interação agregadas, e o Google Analytics fornece estatísticas de utilização agregadas, como visualizações de páginas, origens de tráfego e cliques nos botões que encaminham para a oferta e subscrições de alertas de preço. Por predefinição, o Clarity oculta o texto que digita — os dados introduzidos em formulários, como endereços de e-mail, são mascarados no navegador e nunca chegam aos servidores da Microsoft. O Google Analytics está configurado com o Google Consent Mode (nada é carregado e nenhum dado é enviado antes de dar o seu consentimento), sem as funcionalidades de publicidade da Google, e o Google Analytics 4 não regista nem armazena endereços IP completos. Os dados são tratados pela Microsoft Ireland Operations Ltd. e pela Google Ireland Limited e podem ser transferidos para a Microsoft Corporation e para a Google LLC, nos Estados Unidos, ao abrigo do Quadro de Privacidade de Dados UE-EUA (EU–U.S. Data Privacy Framework) e das Cláusulas Contratuais-Tipo da UE. A Microsoft conserva os dados de sessão do Clarity durante um máximo de 30 dias (estatísticas agregadas até 13 meses); o nosso período de conservação no Google Analytics está definido para 14 meses. Pode retirar o consentimento a qualquer momento através de «Definições de cookies» no rodapé. O Google Search Console e o Bing Webmaster Tools, que utilizamos para monitorizar a forma como os motores de pesquisa indexam este site, não recebem dados pessoais do website nem definem cookies no mesmo."
   },
@@ -212,7 +220,12 @@
     "errorBody": "Não foi possível verificar o token de segurança. A ligação pode estar incompleta ou ter expirado.",
     "confirmTitle": "Confirmar cancelamento de inscrição",
     "confirmBody": "Clique no botão abaixo para confirmar que deseja cancelar a sua inscrição nos alertas de redução de preço para esta oferta.",
-    "confirmButton": "Confirmar cancelamento de inscrição"
+    "confirmButton": "Confirmar cancelamento de inscrição",
+    "travelConfirmTitle": "Confirmar a eliminação",
+    "travelConfirmBody": "Clique no botão abaixo para eliminar o seu endereço de e-mail da lista de lançamento de viagens do DealRadar.",
+    "travelConfirmButton": "Eliminar os meus dados",
+    "travelSuccessTitle": "Eliminado",
+    "travelSuccessBody": "O seu endereço de e-mail foi eliminado da lista de lançamento de viagens."
   },
   "error": {
     "title": "Algo correu mal",

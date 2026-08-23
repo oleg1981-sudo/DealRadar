@@ -41,6 +41,14 @@
     "notifyError": "Något gick fel. Försök igen.",
     "notifyPrivacy": "Ett mejl vid lansering. Ingen spam, avsluta när du vill."
   },
+  "travelLaunchEmail": {
+    "subject": "Kryssningar och paketresor finns nu på DealRadar",
+    "heading": "Resedelen är öppen",
+    "body": "Du bad om att få veta när våra kryssnings- och paketreseerbjudanden lanserades. Nu är de här — ta en titt.",
+    "cta": "Se reseerbjudanden",
+    "footerReason": "Du får det här meddelandet eftersom du bad om att få veta när DealRadars resedel lanserades. Det är det enda mejl vi skickar till dig om detta.",
+    "unsubscribeLabel": "Avregistrera och radera mina uppgifter"
+  },
   "deal": {
     "goToDeal": "Se hos <chip>{shop}</chip>",
     "otherStores": "Visa i andra butiker",
@@ -182,7 +190,7 @@
     "s1Title": "1. Personuppgiftsansvarig",
     "s1Body": "Personuppgiftsansvarig för behandlingen av personuppgifter på denna webbplats är den operatör som anges i vårt Imprint. Kontakta oss på den e-postadress som anges där för alla dataskyddsförfrågningar.",
     "s2Title": "2. Uppgifter vi behandlar",
-    "s2Body": "Prisbevakningsprenumerationer: din e-postadress och den produkt du bevakar, vilka enbart används för att skicka aviseringar om prissänkningar. Ungefärlig plats: ditt land uppskattas utifrån nätverksrubriker (och, endast med ditt samtycke, din webbläsares platsuppgifter) för att visa lokala erbjudanden; exakta koordinater behandlas tillfälligt och lagras aldrig. Cookie-inställningar: ditt samtyckesval lagras för att respektera det vid framtida besök.",
+    "s2Body": "Prisbevakningsprenumerationer: din e-postadress och den produkt du bevakar, vilka enbart används för att skicka aviseringar om prissänkningar. Lanseringsaviseringar: om du ber om att få veta när vår del med kryssningar och paketresor öppnar lagras din e-postadress, ditt språk och den kategori du anmälde dig från, vilka enbart används för att skicka detta enda meddelande. Ungefärlig plats: ditt land uppskattas utifrån nätverksrubriker (och, endast med ditt samtycke, din webbläsares platsuppgifter) för att visa lokala erbjudanden; exakta koordinater behandlas tillfälligt och lagras aldrig. Cookie-inställningar: ditt samtyckesval lagras för att respektera det vid framtida besök.",
     "s3Title": "3. Personuppgiftsbiträden (tredje part)",
     "s3Body": "Vi anlitar följande personuppgiftsbiträden enligt biträdesavtal: Supabase (databashosting), Upstash (Redis-cachning och hastighetsbegränsning), Resend (transaktionsmejl), Microsoft Ireland Operations Ltd. (Microsoft Clarity — användningsanalys, se avsnitt 7), Google Ireland Limited (Google Analytics 4 — användningsstatistik, se avsnitt 7) samt våra affiliatenätverk (Awin, Kelkoo, Tradedoubler, Strackr), som tar emot en anonymiserad spårningsidentifierare när du klickar på en utgående erbjudandelänk. Vår edge-värd behandlar serverloggdata (inklusive IP) för att driva tjänsten på ett säkert sätt (art. 6.1 f GDPR).",
     "s4Title": "4. Cookies",
@@ -190,7 +198,7 @@
     "s5Title": "5. Dina rättigheter enligt GDPR",
     "s5Body": "Du har rätt att få tillgång till, rätta, radera (art. 17), begränsa och flytta dina personuppgifter samt att invända mot eller återkalla ditt samtycke när som helst utan att det påverkar lagligheten av behandling som skett dessförinnan. För att utöva dessa rättigheter, kontakta adressen i vårt Imprint. Du har även rätt att lämna in ett klagomål till en tillsynsmyndighet.",
     "s6Title": "6. Automatisk avregistrering och radering",
-    "s6Body": "Varje prisbevakningsmejl innehåller en avregistreringslänk med ett klick, säkrad med en HMAC-token. Genom att följa den raderas din prenumeration omedelbart och utan ytterligare verifiering, vilket uppfyller rätten att återkalla samtycke och rätten till radering. Prenumerationer raderas dessutom automatiskt efter en fastställd lagringsperiod.",
+    "s6Body": "Varje prisbevakningsmejl innehåller en avregistreringslänk med ett klick, säkrad med en HMAC-token. Genom att följa den raderas din prenumeration omedelbart och utan ytterligare verifiering, vilket uppfyller rätten att återkalla samtycke och rätten till radering. Prenumerationer och anmälningar till lanseringsaviseringar raderas dessutom automatiskt efter en fastställd lagringsperiod.",
     "s7Title": "7. Användningsanalys (Microsoft Clarity och Google Analytics)",
     "s7Body": "Med ditt samtycke (art. 6.1 a GDPR) använder vi Microsoft Clarity och Google Analytics 4 för att förstå hur besökare använder DealRadar: Clarity tillhandahåller värmekartor, sessionsinspelningar och aggregerad interaktionsstatistik, och Google Analytics tillhandahåller aggregerad användningsstatistik såsom sidvisningar, trafikkällor och klick på ”Till erbjudandet”-knappar och registreringar för prisbevakning. Clarity maskerar som standard text du skriver — formulärinmatning såsom e-postadresser maskeras i webbläsaren och når aldrig Microsofts servrar. Google Analytics är konfigurerat med Google Consent Mode (inget läses in och inga uppgifter skickas innan du samtycker), utan Googles annonseringsfunktioner, och Google Analytics 4 loggar eller lagrar inte fullständiga IP-adresser. Uppgifterna behandlas av Microsoft Ireland Operations Ltd. och Google Ireland Limited och kan överföras till Microsoft Corporation och Google LLC i USA med stöd av dataskyddsramen mellan EU och USA (EU–U.S. Data Privacy Framework) och EU:s standardavtalsklausuler. Microsoft lagrar Claritys sessionsdata i upp till 30 dagar (aggregerad statistik i upp till 13 månader); vår lagringstid i Google Analytics är inställd på 14 månader. Du kan återkalla ditt samtycke när som helst via ”Cookie-inställningar” i sidfoten. Google Search Console och Bing Webmaster Tools, som vi använder för att övervaka hur sökmotorer indexerar denna webbplats, tar inte emot några personuppgifter från webbplatsen och placerar inga cookies på den."
   },
@@ -212,7 +220,12 @@
     "errorBody": "Vi kunde inte verifiera säkerhetstoken. Länken kan vara ofullständig eller ha gått ut.",
     "confirmTitle": "Bekräfta avregistrering",
     "confirmBody": "Klicka på knappen nedan för att bekräfta att du vill avregistrera dig från prissänkningsbevakningar för det här erbjudandet.",
-    "confirmButton": "Bekräfta avregistrering"
+    "confirmButton": "Bekräfta avregistrering",
+    "travelConfirmTitle": "Bekräfta radering",
+    "travelConfirmBody": "Klicka på knappen nedan för att ta bort din e-postadress från DealRadars lanseringslista för resor.",
+    "travelConfirmButton": "Radera mina uppgifter",
+    "travelSuccessTitle": "Raderad",
+    "travelSuccessBody": "Din e-postadress har raderats från lanseringslistan för resor."
   },
   "error": {
     "title": "Något gick fel",

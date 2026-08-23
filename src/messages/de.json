@@ -41,6 +41,14 @@
     "notifyError": "Etwas ist schiefgelaufen. Bitte versuche es erneut.",
     "notifyPrivacy": "Eine E-Mail zum Start. Kein Spam, jederzeit abbestellbar."
   },
+  "travelLaunchEmail": {
+    "subject": "Kreuzfahrten und Pauschalreisen sind jetzt auf DealRadar verfügbar",
+    "heading": "Der Reisebereich ist eröffnet",
+    "body": "Sie wollten benachrichtigt werden, sobald unsere Kreuzfahrt- und Pauschalreise-Angebote online gehen. Sie sind da — schauen Sie vorbei.",
+    "cta": "Reiseangebote ansehen",
+    "footerReason": "Sie erhalten diese E-Mail, weil Sie benachrichtigt werden wollten, sobald der Reisebereich von DealRadar startet. Dies ist die einzige E-Mail, die wir Ihnen dazu senden.",
+    "unsubscribeLabel": "Abmelden und meine Daten löschen"
+  },
   "deal": {
     "goToDeal": "Bei <chip>{shop}</chip> ansehen",
     "otherStores": "In anderen Shops ansehen",
@@ -182,7 +190,7 @@
     "s1Title": "1. Verantwortlicher",
     "s1Body": "Verantwortlicher für die Datenverarbeitung auf dieser Website ist der im Impressum genannte Betreiber. Für datenschutzrechtliche Anliegen kontaktieren Sie uns bitte unter der dort angegebenen E-Mail-Adresse.",
     "s2Title": "2. Daten, die wir verarbeiten",
-    "s2Body": "Preisalarm-Abonnements: Ihre E-Mail-Adresse und das gewünschte Produkt, die ausschließlich zum Versand von Benachrichtigungen über Preissenkungen verwendet werden. Ungefährer Standort: Ihr Land wird anhand von Netzwerk-Headern (und – nur mit Ihrer Einwilligung – Ihrem Browser-Standort) geschätzt, um lokale Angebote anzuzeigen; genaue Koordinaten werden nur vorübergehend verarbeitet und niemals gespeichert. Cookie-Einstellungen: Ihre Einwilligungsentscheidung wird gespeichert, um sie bei künftigen Besuchen zu berücksichtigen.",
+    "s2Body": "Preisalarm-Abonnements: Ihre E-Mail-Adresse und das gewünschte Produkt, die ausschließlich zum Versand von Benachrichtigungen über Preissenkungen verwendet werden. Start-Benachrichtigungen: Wenn Sie benachrichtigt werden möchten, sobald unser Bereich für Kreuzfahrten und Pauschalreisen öffnet, werden Ihre E-Mail-Adresse, Ihre Sprache und die Kategorie, über die Sie sich angemeldet haben, gespeichert und ausschließlich für den Versand dieser einen Ankündigung verwendet. Ungefährer Standort: Ihr Land wird anhand von Netzwerk-Headern (und – nur mit Ihrer Einwilligung – Ihrem Browser-Standort) geschätzt, um lokale Angebote anzuzeigen; genaue Koordinaten werden nur vorübergehend verarbeitet und niemals gespeichert. Cookie-Einstellungen: Ihre Einwilligungsentscheidung wird gespeichert, um sie bei künftigen Besuchen zu berücksichtigen.",
     "s3Title": "3. Auftragsverarbeiter (Dritte)",
     "s3Body": "Wir setzen die folgenden Auftragsverarbeiter auf Grundlage von Auftragsverarbeitungsverträgen ein: Supabase (Datenbank-Hosting), Upstash (Redis-Caching und Ratenbegrenzung), Resend (transaktionale E-Mails), Microsoft Ireland Operations Ltd. (Microsoft Clarity – Nutzungsanalyse, siehe Abschnitt 7), Google Ireland Limited (Google Analytics 4 – Nutzungsstatistiken, siehe Abschnitt 7) sowie unsere Affiliate-Netzwerke (Awin, Kelkoo, Tradedoubler, Strackr), die eine anonymisierte Tracking-Kennung erhalten, wenn Sie auf einen ausgehenden Angebotslink klicken. Unser Edge-Host verarbeitet Server-Protokolldaten (einschließlich der IP-Adresse), um den Dienst sicher zu betreiben (Art. 6 Abs. 1 lit. f GDPR).",
     "s4Title": "4. Cookies",
@@ -190,7 +198,7 @@
     "s5Title": "5. Ihre Rechte nach der GDPR",
     "s5Body": "Sie haben das Recht auf Auskunft, Berichtigung, Löschung (Art. 17), Einschränkung und Übertragbarkeit Ihrer personenbezogenen Daten sowie das Recht, der Verarbeitung zu widersprechen oder Ihre Einwilligung jederzeit zu widerrufen, ohne dass die Rechtmäßigkeit der bis dahin erfolgten Verarbeitung berührt wird. Zur Ausübung dieser Rechte wenden Sie sich bitte an die im Impressum genannte Adresse. Darüber hinaus haben Sie das Recht, Beschwerde bei einer Aufsichtsbehörde einzulegen.",
     "s6Title": "6. Automatische Abmeldung und Löschung",
-    "s6Body": "Jede Preisalarm-E-Mail enthält einen Ein-Klick-Abmeldelink, der durch ein HMAC-Token gesichert ist. Durch Anklicken wird Ihr Abonnement sofort und ohne weitere Überprüfung gelöscht, womit dem Recht auf Widerruf der Einwilligung und auf Löschung entsprochen wird. Abonnements werden zudem nach einer festgelegten Speicherfrist automatisch gelöscht.",
+    "s6Body": "Jede Preisalarm-E-Mail enthält einen Ein-Klick-Abmeldelink, der durch ein HMAC-Token gesichert ist. Durch Anklicken wird Ihr Abonnement sofort und ohne weitere Überprüfung gelöscht, womit dem Recht auf Widerruf der Einwilligung und auf Löschung entsprochen wird. Abonnements und Anmeldungen für Start-Benachrichtigungen werden zudem nach einer festgelegten Speicherfrist automatisch gelöscht.",
     "s7Title": "7. Nutzungsanalyse (Microsoft Clarity und Google Analytics)",
     "s7Body": "Mit Ihrer Einwilligung (Art. 6 Abs. 1 lit. a GDPR) verwenden wir Microsoft Clarity und Google Analytics 4, um zu verstehen, wie Besucher DealRadar nutzen: Clarity liefert Heatmaps, Sitzungsaufzeichnungen (Session Replays) und aggregierte Interaktionskennzahlen, Google Analytics liefert aggregierte Nutzungsstatistiken wie Seitenaufrufe, Zugriffsquellen sowie Klicks auf Angebots-Schaltflächen und Preisalarm-Anmeldungen. Clarity maskiert von Ihnen eingegebenen Text standardmäßig – Formulareingaben wie E-Mail-Adressen werden bereits im Browser maskiert und erreichen die Server von Microsoft nie. Google Analytics ist mit dem Google Consent Mode konfiguriert (vor Ihrer Einwilligung wird nichts geladen und es werden keine Daten übermittelt), ohne Google-Werbefunktionen, und Google Analytics 4 protokolliert und speichert keine vollständigen IP-Adressen. Die Daten werden von Microsoft Ireland Operations Ltd. und Google Ireland Limited verarbeitet und können auf Grundlage des EU-US-Datenschutzrahmens (EU–U.S. Data Privacy Framework) sowie der EU-Standardvertragsklauseln an die Microsoft Corporation und Google LLC in die Vereinigten Staaten übermittelt werden. Microsoft speichert Clarity-Sitzungsdaten für bis zu 30 Tage (aggregierte Statistiken bis zu 13 Monate); unsere Aufbewahrungsdauer für Google Analytics ist auf 14 Monate eingestellt. Sie können Ihre Einwilligung jederzeit über „Cookie-Einstellungen“ in der Fußzeile widerrufen. Google Search Console und Bing Webmaster Tools, die wir einsetzen, um die Indexierung dieser Website durch Suchmaschinen zu überwachen, erhalten keine personenbezogenen Daten von der Website und setzen auf ihr keine Cookies."
   },
@@ -212,7 +220,12 @@
     "errorBody": "Wir konnten das Sicherheitstoken nicht verifizieren. Der Link ist möglicherweise unvollständig oder abgelaufen.",
     "confirmTitle": "Abmeldung bestätigen",
     "confirmBody": "Klicken Sie auf die Schaltfläche unten, um zu bestätigen, dass Sie sich von den Benachrichtigungen über Preissenkungen für dieses Angebot abmelden möchten.",
-    "confirmButton": "Abmeldung bestätigen"
+    "confirmButton": "Abmeldung bestätigen",
+    "travelConfirmTitle": "Löschung bestätigen",
+    "travelConfirmBody": "Klicken Sie auf die Schaltfläche unten, um Ihre E-Mail-Adresse von der Reise-Startliste von DealRadar zu entfernen.",
+    "travelConfirmButton": "Meine Daten entfernen",
+    "travelSuccessTitle": "Entfernt",
+    "travelSuccessBody": "Ihre E-Mail-Adresse wurde aus der Reise-Startliste gelöscht."
   },
   "error": {
     "title": "Etwas ist schiefgelaufen",

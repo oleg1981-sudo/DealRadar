@@ -41,6 +41,14 @@
     "notifyError": "Noget gik galt. Prøv igen.",
     "notifyPrivacy": "Én mail ved lancering. Ingen spam, afmeld når som helst."
   },
+  "travelLaunchEmail": {
+    "subject": "Krydstogter og pakkerejser er nu live på DealRadar",
+    "heading": "Rejsesektionen er åben",
+    "body": "Du bad om at få besked, når vores krydstogt- og pakkerejsetilbud gik i luften. De er klar — tag et kig.",
+    "cta": "Se rejsetilbud",
+    "footerReason": "Du modtager denne mail, fordi du bad om besked, når DealRadars rejsesektion blev lanceret. Det er den eneste mail, vi sender dig om det.",
+    "unsubscribeLabel": "Afmeld, og slet mine oplysninger"
+  },
   "deal": {
     "goToDeal": "Se hos <chip>{shop}</chip>",
     "otherStores": "Se i andre butikker",
@@ -182,7 +190,7 @@
     "s1Title": "1. Dataansvarlig",
     "s1Body": "Den dataansvarlige for behandlingen af oplysninger på dette websted er den operatør, der er anført i vores juridiske oplysninger (Impressum). Kontakt os på den e-mailadresse, der er anført dér, ved enhver henvendelse om databeskyttelse.",
     "s2Title": "2. Oplysninger, vi behandler",
-    "s2Body": "Abonnementer på prisalarmer: din e-mailadresse og det ønskede produkt, som udelukkende anvendes til at sende meddelelser om prisfald. Omtrentlig placering: dit land estimeres ud fra netværksheadere (og, kun med dit samtykke, din browserplacering) for at vise lokale tilbud; præcise koordinater behandles midlertidigt og gemmes aldrig. Cookiepræferencer: dit samtykkevalg gemmes, så vi kan overholde det ved fremtidige besøg.",
+    "s2Body": "Abonnementer på prisalarmer: din e-mailadresse og det ønskede produkt, som udelukkende anvendes til at sende meddelelser om prisfald. Lanceringsvarsler: hvis du beder om at få besked, når vores sektion med krydstogter og pakkerejser åbner, gemmes din e-mailadresse, dit sprog og den kategori, du tilmeldte dig fra, som udelukkende anvendes til at sende denne ene meddelelse. Omtrentlig placering: dit land estimeres ud fra netværksheadere (og, kun med dit samtykke, din browserplacering) for at vise lokale tilbud; præcise koordinater behandles midlertidigt og gemmes aldrig. Cookiepræferencer: dit samtykkevalg gemmes, så vi kan overholde det ved fremtidige besøg.",
     "s3Title": "3. Tredjepartsdatabehandlere",
     "s3Body": "Vi anvender følgende databehandlere i henhold til databehandleraftaler: Supabase (databasehosting), Upstash (Redis-caching og hastighedsbegrænsning), Resend (transaktionsmails), Microsoft Ireland Operations Ltd. (Microsoft Clarity — brugsanalyse, se afsnit 7), Google Ireland Limited (Google Analytics 4 — brugsstatistik, se afsnit 7) samt vores affiliatenetværk (Awin, Kelkoo, Tradedoubler, Strackr), som modtager en anonymiseret sporings-id, når du klikker på et udgående tilbudslink. Vores edge-host behandler serverlogdata (herunder IP) for at drive tjenesten sikkert (art. 6, stk. 1, litra f, i GDPR).",
     "s4Title": "4. Cookies",
@@ -190,7 +198,7 @@
     "s5Title": "5. Dine rettigheder i henhold til GDPR",
     "s5Body": "Du har ret til indsigt i, berigtigelse og sletning (art. 17) af samt begrænsning og dataportabilitet vedrørende dine personoplysninger og til at gøre indsigelse mod eller til enhver tid trække dit samtykke tilbage, uden at dette berører lovligheden af den behandling, der er sket forinden. For at udøve disse rettigheder kan du kontakte adressen i vores juridiske oplysninger (Impressum). Du kan også indgive en klage til en tilsynsmyndighed.",
     "s6Title": "6. Automatisk afmelding og sletning",
-    "s6Body": "Hver prisalarm-e-mail indeholder et afmeldingslink med ét klik, der er sikret med et HMAC-token. Når du følger linket, slettes dit abonnement øjeblikkeligt og uden yderligere verificering, hvilket opfylder retten til at trække samtykket tilbage og retten til sletning. Abonnementer slettes desuden automatisk efter en fastsat opbevaringsperiode.",
+    "s6Body": "Hver prisalarm-e-mail indeholder et afmeldingslink med ét klik, der er sikret med et HMAC-token. Når du følger linket, slettes dit abonnement øjeblikkeligt og uden yderligere verificering, hvilket opfylder retten til at trække samtykket tilbage og retten til sletning. Abonnementer og tilmeldinger til lanceringsvarsler slettes desuden automatisk efter en fastsat opbevaringsperiode.",
     "s7Title": "7. Brugsanalyse (Microsoft Clarity og Google Analytics)",
     "s7Body": "Med dit samtykke (art. 6, stk. 1, litra a, i GDPR) bruger vi Microsoft Clarity og Google Analytics 4 til at forstå, hvordan besøgende bruger DealRadar: Clarity leverer heatmaps, sessionsafspilninger og aggregerede interaktionsmålinger, og Google Analytics leverer aggregeret brugsstatistik såsom sidevisninger, trafikkilder og klik på »Gå til tilbud«-knapper samt tilmeldinger til prisalarmer. Clarity maskerer som standard den tekst, du indtaster — formularinput såsom e-mailadresser maskeres i browseren og når aldrig frem til Microsofts servere. Google Analytics er konfigureret med Google Consent Mode (intet indlæses, og ingen data sendes, før du samtykker), uden Googles annonceringsfunktioner, og Google Analytics 4 hverken logger eller gemmer fulde IP-adresser. Oplysningerne behandles af Microsoft Ireland Operations Ltd. og Google Ireland Limited og kan overføres til Microsoft Corporation og Google LLC i USA på grundlag af EU-USA-databeskyttelsesrammen (EU–U.S. Data Privacy Framework) og EU's standardkontraktbestemmelser. Microsoft opbevarer Clarity-sessionsdata i op til 30 dage (aggregerede statistikker i op til 13 måneder); vores opbevaringsperiode i Google Analytics er sat til 14 måneder. Du kan til enhver tid trække dit samtykke tilbage via »Cookieindstillinger« i sidefoden. Google Search Console og Bing Webmaster Tools, som vi bruger til at overvåge, hvordan søgemaskiner indekserer dette websted, modtager ingen personoplysninger fra webstedet og placerer ingen cookies på det."
   },
@@ -212,7 +220,12 @@
     "errorBody": "Vi kunne ikke verificere sikkerhedstokenet. Linket kan være ufuldstændigt eller udløbet.",
     "confirmTitle": "Bekræft afmeldelse",
     "confirmBody": "Klik på knappen nedenfor for at bekræfte, at du vil afmelde dig prisaldingsalarmer for dette tilbud.",
-    "confirmButton": "Bekræft afmeldelse"
+    "confirmButton": "Bekræft afmeldelse",
+    "travelConfirmTitle": "Bekræft sletning",
+    "travelConfirmBody": "Klik på knappen nedenfor for at fjerne din e-mailadresse fra DealRadars rejselanceringsliste.",
+    "travelConfirmButton": "Fjern mine oplysninger",
+    "travelSuccessTitle": "Fjernet",
+    "travelSuccessBody": "Din e-mailadresse er slettet fra rejselanceringslisten."
   },
   "error": {
     "title": "Noget gik galt",

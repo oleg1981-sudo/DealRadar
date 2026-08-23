@@ -3,6 +3,7 @@ import { verifyUnsubscribeToken } from '@/lib/utils/crypto';
 import { supabase, supabaseConfigured } from '@/lib/db/supabase';
 import { getTranslations } from 'next-intl/server';
 import { routing } from '@/i18n/routing';
+import { unsubscribePageHtml } from '@/lib/email/unsubscribe-page';
 
 export const runtime = 'nodejs';
 
@@ -58,22 +59,7 @@ async function renderHtmlPage(locale: string, namespace: 'success' | 'error' | '
     }
   }
 
-  const actionHtml = namespace === 'confirm'
-    ? `<form method="POST">
-        <button type="submit" style="background:#EA580C;color:#fff;border:none;padding:12px 24px;border-radius:8px;font-weight:600;cursor:pointer;font-size:14px;transition:background 0.2s">
-          ${buttonText}
-        </button>
-       </form>`
-    : '';
-
-  return `<!DOCTYPE html><html lang="${locale}"><head><meta charset="utf-8"><meta name="robots" content="noindex"><title>${title}</title></head>
-    <body style="font-family:system-ui,-apple-system,sans-serif;text-align:center;padding:50px;color:#18181b;background:#fafafa;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:80vh;margin:0">
-      <div style="background:#fff;padding:40px;border-radius:12px;box-shadow:0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);max-width:440px;width:100%;box-sizing:border-box">
-        <h2 style="margin:0 0 12px;font-size:22px;font-weight:700;line-height:1.25">${title}</h2>
-        <p style="color:#71717a;font-size:14px;line-height:1.5;margin:0 0 24px">${body}</p>
-        ${actionHtml}
-      </div>
-    </body></html>`;
+  return unsubscribePageHtml({ locale, title, body, buttonText: buttonText || undefined });
 }
 
 /**

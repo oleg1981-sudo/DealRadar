@@ -1,9 +1,11 @@
-# Scheduled GDPR retention sweep for price_alerts.
+# Scheduled GDPR retention sweep for every table holding a visitor's email
+# address: price_alerts and travel_signups.
 #
 # Calls POST /api/purge-alerts (protected by CRON_SECRET), which runs the
-# purge_stale_price_alerts SQL function: deletes subscriptions past the retention
-# window (365d) and notified rows past a shorter window (30d). This is the data
-# side of NFR-PRIV-1 (R-MAIL-5) — personal data is not retained indefinitely.
+# purge_stale_price_alerts and purge_stale_travel_signups SQL functions: deletes
+# rows past the retention window (365d) and already-notified rows past a shorter
+# window (30d). This is the data side of NFR-PRIV-1 (R-MAIL-5) — personal data is
+# not retained indefinitely.
 #
 # Required repository secrets (Settings → Secrets and variables → Actions):
 #   APP_URL      the deployed app base URL (e.g. https://dealradar.eu)
