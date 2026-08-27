@@ -5,19 +5,33 @@
 **Any time a new advertiser, feed, provider or product API starts producing rows,
 the category assignment MUST be verified before the work is called done.**
 
-This is not a style preference. The same defect has shipped three times:
+This is not a style preference. The same defect has shipped four times:
 
 | Date | Merchant | What published |
 |---|---|---|
 | 2026-07-19 | Profichemie | Cleaning chemicals under **Elektronik** |
 | 2026-08-20 | Zizzz.de | A child's pyjama under **Elektronik** |
+| 2026-08-27 | Mediakos DE | CBD/collagen oils + Omega-3 capsules under **Elektronik** (64 rows), and 62 more supplements — Magnesium, MSM, NAC, Chlorella — under **Sport** |
 | _(and one earlier)_ | — | same shape |
 
-Every occurrence was found by a person noticing a wrong page — never by the
-pipeline, and never by me. The cause is always the same: `mapCategory()` in
-`scripts/ingest-awin.cjs` falls back to `'electronics'` when a merchant's
-`category_name` matches no rule, and the feed taxonomy rules are **English**
-while many German catalogues are not.
+The cause is always the same: `mapCategory()` in `scripts/ingest-awin.cjs` falls
+back to `'electronics'` when a merchant's `category_name` matches no rule, and
+the feed taxonomy rules are **English** while many German catalogues are not.
+
+Two things the Mediakos case adds to the pattern:
+
+- **The wrong bucket isn't always `electronics`.** Half that catalogue landed in
+  `sports` via a stray keyword match, which the fallback tracker cannot see — it
+  only counts rows that took the *default*. A merchant can be badly miscategorised
+  while the guard reports a clean run, so reading the per-merchant category split
+  (the SQL below) is still required; the automated half is not a substitute.
+- **The tracker's threshold is a floor, not a verdict.** Mediakos reported 37%
+  defaulted — under the ≥50% fail line, so the run passed and printed it as a
+  warning. It was still 126 wrong rows on the live site. Read the warnings.
+
+The first three were each found by a person noticing a wrong page. This one was
+found by running the verification above after an ingest — which is the point of
+the rule.
 
 ### How to verify
 
