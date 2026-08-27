@@ -45,6 +45,16 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
+      # pnpm must be on PATH BEFORE setup-node@v5: it reads `packageManager`
+      # (pnpm@9.15.0) from package.json and hard-fails with "Unable to locate
+      # executable file: pnpm" otherwise — which skipped every step below and
+      # silently froze the catalog for 5 days (2026-08-22 → 08-27). The ops
+      # scripts here are dependency-free and never call pnpm; this step exists
+      # purely to satisfy that probe. Mirrors ci.yml's proven ordering.
+      - uses: pnpm/action-setup@v5
+        with:
+          version: 9.15.0
+
       - uses: actions/setup-node@v5
         with:
           node-version: '22'
