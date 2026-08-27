@@ -83,59 +83,79 @@ Docker and a reverse proxy (Traefik) with automatic Let's Encrypt certificates.
    serves it. (DNS for this subdomain is set in Phase 4.)
 7. Click **Deploy** and watch the build log. First deploy ≈ 3–6 min.
 
-## Phase 4 — Cloudflare  [YOU], cache rule [PREPARED value]
+## STATUS (2026-08-27)
 
-1. Create a free account at https://dash.cloudflare.com → **Add a site** →
-   `dealradar.me` → Free plan.
-2. Cloudflare shows two **nameservers**. Set them at your domain registrar
-   (where dealradar.me is registered), replacing the current ones. Propagation:
-   minutes to a few hours.
-3. In Cloudflare **DNS**, add:
-   - `A  new  → <SERVER_IP>`  (Proxied / orange cloud) — the staging host.
-   - Leave the apex (`@`) pointing at Netlify **for now** (don't cut over yet).
-4. **SSL/TLS → Overview → Full (strict)** (Coolify serves a valid Let's Encrypt
-   cert on the origin, so strict is correct).
-5. **Caching → Cache Rules → Create rule** ("Cache deal pages"):
-   - **When**: `URI Path` `matches regex` `^/[a-z]{2}/deal/.+`
-   - **Then**: *Eligible for cache* = **On**; *Edge TTL* = **Use cache-control
-     header if present** (respect origin). This makes Cloudflare honour the
-     `CDN-Cache-Control: public, s-maxage=3600, stale-while-revalidate=86400`
-     the app emits. (Cloudflare does not cache HTML without this rule.)
+Phases 1–3 are **DONE**: the site is live on the Hetzner VPS
+(`178.104.121.109`, Nuremberg) serving `dealradar.me` directly. Netlify is out
+of the path. **Phase 4 (Cloudflare) was skipped**, so today there is *no CDN*:
+the app emits `CDN-Cache-Control` on deal pages and nothing honours it, every
+crawl reaches the origin and Postgres, and the origin IP is publicly exposed.
+Phase 4 below is rewritten for that reality — adding Cloudflare **in front of a
+site that is already live**, not a staging cutover.
 
-## Phase 5 — Test on staging BEFORE cutover  [YOU/ME]
+App-side prerequisites are already shipped (commit 08070c8):
+- deal pages ship **cookie-free** (a cached `Set-Cookie` would replay the first
+  visitor's geo to everyone), and
+- `clientIp()` prefers **`cf-connecting-ip`** (otherwise every visitor collapses
+  into one rate-limit bucket behind the edge).
 
-Against `https://new.dealradar.me`:
-- Home, a category, a deal page, search, `/robots.txt`, `/sitemap.xml` all load.
-- All 13 locales render (`/de`, `/en`, …) — watch for missing translations.
-- A deal page served twice: 2nd hit shows a Cloudflare cache HIT
-  (`cf-cache-status: HIT`) and is fast.
-- `/api/health` returns `ok`.
-- Ping me with the staging URL and I'll run the full verification sweep
-  (cache headers, locale coverage, JSON-LD, price cardiograms).
+## Phase 4 — Put Cloudflare in front of the LIVE site  [YOU]
 
-## Phase 6 — Cutover  [YOU]
+Order matters. Doing step 4 *after* step 3 can produce a redirect loop.
 
-Only once staging is verified:
-1. Cloudflare DNS: point the apex `A @ → <SERVER_IP>` (Proxied). Remove/disable
-   the Netlify DNS records.
-2. In Coolify, add `dealradar.me` (and `www`) as domains on the service so its
-   proxy serves a cert for them.
-3. Watch `https://dealradar.me` — it's now served by Hetzner via Cloudflare.
-4. Keep Netlify running for ~48h as a hot rollback (see below).
+1. **Add the site.** https://dash.cloudflare.com → **Add a site** →
+   `dealradar.me` → **Free**. Cloudflare imports the existing DNS records —
+   check the apex `A` record points at `178.104.121.109`.
+2. **Set SSL mode FIRST.** SSL/TLS → Overview → **Full (strict)**.
+   *Why first:* on the default/Flexible setting Cloudflare talks to the origin
+   over plain HTTP while the origin redirects HTTP→HTTPS — an infinite redirect
+   loop that takes the site down. The origin already serves a valid Let's
+   Encrypt cert, so **Full (strict)** is correct.
+3. **Switch nameservers** at the registrar to the two Cloudflare gives you.
+   Propagation is minutes–hours. The site keeps working throughout: old
+   resolvers hit the origin directly, new ones go through Cloudflare.
+4. **Proxy the record.** DNS → apex `A` record → **Proxied** (orange cloud).
+   Add `www` as a proxied `CNAME` to the apex if you use it.
+5. **Cache Rule** — Caching → Cache Rules → **Create rule** ("Cache deal pages"):
+   - **When**: *URI Path* → *matches regex* → `^/[a-z]{2}/deal/.+`
+   - **Then**: *Cache eligibility* = **Eligible for cache**;
+     *Edge TTL* = **Use cache-control header if present** (respect origin).
+   This is what makes Cloudflare honour
+   `CDN-Cache-Control: public, s-maxage=3600, stale-while-revalidate=86400`.
+   Cloudflare does not cache HTML without such a rule.
+   **Do not widen the regex.** Home/category/search read the location cookie and
+   must stay uncached — caching them would serve one visitor's city view to
+   everyone.
+6. **Lock the origin to Cloudflare** (Hetzner Cloud → Firewall, or `ufw`): allow
+   :80/:443 only from Cloudflare's published ranges
+   (https://www.cloudflare.com/ips/), plus your own IP for SSH.
+   *Why it matters:* `cf-connecting-ip` is only trustworthy for traffic that
+   actually transits Cloudflare. If the origin stays open, someone can hit
+   `178.104.121.109` directly and forge that header to bypass rate limits — and
+   bypass the CDN entirely.
+7. **Watch cert renewal.** Let's Encrypt HTTP-01 renewals normally still work
+   through the proxy, but if Coolify/Traefik ever fails to renew behind
+   Cloudflare, switch the origin to a **Cloudflare Origin Certificate**
+   (SSL/TLS → Origin Server → Create Certificate, 15-year) and keep Full
+   (strict). No rush — just don't ignore a renewal-failure alert.
 
-## Phase 7 — Decommission  [YOU]
+## Phase 5 — Verify  [YOU/ME]
 
-After ~48h stable: delete the Netlify site (stops any residual billing). Keep
-the `netlify.toml` in the repo — harmless, and it lets you redeploy to Netlify
-instantly if ever needed.
+Once the orange cloud is on, tell me and I'll sweep it. What must be true:
+- `cf-ray` header present (traffic is going through Cloudflare).
+- A deal page fetched twice → 2nd response has **`cf-cache-status: HIT`** and is
+  fast; the deal page carries **no `Set-Cookie`**.
+- Home/category/search → **`cf-cache-status: DYNAMIC`** (i.e. *not* cached) and
+  still send `Set-Cookie`.
+- All 13 locales render; `/robots.txt`, `/sitemap.xml`, `/api/health` fine.
+- `/api/health/deep` still reports `db: up`.
 
----
+## Rollback
 
-## Rollback (any time before Phase 7)
-
-DNS is the switch. In Cloudflare, point the apex back to Netlify (restore the
-Netlify record / CNAME). Within the DNS TTL you're back on Netlify. Nothing in
-the repo or database changed, so rollback is just a DNS edit.
+**Grey-cloud the DNS record** (DNS → apex `A` → toggle Proxied off). Traffic
+goes straight to the origin again within the record's TTL — exactly today's
+behaviour. Nothing in the repo or database depends on Cloudflare, so this is a
+one-click, zero-risk revert. Full revert = point the nameservers back.
 
 ## Ongoing operations (after migration)
 
