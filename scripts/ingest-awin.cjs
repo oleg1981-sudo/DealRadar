@@ -160,6 +160,19 @@ const ADVERTISER_CATEGORY = [
   [/\bapotheke\b|\baliva\b/i, 'health'],
   [/\bbinu\b|korean\s+cosmetics/i, 'beauty'],
   [/profichemie/i, 'home-garden'],   // household cleaning chemicals
+  // Mediakos is a food-supplement / natural-wellness distributor (2026-08-27).
+  // Fourth instance of the German-catalogue class: its titles matched no
+  // English feed-taxonomy rule, so 64 rows took the `electronics` default —
+  // CBD and collagen oils, Omega-3 capsules and an ear spray filed under
+  // Elektronik — while another 62 supplements (Magnesium, MSM, NAC, Chlorella,
+  // Vitamin C complexes) were caught by a stray `sports` match. Two wrong
+  // categories, so a name rule would have to enumerate every active ingredient
+  // to be reliable; the merchant IS the vertical, which is what this table is
+  // for. Same call as Aliva above: a pharmacy also sells cosmetics, and we
+  // still classify the whole advertiser as health. Accepted trade-off: ~40
+  // genuine skincare rows (biana, Hemptouch balms) move beauty -> health, which
+  // is far less wrong than 126 supplements sitting under Elektronik.
+  [/mediakos/i, 'health'],
   // GSMnet is a phone/watch spare-parts retailer — genuinely 100% electronics.
   // It was ALREADY landing there, but via the default rather than a decision,
   // so the new tracker (correctly) could not tell it apart from an unreviewed
