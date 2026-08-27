@@ -9,6 +9,50 @@ push to `main`) → behind **Cloudflare** (free plan, CDN + WAF) → **Supabase 
 
 ---
 
+## Hosting migration: Netlify → Hetzner + Cloudflare (Aug 2026)
+
+The site moved off Netlify. Summary, because it is the largest change here:
+
+**Why.** Every page was `force-dynamic` and uncached, so each request — human or
+bot — was a billed serverless invocation plus Supabase queries. With ~31 k deals
+× 13 locales the crawlable surface is ~405 k URLs. On **08-06** a crawl wave
+burned **2,058 credits / 205 GB-Hrs in one day** and exhausted the monthly
+budget. Serverless cost scales with catalog size, so this only gets worse: at
+100 k products the projection was ~4,000+ credits/month against a 3,000 budget.
+
+**What changed.**
+
+| | Before | After |
+|---|---|---|
+| Web app | Netlify Functions (per-invocation billing) | **Hetzner VPS** — flat ~€5/mo, Docker via Coolify |
+| CDN | Netlify Edge | **Cloudflare** free — deal pages cached at the edge |
+| Database | Supabase | **Supabase Pro** (unchanged otherwise) |
+| Repo + cron | GitHub / GitHub Actions | unchanged |
+
+Cost now stops scaling with the catalog: same flat price at 31 k or 1 M products,
+however hard crawlers hit it.
+
+**Timeline.**
+- **08-06** — Netlify compute blowout (credits exhausted).
+- **08-07** — root cause found: uncached `force-dynamic` pages × ~20 crawlers.
+  Training crawlers disallowed as a stopgap (`3854323`).
+- **08-08** — the same uncached crawl saturated Postgres: trivial queries took
+  ~48 s, SSR pages timed out, **site effectively down**; whole CI pipeline
+  failed too. Recovered by restarting the Supabase project.
+- **08-10** — deal pages CDN-cached (`eace6be`); compute dropped **2,058 → 43
+  credits/day** (~98%).
+- **08-11** — Dockerfile / Coolify / Cloudflare scaffolding + runbook
+  (`0d26eee`, `docs/migration/hetzner-cloudflare-coolify.md`).
+- **by 08-27** — live on Hetzner, Netlify out of the path (exact cutover date
+  not recorded in this repo).
+- **08-27** — Cloudflare activated in front of the origin; app fixed for CDN
+  correctness (`08070c8`); origin firewalled to Cloudflare's ranges.
+
+**Rollback.** Grey-cloud the Cloudflare DNS record to bypass the CDN; `netlify.toml`
+is still in the repo if Netlify is ever needed again.
+
+---
+
 ## 2026-08
 
 **08-27 — Cloudflare put in front of the site**
@@ -55,13 +99,11 @@ push to `main`) → behind **Cloudflare** (free plan, CDN + WAF) → **Supabase 
 - Ingest timeout 15 → 45 min; the old ceiling was killing half the runs.
 - Price disclaimer and country names localised (were hardcoded English).
 
-**08-10/11 — Caching + hosting migration** (`eace6be`, `2b73ab1`, `0d26eee`)
-- Deal pages CDN-cached (`s-maxage=3600`, `stale-while-revalidate`) after
-  uncached crawling exhausted the Netlify compute budget (08-06) and then
-  saturated Postgres (08-08 outage: trivial queries took ~48 s, site down).
-- A DB error now returns 500, never a cacheable false 404.
-- Docker/Coolify scaffolding for the VPS. Site was live on Hetzner by 08-27
-  (exact cutover date not recorded); Netlify no longer in the path.
+**08-10/11 — Caching + VPS scaffolding** (`eace6be`, `2b73ab1`, `0d26eee`)
+- Deal pages CDN-cached (`s-maxage=3600`, `stale-while-revalidate`); compute
+  fell ~98%. A DB error now returns 500, never a cacheable false 404.
+- Dockerfile / Coolify / Cloudflare scaffolding + runbook.
+- See **Hosting migration** above for the full story.
 
 **08-07 — Trust fixes**
 - Cards show the real recorded price cardiogram, matching the detail page.
