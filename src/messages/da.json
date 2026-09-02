@@ -136,8 +136,7 @@
     "useIpInstead": "Brug min IP i stedet",
     "changeLocation": "Skift placering",
     "country": "Land",
-    "cityOptional": "By (valgfrit)",
-    "cityPlaceholder": "f.eks. København",
+    "language": "Sprog",
     "apply": "Anvend"
   },
   "gdpr": {

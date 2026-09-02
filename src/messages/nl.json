@@ -136,8 +136,7 @@
     "useIpInstead": "Gebruik mijn IP",
     "changeLocation": "Locatie wijzigen",
     "country": "Land",
-    "cityOptional": "Stad (optioneel)",
-    "cityPlaceholder": "bijv. Amsterdam",
+    "language": "Taal",
     "apply": "Toepassen"
   },
   "gdpr": {

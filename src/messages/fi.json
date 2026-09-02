@@ -136,8 +136,7 @@
     "useIpInstead": "Käytä IP-osoitettani",
     "changeLocation": "Vaihda sijaintia",
     "country": "Maa",
-    "cityOptional": "Kaupunki (valinnainen)",
-    "cityPlaceholder": "esim. Helsinki",
+    "language": "Kieli",
     "apply": "Käytä"
   },
   "gdpr": {

@@ -136,8 +136,7 @@
     "useIpInstead": "Använd min IP istället",
     "changeLocation": "Ändra plats",
     "country": "Land",
-    "cityOptional": "Stad (valfritt)",
-    "cityPlaceholder": "t.ex. Stockholm",
+    "language": "Språk",
     "apply": "Tillämpa"
   },
   "gdpr": {

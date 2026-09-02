@@ -1,10 +1,11 @@
 import { Link } from '@/i18n/routing';
 import { SearchBar } from '@/components/search/SearchBar';
 import { LocationPicker } from './LocationPicker';
-import { LanguageSwitcher } from './LanguageSwitcher';
 import { Radar } from 'lucide-react';
 
-/** Top bar: burger + logo (left), search (center), location + language (right). */
+/** Top bar: logo (left), search (center), location+language picker (right).
+ *  Language moved INTO LocationPicker — it used to be a separate control here
+ *  on desktop and in the footer on mobile, i.e. at the bottom of the page. */
 export function Header() {
   return (
     <header className="sticky top-0 z-40 border-b border-zinc-100 bg-white/95 backdrop-blur">
@@ -22,7 +23,6 @@ export function Header() {
 
         <div className="flex shrink-0 items-center gap-1">
           <LocationPicker />
-          <span className="hidden sm:block"><LanguageSwitcher /></span>
         </div>
       </div>
     </header>

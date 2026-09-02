@@ -136,8 +136,7 @@
     "useIpInstead": "Bruk IP-en min i stedet",
     "changeLocation": "Endre plassering",
     "country": "Land",
-    "cityOptional": "By (valgfritt)",
-    "cityPlaceholder": "f.eks. Oslo",
+    "language": "Språk",
     "apply": "Bruk"
   },
   "gdpr": {

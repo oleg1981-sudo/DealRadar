@@ -136,8 +136,7 @@
     "useIpInstead": "Folosește IP-ul meu",
     "changeLocation": "Schimbă locația",
     "country": "Țară",
-    "cityOptional": "Oraș (opțional)",
-    "cityPlaceholder": "ex. București",
+    "language": "Limbă",
     "apply": "Aplică"
   },
   "gdpr": {

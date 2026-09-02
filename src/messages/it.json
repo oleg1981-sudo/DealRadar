@@ -136,8 +136,7 @@
     "useIpInstead": "Usa il mio IP",
     "changeLocation": "Cambia posizione",
     "country": "Paese",
-    "cityOptional": "Città (facoltativo)",
-    "cityPlaceholder": "es. Milano",
+    "language": "Lingua",
     "apply": "Applica"
   },
   "gdpr": {

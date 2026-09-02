@@ -136,8 +136,7 @@
     "useIpInstead": "Stattdessen IP verwenden",
     "changeLocation": "Standort ändern",
     "country": "Land",
-    "cityOptional": "Stadt (optional)",
-    "cityPlaceholder": "z. B. Berlin",
+    "language": "Sprache",
     "apply": "Übernehmen"
   },
   "gdpr": {

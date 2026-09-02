@@ -1,6 +1,5 @@
 import Link from 'next/link';
 import { useTranslations, useLocale } from 'next-intl';
-import { LanguageSwitcher } from './LanguageSwitcher';
 import { CookieSettingsButton } from '@/components/consent/CookieSettingsButton';
 
 export function Footer() {
@@ -19,7 +18,6 @@ export function Footer() {
             <CookieSettingsButton className={linkCls} />
           </div>
         </div>
-        <div className="sm:hidden"><LanguageSwitcher /></div>
       </div>
     </footer>
   );
