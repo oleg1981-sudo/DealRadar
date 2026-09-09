@@ -9,6 +9,7 @@ import { formatPrice, formatDiscount } from '@/lib/utils/format';
 import { decorateAffiliateUrl } from '@/lib/utils/affiliate';
 import { priceWindow, priceSeries } from '@/lib/utils/price-history';
 import { findLastDeal } from '@/lib/utils/deal-index';
+import { hasIndexableContent } from '@/lib/utils/indexable';
 import { queryPriceHistory } from '@/lib/db/price-history.repo';
 import { SmartImage as Image } from '@/components/deals/SmartImage';
 import { PriceAlertButton } from '@/components/deals/PriceAlertButton';
@@ -92,9 +93,17 @@ export async function generateMetadata({ params }: Props) {
       : `${deal.productName} — ${sale} · ${deal.shopName}`,
     // [Q-1/EC-24, docs/specs/pdp-full-content] hidden (unproven/delisted) deals
     // stay reachable (200, M2 forbids unexpected 404s) but are not indexable.
-    // A proven deal (hidden=false) must never carry noindex — indexability
-    // gates solely on proven-discount status, never on price-history depth.
-    ...(deal.hidden ? { robots: { index: false, follow: true } } : {}),
+    //
+    // ALSO noindex a page with NO product copy at all (2026-09-09). 7,840
+    // visible pages have neither `description` nor `description_html` — there is
+    // literally nothing on them to index, and at ~20% of the catalogue they are
+    // evidence of low quality across the whole domain, which is part of why
+    // Google is refusing the rest (28,055 "Discovered - currently not indexed").
+    // Deliberately narrow: `description_html` alone still counts as content (281
+    // pages have only that), and pages with a short-but-real description are
+    // left indexable. Self-healing — the moment either field is populated the
+    // page becomes indexable again, no backfill needed.
+    ...(deal.hidden || !hasIndexableContent(deal) ? { robots: { index: false, follow: true } } : {}),
     alternates: {
       canonical: `${BASE_URL}/${params.locale}/deal/${params.slug}`,
       languages: { ...languages, 'x-default': `${BASE_URL}/${routing.defaultLocale}/deal/${params.slug}` },

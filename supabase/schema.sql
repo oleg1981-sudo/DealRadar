@@ -553,3 +553,80 @@ drop policy if exists ops_metrics_public_read on public.ops_metrics;
 create policy ops_metrics_public_read on public.ops_metrics for select to anon using (true);
 drop policy if exists fetch_outcomes_public_read on public.fetch_outcomes;
 create policy fetch_outcomes_public_read on public.fetch_outcomes for select to anon using (true);
+
+-- ── Sitemap quality gate (2026-09-09) ────────────────────────────────────────
+-- Search Console showed an indexation collapse: 28,055 URLs "Discovered -
+-- currently not indexed" (found via the sitemap, never crawled), 5,772
+-- "Crawled - currently not indexed", and indexed pages FALLING 5,443 -> 2,850
+-- with ~0 impressions. Advertising ~32k URLs from a 3-month-old domain spends a
+-- small crawl allowance on thin, duplicated pages, so nothing lands. This
+-- publishes only the best n pages instead.
+--
+-- Ranked + capped, not threshold-gated: thresholds need re-guessing as the
+-- catalogue changes, whereas rank + cap is ONE dial (p_limit). Raise it as
+-- indexation recovers; pages rise in on their own as descriptions and price
+-- history improve. No manual curation.
+--
+-- Score (0-100), all from data we already store:
+--   30  content depth   length(description), saturating at 2000 chars
+--   25  uniqueness      description not shared with another page (25.5% are)
+--   20  discount depth  discount_percent, saturating at 60%
+--   15  recorded low    historical_low_price present = real price history
+--    5  gallery         >= 2 images
+--    5  specs           feed_attrs present
+--
+-- DIVERSITY (the reason for the row_number round-robin): score alone returned
+-- 1,987 of 2,000 pages from ONE merchant (Aliva/health), because two shops
+-- (Aliva 14.3k, GSMnet 12.5k eligible) dwarf every other (tens to hundreds).
+-- That would present the site to Google as a pharmacy and concentrate the whole
+-- crawl budget on one query space. Ordering by rank-within-(shop,category)
+-- takes each group's best first, so every merchant and category is represented:
+-- 8 categories / 21 shops, health down from 99% to 19.5%, average description
+-- still 1,885 chars.
+create or replace function public.sitemap_deals(
+  p_limit int default 2000,
+  p_countries text[] default array['DE']
+)
+returns table (slug text, last_updated timestamptz)
+language sql stable
+set search_path = public
+as $$
+  with eligible as (
+    select d.slug, d.last_updated, d.description, d.discount_percent,
+           d.shop_name, d.category, d.gallery, d.feed_attrs, d.historical_low_price,
+           length(coalesce(d.description, '')) as dlen
+    from public.deals d
+    where d.hidden = false
+      and d.country = any (p_countries)
+      and d.slug is not null
+      and d.image_url is not null
+      -- A page with no real copy has nothing to index; it is exactly what
+      -- Google already rejects as "Crawled - currently not indexed".
+      and length(coalesce(d.description, '')) >= 300
+  ),
+  dup as (
+    select e.description from eligible e
+    group by e.description having count(*) > 1
+  ),
+  scored as (
+    select e.slug, e.last_updated, e.shop_name, e.category,
+           least(e.dlen, 2000)::numeric / 2000 * 30
+         + case when e.description not in (select d2.description from dup d2) then 25 else 0 end
+         + least(coalesce(e.discount_percent, 0), 60)::numeric / 60 * 20
+         + case when e.historical_low_price is not null then 15 else 0 end
+         + case when coalesce(array_length(e.gallery, 1), 0) >= 2 then 5 else 0 end
+         + case when e.feed_attrs is not null and e.feed_attrs <> '{}'::jsonb then 5 else 0 end
+           as score
+    from eligible e
+  ),
+  ranked as (
+    select s.slug, s.last_updated, s.score,
+           row_number() over (partition by s.shop_name, s.category
+                              order by s.score desc, s.slug asc) as rn
+    from scored s
+  )
+  select r.slug, r.last_updated
+  from ranked r
+  order by r.rn asc, r.score desc, r.slug asc
+  limit greatest(p_limit, 0);
+$$;

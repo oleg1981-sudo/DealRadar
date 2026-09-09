@@ -53,6 +53,30 @@ is still in the repo if Netlify is ever needed again.
 
 ---
 
+## 2026-09
+
+**09-09 — Sitemap quality gate: stop advertising 32 k URLs**
+- Search Console showed indexation collapsing: **28,055** URLs "Discovered –
+  currently not indexed", 5,772 "Crawled – currently not indexed", indexed pages
+  down **5,443 → 2,850**, impressions ≈ 0. A 3-month-old domain gets a small
+  crawl allowance; spreading it over 32 k thin pages indexes none of them.
+- New `sitemap_deals()` SQL function ranks deals (content depth, description
+  uniqueness, discount, recorded low, gallery, specs) and publishes the best
+  **2,000** — one dial, `SITEMAP_MAX_DEAL_URLS` in `src/lib/geo/countries.ts`.
+- Ranking alone returned 1,987 of 2,000 pages from a single pharmacy, so the
+  function round-robins across shop + category. Result: **21 shops, 8
+  categories**, avg description 1,885 chars, 90% discounted.
+- Deal pages with no product copy at all (7,840 of them) now emit
+  `noindex, follow`. Self-healing: a page returns to the index as soon as the
+  ingest or verifier supplies a description.
+- **Raise the cap** once Search Console shows most of the 2,000 indexed.
+
+**09-02 — Language moved into the location dropdown** (`a608d2c`)
+- Language was a footer strip; it is now a Country + Language dropdown in the
+  header, replacing the unused city selector.
+
+---
+
 ## 2026-08
 
 **08-27 — Cloudflare put in front of the site**

@@ -12,7 +12,7 @@ import { queryTokens } from '../utils/search-tokens';
 import { slugify } from '../utils/slug';
 import { randomSeed } from '../utils/rng';
 import type { CategorySlug, CountryCode, DealQuery, NormalizedDeal } from '../providers/types';
-import { SITEMAP_ACTIVE_COUNTRIES } from '../geo/countries';
+import { SITEMAP_ACTIVE_COUNTRIES, SITEMAP_MAX_DEAL_URLS } from '../geo/countries';
 
 const TABLE = 'deals';
 
@@ -450,29 +450,28 @@ export async function getAllDealSlugs(): Promise<{ slug: string; lastUpdated: st
     }
     return results;
   }
-  const out: { slug: string; lastUpdated: string }[] = [];
-  // Page explicitly past the 1000-row REST cap and exclude hidden deals — a
-  // hidden/delisted deal must never appear in the sitemap.
-  // Only include deals from active (legal-cleared) countries so non-cleared
-  // markets never reach the crawl surface even after their rows unhide.
-  for (let offset = 0; ; offset += REST_PAGE) {
-    const { data, error } = await supabase()
-      .from(TABLE)
-      .select('slug,last_updated')
-      .eq('hidden', false)
-      .in('country', SITEMAP_ACTIVE_COUNTRIES)
-      .not('slug', 'is', null)
-      .order('slug', { ascending: true })
-      .range(offset, offset + REST_PAGE - 1);
-    if (error) {
-      console.error('[deals.repo] getAllDealSlugs failed:', error.message);
-      return out;
-    }
-    const rows = data ?? [];
-    out.push(...rows.map((r) => ({ slug: r.slug as string, lastUpdated: r.last_updated as string })));
-    if (rows.length < REST_PAGE) break;
+  // Quality-gated + capped, via the `sitemap_deals` SQL function: it ranks
+  // eligible deals by content depth / uniqueness / discount / price history and
+  // round-robins across shop+category so no single merchant floods the set
+  // (score alone returned 1,987 of 2,000 pages from one pharmacy). Hidden rows
+  // and non-legal-cleared countries are excluded inside the function, so the
+  // guarantees the old query made still hold.
+  //
+  // Was: every visible slug, ~32k URLs. Search Console showed 28,055 of them
+  // "Discovered - currently not indexed" and indexed pages falling to 2,850 —
+  // a small crawl allowance spread across thin pages indexes none of them.
+  const { data, error } = await supabase().rpc('sitemap_deals', {
+    p_limit: SITEMAP_MAX_DEAL_URLS,
+    p_countries: SITEMAP_ACTIVE_COUNTRIES,
+  });
+  if (error) {
+    console.error('[deals.repo] getAllDealSlugs failed:', error.message);
+    return [];
   }
-  return out;
+  return (data ?? []).map((r: { slug: string; last_updated: string }) => ({
+    slug: r.slug,
+    lastUpdated: r.last_updated,
+  }));
 }
 
 export async function updateHistoricalLows(): Promise<void> {

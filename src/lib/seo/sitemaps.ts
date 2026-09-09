@@ -49,7 +49,13 @@ export function staticSitemap(): string {
 
 /** Deal slugs in stable (slug-ordered) chunks. */
 export async function dealChunks(): Promise<{ slug: string; lastUpdated: string }[][]> {
-  const deals = await getAllDealSlugs(); // already slug-ordered + hidden-filtered
+  // The repo picks WHICH deals qualify (quality-ranked, round-robined across
+  // merchants); it does not return them slug-ordered any more. Sort here so
+  // chunk membership stays stable between runs — otherwise a score change
+  // reshuffles every deals-N.xml and its lastmod, which teaches crawlers that
+  // our lastmod means nothing.
+  // Plain codepoint compare, not localeCompare — same order on every runtime.
+  const deals = (await getAllDealSlugs()).sort((a, b) => (a.slug < b.slug ? -1 : a.slug > b.slug ? 1 : 0));
   const chunks: { slug: string; lastUpdated: string }[][] = [];
   for (let i = 0; i < deals.length; i += DEALS_PER_SITEMAP) {
     chunks.push(deals.slice(i, i + DEALS_PER_SITEMAP));

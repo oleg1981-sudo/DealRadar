@@ -37,6 +37,21 @@ export const DEFAULT_COUNTRY: CountryCode = 'DE';
  */
 export const SITEMAP_ACTIVE_COUNTRIES: CountryCode[] = ['DE'];
 
+/**
+ * How many deal URLs the sitemap advertises. THE dial for crawl budget.
+ *
+ * Search Console (2026-09-09): 28,055 URLs "Discovered - currently not indexed"
+ * and indexed pages falling 5,443 -> 2,850 with ~0 impressions. Asking a
+ * 3-month-old domain to index ~32k URLs spreads a small crawl allowance across
+ * thin, duplicated pages and none of it lands. Publishing a smaller, genuinely
+ * good set concentrates that allowance.
+ *
+ * Raise it as indexation recovers — when Search Console shows most of these
+ * indexed (say 1,800 of 2,000), go to 5,000, then higher. Ranking + diversity
+ * live in the `sitemap_deals` SQL function; this is only the cap.
+ */
+export const SITEMAP_MAX_DEAL_URLS = 2000;
+
 export function isSupportedCountry(code: string): code is CountryCode {
   return COUNTRIES.some((c) => c.code === code);
 }
