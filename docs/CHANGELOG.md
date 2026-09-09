@@ -70,6 +70,9 @@ is still in the repo if Netlify is ever needed again.
   `noindex, follow`. Self-healing: a page returns to the index as soon as the
   ingest or verifier supplies a description.
 - **Raise the cap** once Search Console shows most of the 2,000 indexed.
+- Follow-up the same day: the first deploy shipped only 1,000 URLs. PostgREST
+  truncates every response at `max-rows` (1,000) without erroring, RPC calls
+  included. The sitemap query now pages.
 
 **09-02 — Language moved into the location dropdown** (`a608d2c`)
 - Language was a footer strip; it is now a Country + Language dropdown in the

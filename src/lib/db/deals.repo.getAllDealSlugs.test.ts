@@ -11,8 +11,10 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 const h = vi.hoisted(() => ({
   configured: false,
   queriedCountries: [] as string[],
-  // Captures the .rpc(name, params) call the supabase path now makes.
-  rpcArgs: null as null | [string, Record<string, unknown>],
+  // Every .rpc(name, params) call the supabase path makes, in order.
+  rpcCalls: [] as [string, Record<string, unknown>][],
+  // The full result set; the mock serves p_limit/p_offset slices of it, the way
+  // PostgREST does — so the paging loop is genuinely exercised.
   rpcRows: [] as { slug: string; last_updated: string }[],
   rpcError: null as null | { message: string },
 }));
@@ -32,8 +34,11 @@ vi.mock('./supabase', () => ({
   supabaseConfigured: () => h.configured,
   supabase: () => ({
     rpc: async (name: string, params: Record<string, unknown>) => {
-      h.rpcArgs = [name, params];
-      return h.rpcError ? { data: null, error: h.rpcError } : { data: h.rpcRows, error: null };
+      h.rpcCalls.push([name, params]);
+      if (h.rpcError) return { data: null, error: h.rpcError };
+      const offset = (params.p_offset as number) ?? 0;
+      const limit = (params.p_limit as number) ?? h.rpcRows.length;
+      return { data: h.rpcRows.slice(offset, offset + limit), error: null };
     },
   }),
 }));
@@ -44,10 +49,17 @@ import { SITEMAP_ACTIVE_COUNTRIES, SITEMAP_MAX_DEAL_URLS } from '../geo/countrie
 beforeEach(() => {
   h.configured = false;
   h.queriedCountries.length = 0;
-  h.rpcArgs = null;
+  h.rpcCalls.length = 0;
   h.rpcRows = [];
   h.rpcError = null;
 });
+
+/** `n` distinct rows, enough to fill the cap and then some. */
+const rows = (n: number) =>
+  Array.from({ length: n }, (_, i) => ({
+    slug: `deal-${String(i).padStart(5, '0')}`,
+    last_updated: '2026-09-09T07:00:00Z',
+  }));
 
 describe('getAllDealSlugs', () => {
   it('mock-fallback: only queries countries in SITEMAP_ACTIVE_COUNTRIES', async () => {
@@ -68,21 +80,50 @@ describe('getAllDealSlugs', () => {
     // Non-legal-cleared markets must never reach the sitemap even once their
     // rows unhide.
     h.configured = true;
+    h.rpcRows = rows(10);
     await getAllDealSlugs();
 
-    expect(h.rpcArgs).not.toBeNull();
-    expect(h.rpcArgs![0]).toBe('sitemap_deals');
-    expect(h.rpcArgs![1].p_countries).toEqual(SITEMAP_ACTIVE_COUNTRIES);
+    expect(h.rpcCalls.length).toBeGreaterThan(0);
+    for (const [name, params] of h.rpcCalls) {
+      expect(name).toBe('sitemap_deals');
+      expect(params.p_countries).toEqual(SITEMAP_ACTIVE_COUNTRIES);
+    }
   });
 
   it('supabase path: caps the sitemap at SITEMAP_MAX_DEAL_URLS', async () => {
     // The cap is the whole point: advertising ~32k URLs from a low-authority
     // domain left 28,055 of them "Discovered - currently not indexed".
     h.configured = true;
-    await getAllDealSlugs();
+    h.rpcRows = rows(SITEMAP_MAX_DEAL_URLS + 500); // more available than we want
 
-    expect(h.rpcArgs![1].p_limit).toBe(SITEMAP_MAX_DEAL_URLS);
+    const out = await getAllDealSlugs();
+
+    expect(out).toHaveLength(SITEMAP_MAX_DEAL_URLS);
     expect(SITEMAP_MAX_DEAL_URLS).toBeLessThan(32000);
+  });
+
+  it('pages past the 1000-row PostgREST cap instead of truncating', async () => {
+    // This shipped once: a single .rpc() asking for 2,000 returned 1,000 with no
+    // error, and the live sitemap silently carried half of what it claimed.
+    h.configured = true;
+    h.rpcRows = rows(SITEMAP_MAX_DEAL_URLS);
+
+    const out = await getAllDealSlugs();
+
+    expect(out).toHaveLength(SITEMAP_MAX_DEAL_URLS);
+    // No page may ask for more than the cap allows...
+    for (const [, params] of h.rpcCalls) expect(params.p_limit as number).toBeLessThanOrEqual(1000);
+    // ...and the offsets must walk forward, so pages neither repeat nor skip.
+    expect(h.rpcCalls.map(([, p]) => p.p_offset)).toEqual([0, 1000]);
+    expect(new Set(out.map((d) => d.slug)).size).toBe(SITEMAP_MAX_DEAL_URLS);
+  });
+
+  it('stops early when the catalogue is smaller than the cap', async () => {
+    h.configured = true;
+    h.rpcRows = rows(12);
+
+    expect(await getAllDealSlugs()).toHaveLength(12);
+    expect(h.rpcCalls).toHaveLength(1); // no pointless second round-trip
   });
 
   it('maps rows to the sitemap shape', async () => {

@@ -583,9 +583,20 @@ create policy fetch_outcomes_public_read on public.fetch_outcomes for select to 
 -- takes each group's best first, so every merchant and category is represented:
 -- 8 categories / 21 shops, health down from 99% to 19.5%, average description
 -- still 1,885 chars.
+--
+-- PAGING (p_offset): PostgREST refuses to return more than `max-rows` (1,000 on
+-- Supabase) from ANY request, silently truncating rather than erroring. The
+-- first deploy of this function asked for 2,000 and the live sitemap quietly
+-- carried 1,000. The caller therefore pages; the ordering below is a total
+-- order (rn, score, slug are ranked over the whole set) so pages do not overlap
+-- or skip. Do not raise `max-rows` project-wide to avoid this — that lifts the
+-- cap on every other query too.
+drop function if exists public.sitemap_deals(int, text[]);
+
 create or replace function public.sitemap_deals(
-  p_limit int default 2000,
-  p_countries text[] default array['DE']
+  p_limit int default 1000,
+  p_countries text[] default array['DE'],
+  p_offset int default 0
 )
 returns table (slug text, last_updated timestamptz)
 language sql stable
@@ -628,5 +639,6 @@ as $$
   select r.slug, r.last_updated
   from ranked r
   order by r.rn asc, r.score desc, r.slug asc
-  limit greatest(p_limit, 0);
+  limit greatest(p_limit, 0)
+  offset greatest(p_offset, 0);
 $$;

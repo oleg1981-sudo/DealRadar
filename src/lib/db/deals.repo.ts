@@ -460,18 +460,28 @@ export async function getAllDealSlugs(): Promise<{ slug: string; lastUpdated: st
   // Was: every visible slug, ~32k URLs. Search Console showed 28,055 of them
   // "Discovered - currently not indexed" and indexed pages falling to 2,850 —
   // a small crawl allowance spread across thin pages indexes none of them.
-  const { data, error } = await supabase().rpc('sitemap_deals', {
-    p_limit: SITEMAP_MAX_DEAL_URLS,
-    p_countries: SITEMAP_ACTIVE_COUNTRIES,
-  });
-  if (error) {
-    console.error('[deals.repo] getAllDealSlugs failed:', error.message);
-    return [];
+  //
+  // Paged via REST_PAGE, because the 1000-row cap above applies to RPC calls
+  // too: the first deploy of this asked for 2,000 and silently shipped 1,000.
+  // The function's ordering is a total order, so pages neither overlap nor skip.
+  const out: { slug: string; lastUpdated: string }[] = [];
+  for (let offset = 0; offset < SITEMAP_MAX_DEAL_URLS; offset += REST_PAGE) {
+    const pageSize = Math.min(REST_PAGE, SITEMAP_MAX_DEAL_URLS - offset);
+    const { data, error } = await supabase().rpc('sitemap_deals', {
+      p_limit: pageSize,
+      p_countries: SITEMAP_ACTIVE_COUNTRIES,
+      p_offset: offset,
+    });
+    if (error) {
+      // A short sitemap beats a 500 on /sitemap.xml, so keep what we have.
+      console.error('[deals.repo] getAllDealSlugs failed:', error.message);
+      return out;
+    }
+    const rows = (data ?? []) as { slug: string; last_updated: string }[];
+    out.push(...rows.map((r) => ({ slug: r.slug, lastUpdated: r.last_updated })));
+    if (rows.length < pageSize) break; // catalogue smaller than the cap
   }
-  return (data ?? []).map((r: { slug: string; last_updated: string }) => ({
-    slug: r.slug,
-    lastUpdated: r.last_updated,
-  }));
+  return out;
 }
 
 export async function updateHistoricalLows(): Promise<void> {
