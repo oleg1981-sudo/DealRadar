@@ -29,6 +29,7 @@ const { feedDescription } = require('./lib/description.cjs');
 const { normalizeEnhancedRow } = require('./lib/enhanced-feed.cjs');
 const { makeAttrCollector, FillRates } = require('./lib/feed-attrs.cjs');
 const { normalizeBrand } = require('./lib/brand-normalize.cjs');
+const { repairMojibake } = require('./lib/text-encoding.cjs');
 
 // ── args & env ───────────────────────────────────────────────────────────────
 const args = process.argv.slice(2);
@@ -179,6 +180,31 @@ const ADVERTISER_CATEGORY = [
   // merchant and failed every run. Stating it explicitly is the fix: the guard
   // asks "has a human decided?", not "is it electronics?".
   [/gsmnet/i, 'electronics'],
+  // ── 2026-09-12, fifth and sixth instances of the same German-catalogue class.
+  // Both arrived in the feed on consecutive days and failed the guard twice
+  // (runs #88, #89) before anyone looked.
+  //
+  // VBS Hobby is a Bastelbedarf (craft supplies) retailer: encaustic wax paints,
+  // Raysin/Keraflott casting powder in 1-25 kg sacks, silk squares for painting,
+  // MDF storage kits, paper punches. 18 rows, all filed under Elektronik.
+  // `home-garden` over `toys` because the catalogue is materials for making
+  // decor and the storage to keep it in — the German label for `toys` is
+  // "Spielzeug", which a 25 kg sack of casting powder plainly is not. Same call
+  // as Profichemie above: home-garden is this project's household/DIY bucket.
+  [/vbs[-\s]?hobby/i, 'home-garden'],
+  // Nature's Way is a vitamin and supplement brand. Note the `.` in the pattern:
+  // the feed ships the apostrophe as a raw Windows-1252 byte, so the name
+  // arrives as "Nature<U+0092>s Way DE". repairMojibake() now normalises that to
+  // a typographic apostrophe at read time, and `.?` matches every form the feed
+  // could send next: the stray byte, a real apostrophe, or none at all.
+  [/nature.?s\s*way/i, 'health'],
+  // Sinocare sells blood-glucose meters, test strips and lancets — medical
+  // devices, filed under BEAUTY. Not a fall-through: these rows matched a rule,
+  // so the uncategorised tracker never saw them and the run went green. Found
+  // only by reading the per-merchant split (CLAUDE.md §1), which is the half of
+  // that rule the automation cannot replace. Same shape as Mediakos landing in
+  // `sports`.
+  [/sinocare/i, 'health'],
 ];
 function advertiserCategory(advertiserName) {
   for (const [re, slug] of ADVERTISER_CATEGORY) if (re.test(advertiserName || '')) return slug;
@@ -527,7 +553,9 @@ async function runFeedListFeeds(counters) {
         },
         (cols) => {
           scanned2++;
-          const g = (k) => (idx2[k] !== undefined ? (cols[idx2[k]] ?? '') : '');
+          // repairMojibake here, not per-field: a Windows-1252 byte can land in
+          // ANY column, and this is the one place every column passes through.
+          const g = (k) => repairMojibake(idx2[k] !== undefined ? (cols[idx2[k]] ?? '') : '');
           if (isGoogle) {
             const row = normalizeEnhancedRow(g, { ...ctx, collectAttrs: collect2 });
             if (!row) return;
@@ -685,7 +713,7 @@ async function fetchExistingPrices() {
     (cols) => {
       if (capped) return;
       scanned++;
-      const g = (k) => (idx[k] !== undefined ? (cols[idx[k]] ?? '') : '');
+      const g = (k) => repairMojibake(idx[k] !== undefined ? (cols[idx[k]] ?? '') : '');
       // Per-merchant scan counts (BEFORE the deal gate) — the coverage watchdog
       // uses these to tell "scanned but nothing discounted" (fine, v1 drops
       // non-deals) from "absent from the feed entirely" (a genuine gap).

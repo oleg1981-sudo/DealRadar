@@ -12,6 +12,9 @@ This is not a style preference. The same defect has shipped four times:
 | 2026-07-19 | Profichemie | Cleaning chemicals under **Elektronik** |
 | 2026-08-20 | Zizzz.de | A child's pyjama under **Elektronik** |
 | 2026-08-27 | Mediakos DE | CBD/collagen oils + Omega-3 capsules under **Elektronik** (64 rows), and 62 more supplements — Magnesium, MSM, NAC, Chlorella — under **Sport** |
+| 2026-09-12 | vbs-hobby AT | Craft supplies — encaustic wax, 25 kg sacks of casting powder, silk painting squares — under **Elektronik** (18 rows) |
+| 2026-09-12 | Nature's Way DE | A supplement bundle under **Elektronik** (3 rows) |
+| 2026-09-12 | Sinocare | Blood-glucose meters, test strips and lancets under **Beauty** (8 rows) |
 | _(and one earlier)_ | — | same shape |
 
 The cause is always the same: `mapCategory()` in `scripts/ingest-awin.cjs` falls
@@ -32,6 +35,27 @@ Two things the Mediakos case adds to the pattern:
 The first three were each found by a person noticing a wrong page. This one was
 found by running the verification above after an ingest — which is the point of
 the rule.
+
+**A third thing, from 2026-09-12.** Two merchants arrived on consecutive days
+and failed the guard twice before anyone looked; the only symptom was a red
+badge and two "ingest failed" emails. Reading the per-merchant split to fix them
+then surfaced **Sinocare** — glucose meters and test strips sitting under
+Beauty. Nothing had flagged it, because those rows matched a rule rather than
+defaulting. So the split is worth reading on ANY category work, not only after a
+new merchant appears: the guard tells you where to start looking, never where to
+stop.
+
+**And check the merchant NAME, not just its category.** Nature's Way arrived
+with its apostrophe as a raw Windows-1252 byte, which decodes to an invisible
+control character. The shop read as "Natures Way DE" on the site, matched no
+`where shop_name = ...` query, and formed its own identity in anything grouping
+by shop. `repairMojibake()` in `scripts/lib/text-encoding.cjs` now normalises
+these at read time. To audit:
+
+```sql
+select shop_name, count(*) from public.deals
+where shop_name ~ ('[' || chr(128) || '-' || chr(159) || ']') group by shop_name;
+```
 
 ### How to verify
 
