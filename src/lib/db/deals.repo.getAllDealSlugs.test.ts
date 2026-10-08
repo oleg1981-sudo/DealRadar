@@ -15,7 +15,7 @@ const h = vi.hoisted(() => ({
   rpcCalls: [] as [string, Record<string, unknown>][],
   // The full result set; the mock serves p_limit/p_offset slices of it, the way
   // PostgREST does — so the paging loop is genuinely exercised.
-  rpcRows: [] as { slug: string; last_updated: string }[],
+  rpcRows: [] as { slug: string; country: string; lastmod: string | null }[],
   rpcError: null as null | { message: string },
 }));
 
@@ -58,7 +58,8 @@ beforeEach(() => {
 const rows = (n: number) =>
   Array.from({ length: n }, (_, i) => ({
     slug: `deal-${String(i).padStart(5, '0')}`,
-    last_updated: '2026-09-09T07:00:00Z',
+    country: 'DE',
+    lastmod: '2026-09-09T07:00:00Z',
   }));
 
 describe('getAllDealSlugs', () => {
@@ -126,12 +127,17 @@ describe('getAllDealSlugs', () => {
     expect(h.rpcCalls).toHaveLength(1); // no pointless second round-trip
   });
 
-  it('maps rows to the sitemap shape', async () => {
+  it('maps rows to the sitemap shape, carrying country and content lastmod', async () => {
     h.configured = true;
-    h.rpcRows = [{ slug: 'a-deal-awin-1', last_updated: '2026-09-09T07:00:00Z' }];
+    h.rpcRows = [
+      { slug: 'a-deal-awin-1', country: 'DE', lastmod: '2026-09-09T07:00:00Z' },
+      // A row with no known change time keeps that honestly as null.
+      { slug: 'b-deal-awin-2', country: 'AT', lastmod: null },
+    ];
 
     expect(await getAllDealSlugs()).toEqual([
-      { slug: 'a-deal-awin-1', lastUpdated: '2026-09-09T07:00:00Z' },
+      { slug: 'a-deal-awin-1', country: 'DE', lastmod: '2026-09-09T07:00:00Z' },
+      { slug: 'b-deal-awin-2', country: 'AT', lastmod: null },
     ]);
   });
 

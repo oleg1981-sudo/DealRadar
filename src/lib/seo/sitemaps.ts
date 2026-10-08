@@ -1,5 +1,6 @@
 import 'server-only';
-import { getAllDealSlugs } from '@/lib/db/deals.repo';
+import { getAllDealSlugs, type SitemapDeal } from '@/lib/db/deals.repo';
+import { dealCanonicalUrl } from '@/lib/seo/deal-url';
 import { CATEGORY_SLUGS } from '@/lib/providers/types';
 import { LOCALES, routing } from '@/i18n/routing';
 import { siteUrl } from '@/lib/utils/site-url';
@@ -12,10 +13,13 @@ import { siteUrl } from '@/lib/utils/site-url';
  *   /sitemaps/static.xml    home + legal + category pages (hreflang'd)
  *   /sitemaps/deals-N.xml   deal PDPs, DEALS_PER_SITEMAP per chunk (1-based)
  *
- * Chunk size keeps every child comfortably under the 2 MB page-load budget:
- * one deal entry ≈ 2.2 KB (loc + lastmod + 14 xhtml:link hreflang alternates),
- * so 500 deals ≈ 1.1 MB. The protocol caps are 50k URLs / 50 MB, but small
- * fast-loading chunks are what crawl schedulers favor.
+ * Deal entries list ONE URL each — the canonical copy in the deal's content
+ * language — with no hreflang alternates (2026-10-08, see contentLocale()).
+ * Static pages keep hreflang: their headings and copy really are translated.
+ *
+ * Chunk size: a deal entry is now ~0.2 KB (loc + lastmod), so 500 per chunk is
+ * far under the 2 MB page-load budget. Small fast-loading chunks are what crawl
+ * schedulers favor; the protocol caps are 50k URLs / 50 MB.
  */
 export const DEALS_PER_SITEMAP = 500;
 
@@ -48,7 +52,7 @@ export function staticSitemap(): string {
 }
 
 /** Deal slugs in stable (slug-ordered) chunks. */
-export async function dealChunks(): Promise<{ slug: string; lastUpdated: string }[][]> {
+export async function dealChunks(): Promise<SitemapDeal[][]> {
   // The repo picks WHICH deals qualify (quality-ranked, round-robined across
   // merchants); it does not return them slug-ordered any more. Sort here so
   // chunk membership stays stable between runs — otherwise a score change
@@ -56,20 +60,32 @@ export async function dealChunks(): Promise<{ slug: string; lastUpdated: string 
   // our lastmod means nothing.
   // Plain codepoint compare, not localeCompare — same order on every runtime.
   const deals = (await getAllDealSlugs()).sort((a, b) => (a.slug < b.slug ? -1 : a.slug > b.slug ? 1 : 0));
-  const chunks: { slug: string; lastUpdated: string }[][] = [];
+  const chunks: SitemapDeal[][] = [];
   for (let i = 0; i < deals.length; i += DEALS_PER_SITEMAP) {
     chunks.push(deals.slice(i, i + DEALS_PER_SITEMAP));
   }
   return chunks;
 }
 
+/** ISO lastmod, or undefined when the time is unknown or unparseable. */
+function isoOrUndefined(v: string | null): string | undefined {
+  const t = v ? new Date(v) : null;
+  return t && !Number.isNaN(t.getTime()) ? t.toISOString() : undefined;
+}
+
 /** One deals child sitemap (chunk is 0-based here; URLs are 1-based). */
-export function dealsSitemap(chunk: { slug: string; lastUpdated: string }[]): string {
+export function dealsSitemap(chunk: SitemapDeal[]): string {
   const base = siteUrl();
   const entries = chunk.map((d) => {
-    const t = d.lastUpdated ? new Date(d.lastUpdated) : null;
-    const lastmod = t && !Number.isNaN(t.getTime()) ? t.toISOString() : undefined;
-    return urlEntry(base, `/deal/${d.slug}`, lastmod);
+    // `lastmod` is the deal's content_changed_at — moved only by a change a
+    // visitor would see — not last_updated, which the daily verifier bumps as a
+    // liveness heartbeat. Until 2026-10-08 it was last_updated, so 1,993 of the
+    // 2,000 entries claimed "changed today" every day: precisely the
+    // always-"now" stamp that teaches Google to ignore lastmod.
+    const lastmod = isoOrUndefined(d.lastmod);
+    return `<url><loc>${xmlEscape(dealCanonicalUrl(base, d.slug, d.country))}</loc>${
+      lastmod ? `<lastmod>${lastmod}</lastmod>` : ''
+    }</url>`;
   });
   return URLSET_OPEN + entries.join('\n') + '\n</urlset>\n';
 }
@@ -82,7 +98,7 @@ export async function sitemapIndex(): Promise<string> {
     { loc: `${base}/sitemaps/static.xml`, lastmod: undefined as string | undefined },
     ...chunks.map((chunk, i) => {
       const newest = chunk
-        .map((d) => new Date(d.lastUpdated).getTime())
+        .map((d) => (d.lastmod ? new Date(d.lastmod).getTime() : NaN))
         .filter((t) => !Number.isNaN(t))
         .reduce((a, b) => Math.max(a, b), 0);
       return {

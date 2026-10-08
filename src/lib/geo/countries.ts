@@ -49,6 +49,9 @@ export const SITEMAP_ACTIVE_COUNTRIES: CountryCode[] = ['DE'];
  * Raise it as indexation recovers — when Search Console shows most of these
  * indexed (say 1,800 of 2,000), go to 5,000, then higher. Ranking + diversity
  * live in the `sitemap_deals` SQL function; this is only the cap.
+ *
+ * 2026-10-08: 11 of the 2,016 submitted URLs were indexed and 1,791 had never
+ * been crawled — but those were the /en/ copies; see contentLocale().
  */
 export const SITEMAP_MAX_DEAL_URLS = 2000;
 
@@ -58,6 +61,33 @@ export function isSupportedCountry(code: string): code is CountryCode {
 
 export function countryInfo(code: CountryCode): CountryInfo {
   return COUNTRIES.find((c) => c.code === code)!;
+}
+
+/**
+ * The language a deal's own content is written in: its market's language.
+ *
+ * A deal page exists in all 13 locales, but only the chrome is translated —
+ * the product name, description and specs come from the merchant's feed, in
+ * the merchant's language. So `/fr/deal/x` for a German shop is the German page
+ * with French menus, and Google treats the 13 as duplicates of one another.
+ *
+ * Search Console, 2026-10-08, showed what that costs: Google indexed 961 pages,
+ * picking whichever copy it liked (Finnish, Romanian, Italian versions of German
+ * products), while rejecting the /en/ copies the sitemap actually submitted —
+ * 11 of 2,016 indexed. The same soap dispenser was indexed at /de/ and
+ * "crawled, not indexed" at /en/.
+ *
+ * This names the one copy that is genuinely in its own language. Deal pages
+ * canonicalise to it, and the sitemap lists only it. Every locale still renders
+ * for visitors; only the search signal is consolidated.
+ *
+ * Market-driven rather than hardcoded 'de', so a French market activating later
+ * makes its deals canonical at /fr/ with no change here. An unknown country
+ * falls back to the default market's language.
+ */
+export function contentLocale(country: string): string {
+  const code = (country ?? '').trim().toUpperCase();
+  return countryInfo(isSupportedCountry(code) ? code : DEFAULT_COUNTRY).locale;
 }
 
 /** Cached per locale — the dropdown renders all 16 countries on every open. */

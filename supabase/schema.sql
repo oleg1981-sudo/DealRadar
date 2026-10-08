@@ -554,6 +554,55 @@ create policy ops_metrics_public_read on public.ops_metrics for select to anon u
 drop policy if exists fetch_outcomes_public_read on public.fetch_outcomes;
 create policy fetch_outcomes_public_read on public.fetch_outcomes for select to anon using (true);
 
+-- ── content_changed_at: an honest sitemap <lastmod> (2026-10-08) ─────────────
+-- `last_updated` is a liveness heartbeat: verify-awin touches it on every row it
+-- checks, changed or not, so it reads "today" for nearly every deal, every day.
+-- Feeding it to the sitemap made 1,993 of 2,000 entries claim a change daily —
+-- the always-"now" lastmod that Google learns to ignore sitewide.
+--
+-- This column moves only when something a visitor would SEE changes. The
+-- deliberate omissions are last_updated / last_verified (the heartbeat; the page
+-- renders a "verified at" time from it, which Google's guidance says is not a
+-- significant change), shop_url / merchant_url (link targets, not content),
+-- homepage_hidden (homepage only), and provenance columns.
+--
+-- Initialised with a constant default: on Postgres 11+ that is a metadata-only
+-- change, so the ~45k existing rows are not rewritten (the database sits close to
+-- its shared_buffers size). Their value is the migration time — honest about not
+-- knowing when they last changed — and from then on it moves only on real edits.
+alter table public.deals
+  add column if not exists content_changed_at timestamptz not null default now();
+
+create or replace function public.deals_touch_content_changed()
+returns trigger language plpgsql
+set search_path = public
+as $$
+begin
+  if (new.product_name, new.brand, new.shop_name, new.category, new.currency,
+      new.original_price, new.sale_price, new.discount_percent,
+      new.image_url, new.gallery, new.description, new.description_html,
+      new.feed_attrs, new.historical_low_price, new.rating_value, new.rating_count,
+      new.hidden, new.ean_code, new.mpn, new.model_number, new.merchant_sku)
+     is distinct from
+     (old.product_name, old.brand, old.shop_name, old.category, old.currency,
+      old.original_price, old.sale_price, old.discount_percent,
+      old.image_url, old.gallery, old.description, old.description_html,
+      old.feed_attrs, old.historical_low_price, old.rating_value, old.rating_count,
+      old.hidden, old.ean_code, old.mpn, old.model_number, old.merchant_sku)
+  then
+    new.content_changed_at := now();
+  end if;
+  return new;
+end $$;
+
+-- BEFORE UPDATE only: an INSERT takes the column default. The ingest's upsert
+-- rewrites every column with the feed's values; identical values compare equal
+-- here, so an unchanged re-ingest leaves the timestamp alone.
+drop trigger if exists trigger_deals_content_changed on public.deals;
+create trigger trigger_deals_content_changed
+  before update on public.deals
+  for each row execute function public.deals_touch_content_changed();
+
 -- ── Sitemap quality gate (2026-09-09) ────────────────────────────────────────
 -- Search Console showed an indexation collapse: 28,055 URLs "Discovered -
 -- currently not indexed" (found via the sitemap, never crawled), 5,772
@@ -592,18 +641,33 @@ create policy fetch_outcomes_public_read on public.fetch_outcomes for select to 
 -- or skip. Do not raise `max-rows` project-wide to avoid this — that lifts the
 -- cap on every other query too.
 drop function if exists public.sitemap_deals(int, text[]);
+-- 2026-10-08: the result gained `country` and `lastmod` (was slug, last_updated).
+-- A return-type change cannot go through `create or replace`, and this file is
+-- applied statement-by-statement with no transaction, so an unconditional drop
+-- would remove the function for a moment on every run. Drop only the old shape.
+do $$
+begin
+  if exists (
+    select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+    where n.nspname = 'public' and p.proname = 'sitemap_deals'
+      and pg_get_function_result(p.oid) not like '%lastmod%'
+  ) then
+    drop function public.sitemap_deals(int, text[], int);
+  end if;
+end $$;
 
 create or replace function public.sitemap_deals(
   p_limit int default 1000,
   p_countries text[] default array['DE'],
   p_offset int default 0
 )
-returns table (slug text, last_updated timestamptz)
+returns table (slug text, country text, lastmod timestamptz)
 language sql stable
 set search_path = public
 as $$
   with eligible as (
-    select d.slug, d.last_updated, d.description, d.discount_percent,
+    select d.slug, d.country::text as country, d.content_changed_at as lastmod,
+           d.description, d.discount_percent,
            d.shop_name, d.category, d.gallery, d.feed_attrs, d.historical_low_price,
            length(coalesce(d.description, '')) as dlen
     from public.deals d
@@ -620,7 +684,7 @@ as $$
     group by e.description having count(*) > 1
   ),
   scored as (
-    select e.slug, e.last_updated, e.shop_name, e.category,
+    select e.slug, e.country, e.lastmod, e.shop_name, e.category,
            least(e.dlen, 2000)::numeric / 2000 * 30
          + case when e.description not in (select d2.description from dup d2) then 25 else 0 end
          + least(coalesce(e.discount_percent, 0), 60)::numeric / 60 * 20
@@ -631,12 +695,12 @@ as $$
     from eligible e
   ),
   ranked as (
-    select s.slug, s.last_updated, s.score,
+    select s.slug, s.country, s.lastmod, s.score,
            row_number() over (partition by s.shop_name, s.category
                               order by s.score desc, s.slug asc) as rn
     from scored s
   )
-  select r.slug, r.last_updated
+  select r.slug, r.country, r.lastmod
   from ranked r
   order by r.rn asc, r.score desc, r.slug asc
   limit greatest(p_limit, 0)

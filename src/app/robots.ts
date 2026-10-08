@@ -36,6 +36,16 @@ const DISALLOW = [
   '/*?*maxPrice=',
   '/*?*minDiscount=',
   '/*?*brand=',   // facet params: duplicates of the canonical category view
+  // Next.js RSC payloads. When Googlebot renders a page, <Link> prefetches the
+  // React Server Component data for every link in view, and each response is a
+  // fresh URL (`?_rsc=<build hash>`). Search Console, 2026-10-08: these were 57%
+  // of all Googlebot requests ("Other file type"), against 39% for actual HTML —
+  // on a site Google is crawling at near-zero rate, more than half the allowance
+  // went to data that is never indexed. The page being rendered does not need
+  // them (its own RSC payload is inlined in the HTML); they only serve
+  // client-side navigation, which a crawler never performs. `?*` also covers the
+  // `?page=2&_rsc=` form.
+  '/*?*_rsc=',
 ];
 
 // Answer/search-engine indexers + assistants' live-retrieval bots.

@@ -22,8 +22,8 @@ import { productGallery } from '@/lib/utils/product-details';
 import { sanitizeDescriptionHtml } from '@/lib/utils/description-render';
 import { renderableAttrs } from '@/lib/utils/renderable-attrs';
 import { Badge } from '@/components/ui/badge';
-import { routing } from '@/i18n/routing';
 import { siteUrl } from '@/lib/utils/site-url';
+import { dealCanonicalUrl } from '@/lib/seo/deal-url';
 import { clampSchemaText, SCHEMA_NAME_MAX, SCHEMA_DESCRIPTION_MAX } from '@/lib/seo/schema-text';
 import { gaItem, gaItemAttr } from '@/lib/analytics/items';
 import { TrackViewItem } from '@/components/analytics/TrackView';
@@ -78,10 +78,6 @@ export async function generateMetadata({ params }: Props) {
   // No hardcoded English: title/description are proper nouns + locale-formatted numbers.
   const sale = formatPrice(deal.salePrice, deal.currency, params.locale);
   const was = formatPrice(deal.originalPrice, deal.currency, params.locale);
-  // hreflang alternates across every supported locale (per-item, dynamic).
-  const languages = Object.fromEntries(
-    routing.locales.map((l) => [l, `${BASE_URL}/${l}/deal/${params.slug}`]),
-  );
   return {
     // 0% (regular-price policy, 2026-08-02): no "-0%" in the title, and the
     // description shows only the live price (no fake "was" reference).
@@ -104,9 +100,19 @@ export async function generateMetadata({ params }: Props) {
     // left indexable. Self-healing — the moment either field is populated the
     // page becomes indexable again, no backfill needed.
     ...(deal.hidden || !hasIndexableContent(deal) ? { robots: { index: false, follow: true } } : {}),
+    // Canonical = the copy in the deal's own content language, from EVERY locale
+    // (2026-10-08). The 13 locale copies share one German title, description and
+    // product text; only the menus differ, so to Google they are duplicates, and
+    // hreflang — which declares them translations — was the wrong signal. Search
+    // Console showed Google indexing random copies (fi/ro/it of German products)
+    // and rejecting the rest. One canonical consolidates them; every locale still
+    // renders for visitors. No hreflang here any more: hreflang must point at
+    // self-canonical pages, and these deliberately are not.
+    //
+    // A noindex page (hidden / no copy) is noindex in every locale, so its
+    // canonical target is noindex too — the two signals agree.
     alternates: {
-      canonical: `${BASE_URL}/${params.locale}/deal/${params.slug}`,
-      languages: { ...languages, 'x-default': `${BASE_URL}/${routing.defaultLocale}/deal/${params.slug}` },
+      canonical: dealCanonicalUrl(BASE_URL, params.slug, deal.country),
     },
   };
 }
@@ -136,7 +142,8 @@ export default async function DealDetailPage({ params }: Props) {
   // [FR-4.4] Without recorded rows the series is the synthetic compare-at
   // fallback — the bar then labels itself a price RANGE, never history.
   const series = priceSeries(deal, recorded);
-  const dealUrl = `${BASE_URL}/${params.locale}/deal/${params.slug}`;
+  // JSON-LD names the canonical copy, matching <link rel="canonical">.
+  const dealUrl = dealCanonicalUrl(BASE_URL, params.slug, deal.country);
 
   // [FR-GEO-1 / P-3] Product + single Offer + itemCondition — built per-item from
   // the deal record. A single-seller deal is a plain Offer, not an AggregateOffer

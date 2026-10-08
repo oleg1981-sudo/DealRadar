@@ -441,12 +441,20 @@ export async function getRecentlyUpdatedDeals(sinceIso: string): Promise<Normali
  * Dev/mock fallback samples the registry for each active country so the sitemap
  * is non-empty locally.
  */
-export async function getAllDealSlugs(): Promise<{ slug: string; lastUpdated: string }[]> {
+export interface SitemapDeal {
+  slug: string;
+  /** Decides the canonical locale — see contentLocale(). */
+  country: string;
+  /** When the page's visible content last changed; NOT the verifier's heartbeat. */
+  lastmod: string | null;
+}
+
+export async function getAllDealSlugs(): Promise<SitemapDeal[]> {
   if (!supabaseConfigured()) {
-    const results: { slug: string; lastUpdated: string }[] = [];
+    const results: SitemapDeal[] = [];
     for (const country of SITEMAP_ACTIVE_COUNTRIES) {
       const deals = await fetchDealsAcrossProviders({ country, limit: 200 });
-      results.push(...deals.map((d) => ({ slug: d.slug || slugify(d.productName), lastUpdated: d.lastUpdated })));
+      results.push(...deals.map((d) => ({ slug: d.slug || slugify(d.productName), country, lastmod: d.lastUpdated })));
     }
     return results;
   }
@@ -464,7 +472,7 @@ export async function getAllDealSlugs(): Promise<{ slug: string; lastUpdated: st
   // Paged via REST_PAGE, because the 1000-row cap above applies to RPC calls
   // too: the first deploy of this asked for 2,000 and silently shipped 1,000.
   // The function's ordering is a total order, so pages neither overlap nor skip.
-  const out: { slug: string; lastUpdated: string }[] = [];
+  const out: SitemapDeal[] = [];
   for (let offset = 0; offset < SITEMAP_MAX_DEAL_URLS; offset += REST_PAGE) {
     const pageSize = Math.min(REST_PAGE, SITEMAP_MAX_DEAL_URLS - offset);
     const { data, error } = await supabase().rpc('sitemap_deals', {
@@ -477,8 +485,8 @@ export async function getAllDealSlugs(): Promise<{ slug: string; lastUpdated: st
       console.error('[deals.repo] getAllDealSlugs failed:', error.message);
       return out;
     }
-    const rows = (data ?? []) as { slug: string; last_updated: string }[];
-    out.push(...rows.map((r) => ({ slug: r.slug, lastUpdated: r.last_updated })));
+    const rows = (data ?? []) as { slug: string; country: string; lastmod: string | null }[];
+    out.push(...rows.map((r) => ({ slug: r.slug, country: r.country, lastmod: r.lastmod ?? null })));
     if (rows.length < pageSize) break; // catalogue smaller than the cap
   }
   return out;
